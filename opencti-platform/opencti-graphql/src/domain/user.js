@@ -643,6 +643,8 @@ export const authenticateUser = async (context, req, user, provider, token = '')
       }
     } else {
       logAudit.error(user, IMPERSONATE_ACTION, { to: applicantId });
+      // If impersonate is required, return unauthenticated user
+      return undefined;
     }
   }
   const sessionUser = buildSessionUser(logged, impersonate, provider);
