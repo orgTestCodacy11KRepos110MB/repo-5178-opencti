@@ -48,7 +48,7 @@ const USE_SSL = booleanConf('redis:use_ssl', false);
 const INCLUDE_INFERENCES = booleanConf('redis:include_inferences', false);
 const REDIS_CA = conf.get('redis:ca').map((path: string) => readFileSync(path));
 const REDIS_STREAM_NAME = `${REDIS_PREFIX}stream.opencti`;
-// const NOTIFICATION_STREAM_NAME = `${REDIS_PREFIX}stream.notification`;
+const NOTIFICATION_STREAM_NAME = `${REDIS_PREFIX}stream.notification`;
 
 export const EVENT_CURRENT_VERSION = '4';
 const BASE_DATABASE = 0; // works key for tracking / stream
@@ -373,8 +373,9 @@ export const cacheGet = async (id: string | Array<string>): Promise<StoreObject 
 };
 // endregion
 
-// region opencti stream
+// region opencti data stream
 const streamTrimming = conf.get('redis:trimming') || 0;
+const notificationTrimming = conf.get('redis:notification_trimming') || 50000;
 const mapJSToStream = (event: any) => {
   const cmdArgs: Array<string> = [];
   Object.keys(event).forEach((key) => {
@@ -664,6 +665,12 @@ export const createStreamProcessor = (user: AuthUser, provider: string, withInte
       }
     },
   };
+};
+// endregion
+
+// region opencti notification stream
+export const storeNotificationEvent = async (context: AuthContext, user: AuthUser, event: any) => {
+  await clientBase.call('XADD', NOTIFICATION_STREAM_NAME, 'MAXLEN', '~', notificationTrimming, '*', ...mapJSToStream(event));
 };
 // endregion
 

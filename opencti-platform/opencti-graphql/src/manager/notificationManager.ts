@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import { Promise as Bluebird } from 'bluebird';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
-import { createStreamProcessor, lockResource, StreamProcessor } from '../database/redis';
+import { createStreamProcessor, lockResource, storeNotificationEvent, StreamProcessor } from '../database/redis';
 import conf, { logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
@@ -14,6 +14,7 @@ import { listAllRelations } from '../database/middleware-loader';
 import { RELATION_MEMBER_OF } from '../schema/internalRelationship';
 import { ES_MAX_CONCURRENCY } from '../database/engine';
 import { resolveUserById } from '../domain/user';
+import type { StixCoreObject } from '../types/stix-common';
 
 const NOTIFICATION_ENGINE_KEY = conf.get('notification_manager:lock_key');
 const SCHEDULE_TIME = 10000;
@@ -48,6 +49,12 @@ interface DigestNotification extends Notification {
   type: 'digest';
   rhythm: string;
   notifications: Array<string>;
+}
+interface NotificationEvent {
+  notification_id: string;
+  user_id: string;
+  data: StixCoreObject;
+  outcomes: Array<string>;
 }
 
 const OUTCOME_UI = 'f4ee7b33-006a-4b0d-b57d-411ad288653d';
@@ -113,15 +120,15 @@ const notificationStreamHandler = async (streamEvents: Array<StreamEvent>) => {
       const { data: { data }, event: eventType } = streamEvents[index];
       // For each event we need to check if
       for (let notifIndex = 0; notifIndex < liveNotifications.length; notifIndex += 1) {
-        const { users, filters, event_types } = liveNotifications[notifIndex];
+        const { internal_id: notification_id, users, filters, event_types, outcomes } = liveNotifications[notifIndex];
         if (event_types.includes(eventType)) {
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
             const isMatch = await isInstanceMatchFilters(context, user, data, filters);
             if (isMatch) {
-              // Publish to stream
-              // console.log(user, data, outcomes);
+              const notificationEvent: NotificationEvent = { notification_id, user_id: user.internal_id, data, outcomes };
+              await storeNotificationEvent(context, user, notificationEvent);
             }
           }
         }
