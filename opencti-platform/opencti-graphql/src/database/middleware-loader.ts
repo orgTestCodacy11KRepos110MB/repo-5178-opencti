@@ -15,7 +15,7 @@ import type { FilterMode, InputMaybe, OrderingMode } from '../generated/graphql'
 
 const MAX_SEARCH_SIZE = 5000;
 
-interface Filter {
+export interface Filter {
   key: any ;
   operator?: string | null;
   filterMode?: InputMaybe<FilterMode>;

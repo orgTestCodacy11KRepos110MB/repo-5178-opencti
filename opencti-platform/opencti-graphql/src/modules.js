@@ -1,14 +1,15 @@
 import conf, {
   ENABLED_API,
+  ENABLED_CONNECTOR_MANAGER,
   ENABLED_EXPIRED_MANAGER,
-  ENABLED_SUBSCRIPTION_MANAGER,
+  ENABLED_HISTORY_MANAGER,
+  ENABLED_NOTIFICATION_MANAGER,
+  ENABLED_RETENTION_MANAGER,
   ENABLED_RULE_ENGINE,
+  ENABLED_SUBSCRIPTION_MANAGER,
+  ENABLED_SYNC_MANAGER,
   ENABLED_TASK_SCHEDULER,
   logApp,
-  ENABLED_SYNC_MANAGER,
-  ENABLED_RETENTION_MANAGER,
-  ENABLED_HISTORY_MANAGER,
-  ENABLED_CONNECTOR_MANAGER,
 } from './config/conf';
 import expiredManager from './manager/expiredManager';
 import subscriptionManager from './manager/subscriptionManager';
@@ -20,6 +21,7 @@ import retentionManager from './manager/retentionManager';
 import httpServer from './http/httpServer';
 import connectorManager from './manager/connectorManager';
 import clusterManager from './manager/clusterManager';
+import notificationManager from './manager/notificationManager';
 
 // region static graphql modules
 import './modules/index';
@@ -54,6 +56,13 @@ export const startModules = async () => {
     await retentionManager.start();
   } else {
     logApp.info('[OPENCTI-MODULE] Retention manager not started (disabled by configuration)');
+  }
+  // endregion
+  // region Notification manager
+  if (ENABLED_NOTIFICATION_MANAGER) {
+    await notificationManager.start();
+  } else {
+    logApp.info('[OPENCTI-MODULE] Notification manager not started (disabled by configuration)');
   }
   // endregion
   // region Task manager
@@ -117,6 +126,13 @@ export const shutdownModules = async () => {
     stopTime = new Date().getTime();
     await retentionManager.shutdown();
     logApp.info(`[OPENCTI-MODULE] Retention manager stopped in ${new Date().getTime() - stopTime} ms`);
+  }
+  // endregion
+  // region Notification manager
+  if (ENABLED_NOTIFICATION_MANAGER) {
+    stopTime = new Date().getTime();
+    await notificationManager.shutdown();
+    logApp.info(`[OPENCTI-MODULE] Notification manager stopped in ${new Date().getTime() - stopTime} ms`);
   }
   // endregion
   // region Task manager

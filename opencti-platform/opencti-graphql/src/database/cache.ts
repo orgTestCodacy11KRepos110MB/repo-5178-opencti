@@ -3,6 +3,7 @@ import type { BasicStoreEntity } from '../types/store';
 import { UnsupportedError } from '../config/errors';
 import { telemetry } from '../config/tracing';
 import type { AuthContext, AuthUser } from '../types/user';
+import type { StixId } from '../types/stix-common';
 
 const cache: any = {};
 
@@ -49,7 +50,7 @@ export const getEntitiesFromCache = async <T extends BasicStoreEntity>(context: 
   }, getEntitiesFromCacheFn);
 };
 
-export const getEntitiesMapFromCache = async <T extends BasicStoreEntity>(context: AuthContext, user: AuthUser, type: string): Promise<Map<string, T>> => {
+export const getEntitiesMapFromCache = async <T extends BasicStoreEntity>(context: AuthContext, user: AuthUser, type: string): Promise<Map<string | StixId, T>> => {
   const data = await getEntitiesFromCache(context, user, type);
   return buildStoreEntityMap(data);
 };

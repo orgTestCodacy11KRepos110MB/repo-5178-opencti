@@ -89,6 +89,11 @@
     "lock_key": "expired_manager_lock",
     "interval": 300000
   },
+  "notification_manager": {
+    "enabled": true,
+    "lock_key": "notification_manager_lock",
+    "interval": 10000
+  },
   "subscription_scheduler": {
     "enabled": false,
     "lock_key": "subscription_manager_lock",

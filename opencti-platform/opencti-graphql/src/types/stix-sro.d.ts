@@ -7,9 +7,11 @@ import { StixKillChainPhase } from './stix-common';
 // relationship_type, description, source_ref, target_ref, start_time, stop_time
 export interface RelationExtension extends StixOpenctiExtension {
   extension_type : 'property-extension' | 'new-sro';
+  source_value: string;
   source_ref: string;
   source_ref_object_marking_refs: Array<string>;
   source_type: string;
+  target_value: string;
   target_ref: string;
   target_ref_object_marking_refs: Array<string>;
   target_type: string;

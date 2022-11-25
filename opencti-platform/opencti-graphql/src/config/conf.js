@@ -342,6 +342,7 @@ export const ENABLED_API = booleanConf('app:enabled', true);
 export const ENABLED_TRACING = booleanConf('app:telemetry:tracing:enabled', false);
 export const ENABLED_METRICS = booleanConf('app:telemetry:metrics:enabled', false);
 export const ENABLED_RETENTION_MANAGER = booleanConf('retention_manager:enabled', true);
+export const ENABLED_NOTIFICATION_MANAGER = booleanConf('notification_manager:enabled', true);
 export const ENABLED_CONNECTOR_MANAGER = booleanConf('connector_manager:enabled', true);
 // Default deactivated managers
 export const ENABLED_EXPIRED_MANAGER = booleanConf('expiration_scheduler:enabled', false);

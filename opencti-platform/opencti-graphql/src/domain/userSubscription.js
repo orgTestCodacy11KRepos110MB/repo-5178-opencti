@@ -110,7 +110,7 @@ export const generateDigestForSubscription = async (context, subscription) => {
   const user = { ...rawUser, origin: { user_id: rawUser.id, referer: 'background_task' } };
   // Get the data
   const filters = subscription.filters ? JSON.parse(subscription.filters) : undefined;
-  const queryOptions = convertFiltersToQueryOptions(filters);
+  const queryOptions = await convertFiltersToQueryOptions(context, filters);
   let date = subscription.last_run;
   if (date === FROM_START_STR) {
     const [number, unit] = subscription.cron.split('-');

@@ -1095,9 +1095,11 @@ const convertRelationToStix = (instance: StoreRelation): SRO.StixRelation => {
       [STIX_EXT_OCTI]: cleanObject({
         ...stixRelationship.extensions[STIX_EXT_OCTI],
         extension_type: isBuiltin ? 'property-extension' : 'new-sro',
+        source_value: instance.from.entity_type, // TODO @JRI
         source_ref: instance.from.internal_id,
         source_type: instance.from.entity_type,
         source_ref_object_marking_refs: instance.from[RELATION_OBJECT_MARKING] ?? [],
+        target_value: instance.to.entity_type, // TODO @JRI
         target_ref: instance.to.internal_id,
         target_type: instance.to.entity_type,
         target_ref_object_marking_refs: instance.to[RELATION_OBJECT_MARKING] ?? [],

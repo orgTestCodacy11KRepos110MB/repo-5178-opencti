@@ -48,6 +48,7 @@ const USE_SSL = booleanConf('redis:use_ssl', false);
 const INCLUDE_INFERENCES = booleanConf('redis:include_inferences', false);
 const REDIS_CA = conf.get('redis:ca').map((path: string) => readFileSync(path));
 const REDIS_STREAM_NAME = `${REDIS_PREFIX}stream.opencti`;
+// const NOTIFICATION_STREAM_NAME = `${REDIS_PREFIX}stream.notification`;
 
 export const EVENT_CURRENT_VERSION = '4';
 const BASE_DATABASE = 0; // works key for tracking / stream
