@@ -17,6 +17,7 @@ import {
 } from '../schema/general';
 import { STIX_SIGHTING_RELATIONSHIP } from '../schema/stixSightingRelationship';
 import pjson from '../../package.json';
+import { ENTITY_TYPE_NOTIFICATION } from '../modules/notification/notification-types';
 import { ENTITY_TYPE_VOCABULARY } from '../modules/vocabulary/vocabulary-types';
 import { ENTITY_TYPE_ENTITY_SETTING } from '../modules/entitySetting/entitySetting-types';
 
@@ -136,6 +137,10 @@ export const BUS_TOPICS = {
   [ABSTRACT_STIX_CYBER_OBSERVABLE_RELATIONSHIP]: {
     EDIT_TOPIC: `${TOPIC_PREFIX}STIX_CYBER_OBSERVABLE_RELATIONSHIP_EDIT_TOPIC`,
     ADDED_TOPIC: `${TOPIC_PREFIX}STIX_CYBER_OBSERVABLE_RELATIONSHIP_ADDED_TOPIC`,
+  },
+  [ENTITY_TYPE_NOTIFICATION]: {
+    EDIT_TOPIC: `${TOPIC_PREFIX}ENTITY_TYPE_NOTIFICATION_EDIT_TOPIC`,
+    ADDED_TOPIC: `${TOPIC_PREFIX}ENTITY_TYPE_NOTIFICATION_ADDED_TOPIC`,
   },
 };
 
@@ -343,6 +348,7 @@ export const ENABLED_TRACING = booleanConf('app:telemetry:tracing:enabled', fals
 export const ENABLED_METRICS = booleanConf('app:telemetry:metrics:enabled', false);
 export const ENABLED_RETENTION_MANAGER = booleanConf('retention_manager:enabled', true);
 export const ENABLED_NOTIFICATION_MANAGER = booleanConf('notification_manager:enabled', true);
+export const ENABLED_PUBLISHER_MANAGER = booleanConf('publisher_manager:enabled', true);
 export const ENABLED_CONNECTOR_MANAGER = booleanConf('connector_manager:enabled', true);
 // Default deactivated managers
 export const ENABLED_EXPIRED_MANAGER = booleanConf('expiration_scheduler:enabled', false);
@@ -350,7 +356,6 @@ export const ENABLED_TASK_SCHEDULER = booleanConf('task_scheduler:enabled', fals
 export const ENABLED_SYNC_MANAGER = booleanConf('sync_manager:enabled', false);
 export const ENABLED_RULE_ENGINE = booleanConf('rule_engine:enabled', false);
 export const ENABLED_HISTORY_MANAGER = booleanConf('history_manager:enabled', false);
-export const ENABLED_SUBSCRIPTION_MANAGER = booleanConf('subscription_scheduler:enabled', false);
 export const ENABLED_CACHING = booleanConf('redis:use_as_cache', false);
 
 export const ELASTIC_CREATION_PATTERN = nconf.get('elasticsearch:index_creation_pattern');

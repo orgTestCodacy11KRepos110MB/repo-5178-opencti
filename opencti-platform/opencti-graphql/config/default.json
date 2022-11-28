@@ -94,9 +94,9 @@
     "lock_key": "notification_manager_lock",
     "interval": 10000
   },
-  "subscription_scheduler": {
-    "enabled": false,
-    "lock_key": "subscription_manager_lock",
+  "publisher_manager": {
+    "enabled": true,
+    "lock_key": "publisher_manager_lock",
     "interval": 10000
   },
   "sync_manager": {

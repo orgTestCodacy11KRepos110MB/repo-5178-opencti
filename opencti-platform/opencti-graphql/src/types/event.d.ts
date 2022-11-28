@@ -76,8 +76,10 @@ interface MergeEvent extends Event {
   };
 }
 
-interface StreamEvent {
+type DataEvent = UpdateEvent | DataEvent | MergeEvent;
+
+interface StreamEvent<T extends Event> {
   id: string;
-  event: 'update' | 'create' | 'delete';
-  data: Event
+  event: 'update' | 'create' | 'delete' | 'notification' | 'digest';
+  data: T
 }

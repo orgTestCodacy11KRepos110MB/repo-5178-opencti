@@ -8,6 +8,7 @@ import {
   ABSTRACT_INTERNAL_OBJECT,
   ABSTRACT_STIX_DOMAIN_OBJECT,
   ABSTRACT_STIX_META_OBJECT,
+  ABSTRACT_INTERNAL_OBJECT,
   DEPS_KEYS,
   ENTITY_TYPE_CONTAINER, ENTITY_TYPE_LOCATION,
   schemaTypes,
@@ -27,6 +28,7 @@ import {
   RelationDefinition,
   stixCoreRelationshipsMapping as coreRels,
 } from '../database/stix';
+import { registerInternalType } from '../schema/internalObject';
 import { UnsupportedError } from '../config/errors';
 import {
   SINGLE_STIX_META_RELATIONSHIPS,
@@ -43,7 +45,7 @@ export interface ModuleDefinition<T extends StoreEntity> {
   type: {
     id: string;
     name: string;
-    aliased: boolean;
+    aliased?: boolean;
     category: 'Container' | 'Location' | 'Stix-Domain-Object' | 'Stix-Meta-Object' | 'Internal-Object';
   };
   graphql: {
@@ -52,9 +54,9 @@ export interface ModuleDefinition<T extends StoreEntity> {
   };
   identifier: {
     definition: {
-      [k: string]: Array<{ src: string }>
+      [k: string]: Array<{ src: string }> | (() => string)
     };
-    resolvers: {
+    resolvers?: {
       [f: string]: (data: object) => string
     };
   };
@@ -112,8 +114,14 @@ export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefi
         throw UnsupportedError('Unsupported category');
     }
   }
-  if (definition.type.aliased) {
-    registerStixDomainAliased(definition.type.name);
+  if (definition.type.category === ABSTRACT_STIX_DOMAIN_OBJECT) {
+    registerStixDomainType(definition.type.name);
+    if (definition.type.aliased) {
+      registerStixDomainAliased(definition.type.name);
+    }
+  }
+  if (definition.type.category === ABSTRACT_INTERNAL_OBJECT) {
+    registerInternalType(definition.type.name);
   }
   // Register graphQL schema
   registerGraphqlSchema(definition.graphql);

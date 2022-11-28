@@ -29,7 +29,7 @@ import { convertStoreToStix } from './stix-converter';
 import type { StoreObject, StoreRelation } from '../types/store';
 import type { AuthContext, AuthUser } from '../types/user';
 import type {
-  CreateEventOpts,
+  CreateEventOpts, DataEvent,
   DeleteEvent,
   Event,
   EventOpts,
@@ -47,8 +47,8 @@ import type { ClusterConfig } from '../manager/clusterManager';
 const USE_SSL = booleanConf('redis:use_ssl', false);
 const INCLUDE_INFERENCES = booleanConf('redis:include_inferences', false);
 const REDIS_CA = conf.get('redis:ca').map((path: string) => readFileSync(path));
-const REDIS_STREAM_NAME = `${REDIS_PREFIX}stream.opencti`;
-const NOTIFICATION_STREAM_NAME = `${REDIS_PREFIX}stream.notification`;
+export const REDIS_STREAM_NAME = `${REDIS_PREFIX}stream.opencti`;
+export const NOTIFICATION_STREAM_NAME = `${REDIS_PREFIX}stream.notification`;
 
 export const EVENT_CURRENT_VERSION = '4';
 const BASE_DATABASE = 0; // works key for tracking / stream
@@ -407,6 +407,7 @@ interface MergeImpacts {
   updatedRelations: Array<string>;
   dependencyDeletions: Array<StoreObject>;
 }
+
 const buildMergeEvent = (user: AuthUser, previous: StoreObject, instance: StoreObject, sourceEntities: Array<StoreObject>, impacts: MergeImpacts): MergeEvent => {
   const message = generateMergeMessage(instance, sourceEntities);
   const { updatedRelations, dependencyDeletions } = impacts;
@@ -558,7 +559,7 @@ export const storeDeleteEvent = async (context: AuthContext, user: AuthUser, ins
 };
 export const deleteStream = () => clientBase.call('DEL', REDIS_STREAM_NAME);
 
-const mapStreamToJS = ([id, data]: any): StreamEvent => {
+const mapStreamToJS = ([id, data]: any): StreamEvent<any> => {
   const count = data.length / 2;
   const obj: any = {};
   for (let i = 0; i < count; i += 1) {
@@ -595,7 +596,17 @@ export interface StreamProcessor {
   shutdown: () => Promise<void>;
 }
 
-export const createStreamProcessor = (user: AuthUser, provider: string, withInternal: boolean, callback: any): StreamProcessor => {
+interface StreamOption {
+  withInternal: boolean;
+  streamName: string;
+}
+
+export const createStreamProcessor = (
+  user: AuthUser,
+  provider: string,
+  callback: (events: Array<StreamEvent<DataEvent>>, lastEventId: string) => void,
+  opts: StreamOption = { withInternal: false, streamName: REDIS_STREAM_NAME }
+): StreamProcessor => {
   let client: Redis;
   let startEventId: string;
   let processingLoopPromise: Promise<void>;
@@ -617,16 +628,16 @@ export const createStreamProcessor = (user: AuthUser, provider: string, withInte
         'BLOCK',
         STREAM_BATCH_TIME,
         'STREAMS',
-        REDIS_STREAM_NAME,
+        opts.streamName,
         startEventId
       ) as any[];
       // Process the event results
       if (streamResult && streamResult.length > 0) {
         const [, results] = streamResult[0];
-        const lastElementId = await processStreamResult(results, callback, withInternal);
+        const lastElementId = await processStreamResult(results, callback, opts.withInternal);
         startEventId = lastElementId || startEventId;
       } else {
-        await processStreamResult([], callback, withInternal);
+        await processStreamResult([], callback, opts.withInternal);
       }
     } catch (err) {
       logApp.error(`Error in redis streams read for ${provider}`, { error: err });
@@ -669,8 +680,13 @@ export const createStreamProcessor = (user: AuthUser, provider: string, withInte
 // endregion
 
 // region opencti notification stream
-export const storeNotificationEvent = async (context: AuthContext, user: AuthUser, event: any) => {
+export const storeNotificationEvent = async (context: AuthContext, event: any) => {
   await clientBase.call('XADD', NOTIFICATION_STREAM_NAME, 'MAXLEN', '~', notificationTrimming, '*', ...mapJSToStream(event));
+};
+export const fetchRangeNotifications = async <T extends Event> (start: Date, end: Date): Promise<Array<StreamEvent<T>>> => {
+  const streamResult = await clientBase.call('XRANGE', NOTIFICATION_STREAM_NAME, start.getTime(), end.getTime()) as any[];
+  const streamElements: Array<StreamEvent<T>> = R.map((r) => mapStreamToJS(r), streamResult);
+  return streamElements.filter((s) => s.event === 'notification');
 };
 // endregion
 

@@ -213,7 +213,7 @@ const createSeeMiddleware = () => {
         return;
       }
       const { client } = createSseChannel(req, res);
-      const processor = createStreamProcessor(sessionUser, sessionUser.user_email, false, async (elements, lastEventId) => {
+      const processor = createStreamProcessor(sessionUser, sessionUser.user_email, async (elements, lastEventId) => {
         // Process the event messages
         for (let index = 0; index < elements.length; index += 1) {
           const { id: eventId, event, data } = elements[index];
@@ -488,7 +488,7 @@ const createSeeMiddleware = () => {
       }
       // Init stream and broadcasting
       const userEmail = user.user_email;
-      const processor = createStreamProcessor(user, userEmail, false, async (elements, lastEventId) => {
+      const processor = createStreamProcessor(user, userEmail, async (elements, lastEventId) => {
         // Process the stream elements
         for (let index = 0; index < elements.length; index += 1) {
           const element = elements[index];

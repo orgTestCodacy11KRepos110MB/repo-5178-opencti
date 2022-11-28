@@ -39,5 +39,6 @@ interface ExtendedThemeOptions extends ThemeOptions {
 }
 
 export interface Theme extends MuiTheme {
+  logo: string | undefined
   palette: ExtendedPaletteOptions;
 }

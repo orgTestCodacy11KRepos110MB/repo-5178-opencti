@@ -549,7 +549,9 @@ interface BasicWorkflowStatusEntity extends BasicStoreEntity {
 }
 
 export interface BasicStoreSettings extends BasicStoreEntity {
+  platform_email: string;
   platform_organization: string;
+  platform_theme_dark_background: string;
 }
 
 type BasicStoreObject = BasicStoreEntity | BasicStoreCyberObservable | BasicStoreRelation;

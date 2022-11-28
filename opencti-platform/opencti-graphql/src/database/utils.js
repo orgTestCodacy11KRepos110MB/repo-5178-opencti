@@ -241,7 +241,7 @@ export const inferIndexFromConceptType = (conceptType, inferred = false) => {
   throw DatabaseError(`Cant find index for type ${conceptType}`);
 };
 
-const extractEntityMainValue = (entityData) => {
+export const extractEntityMainValue = (entityData) => {
   let mainValue;
   if (isStixCyberObservable(entityData.entity_type)) {
     mainValue = observableValue(entityData);

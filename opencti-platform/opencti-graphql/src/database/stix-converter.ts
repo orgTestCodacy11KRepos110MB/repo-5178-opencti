@@ -1,6 +1,6 @@
 import * as R from 'ramda';
 import { version as uuidVersion } from 'uuid';
-import { isEmptyField, isInferredIndex } from './utils';
+import { extractEntityMainValue, isEmptyField, isInferredIndex } from './utils';
 import { FunctionalError, UnsupportedError } from '../config/errors';
 import { isBasicObject } from '../schema/stixCoreObject';
 import { isBasicRelationship } from '../schema/stixRelationship';
@@ -119,6 +119,10 @@ import { isRelationBuiltin } from './stix';
 import { isInternalRelationship } from '../schema/internalRelationship';
 import { isInternalObject } from '../schema/internalObject';
 import { ENTITY_TYPE_VOCABULARY } from '../modules/vocabulary/vocabulary-types';
+
+// region type utils
+export const isStixReport = (s: S.StixCoreObject): s is SDO.StixReport => s.extensions[STIX_EXT_OCTI].type === ENTITY_TYPE_CONTAINER_REPORT;
+// endregion
 
 export const isTrustedStixId = (stixId: string): boolean => {
   const segments = stixId.split('--');
@@ -1095,11 +1099,11 @@ const convertRelationToStix = (instance: StoreRelation): SRO.StixRelation => {
       [STIX_EXT_OCTI]: cleanObject({
         ...stixRelationship.extensions[STIX_EXT_OCTI],
         extension_type: isBuiltin ? 'property-extension' : 'new-sro',
-        source_value: instance.from.entity_type, // TODO @JRI
+        source_value: extractEntityMainValue(instance.from),
         source_ref: instance.from.internal_id,
         source_type: instance.from.entity_type,
         source_ref_object_marking_refs: instance.from[RELATION_OBJECT_MARKING] ?? [],
-        target_value: instance.to.entity_type, // TODO @JRI
+        target_value: extractEntityMainValue(instance.to),
         target_ref: instance.to.internal_id,
         target_type: instance.to.entity_type,
         target_ref_object_marking_refs: instance.to[RELATION_OBJECT_MARKING] ?? [],
@@ -1476,4 +1480,9 @@ export const convertStoreToStix = (instance: StoreObject): S.StixObject => {
     throw FunctionalError('Invalid stix data conversion', { data: instance });
   }
   return stix;
+};
+
+export const extractStixRepresentative = (stix: S.StixCoreObject): string => {
+  if (isStixReport(stix)) return stix.name;
+  return 'unknown';
 };

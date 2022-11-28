@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { FunctionComponent, useEffect, useMemo, useState } from 'react';
 import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Badge } from '@mui/material';
+import { Link, useLocation } from 'react-router-dom-v5-compat';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
@@ -8,15 +10,18 @@ import {
   ContentPasteSearchOutlined,
   ExploreOutlined,
   InsertChartOutlined,
+  NotificationsOutlined,
 } from '@mui/icons-material';
 import { UploadOutline } from 'mdi-material-ui';
 import Menu from '@mui/material/Menu';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
-import { graphql } from 'react-relay';
-import { makeStyles, useTheme } from '@mui/styles';
+import { graphql, useSubscription } from 'react-relay';
+import { useTheme } from '@mui/styles';
 import { useFormatter } from '../../../components/i18n';
+import makeStyles from '@mui/styles/makeStyles';
+import { GraphQLSubscriptionConfig } from 'relay-runtime';
 import SearchInput from '../../../components/SearchInput';
 import TopMenuDashboard from './TopMenuDashboard';
 import TopMenuSearch from './TopMenuSearch';
@@ -58,12 +63,11 @@ import TopMenuSettings from './TopMenuSettings';
 import TopMenuProfile from './TopMenuProfile';
 import TopMenuTechniques from './TopMenuTechniques';
 import { commitMutation, MESSAGING$ } from '../../../relay/environment';
-import Security from '../../../utils/Security';
-import {
+import Security, {
   EXPLORE,
   KNOWLEDGE,
   KNOWLEDGE_KNASKIMPORT,
-} from '../../../utils/hooks/useGranted';
+} from '../../../utils/Security';
 import TopMenuCourseOfAction from './TopMenuCourseOfAction';
 import TopMenuWorkspacesDashboards from './TopMenuWorkspacesDashboards';
 import TopMenuWorkspacesInvestigations from './TopMenuWorkspacesInvestigations';
@@ -79,8 +83,13 @@ import TopMenuCaseIncident from './TopMenuCaseIncident';
 import TopMenuCaseFeedback from './TopMenuCaseFeedback';
 import FeedbackCreation from '../cases/feedbacks/FeedbackCreation';
 import TopMenuCases from './TopMenuCases';
+import {
+  TopBarNotificationSubscription,
+  TopBarNotificationSubscription$data,
+} from './__generated__/TopBarNotificationSubscription.graphql';
+import { Theme } from '../../../components/Theme';
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles<Theme>((theme) => ({
   appBar: {
     width: '100%',
     zIndex: theme.zIndex.drawer + 1,
@@ -132,18 +141,44 @@ const logoutMutation = graphql`
   }
 `;
 
-const TopBar = ({
-  keyword,
-  handleChangeTimeField,
-  timeField,
-  handleChangeDashboard,
-  dashboard,
-}) => {
+const notificationSubscription = graphql`
+  subscription TopBarNotificationSubscription {
+    notification {
+      messages
+      is_read
+    }
+  }
+`;
+
+interface TopBarProps {
+  keyword?: string
+  handleChangeTimeField?: (event: React.MouseEvent) => void
+  handleChangeDashboard?: (event: React.MouseEvent) => void
+  timeField?: 'technical' | 'functional'
+  dashboard?: string
+}
+
+const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField, timeField, handleChangeDashboard, dashboard }) => {
   const theme = useTheme();
   const history = useHistory();
   const location = useLocation();
   const classes = useStyles();
   const { t } = useFormatter();
+
+  const [isNewNotif, setIsNewNotif] = useState(false);
+  const notificationListener = (payload: TopBarNotificationSubscription$data | null | undefined) => {
+    if (payload && payload.notification && payload.notification.messages.length > 0) {
+      MESSAGING$.notifySuccess(payload.notification.messages.join(' | '));
+      setIsNewNotif(true);
+    }
+  };
+  const subConfig = useMemo<GraphQLSubscriptionConfig<TopBarNotificationSubscription>>(() => ({
+    subscription: notificationSubscription,
+    variables: {},
+    onNext: notificationListener,
+  }), [notificationSubscription]);
+  useSubscription(subConfig);
+
   const [navOpen, setNavOpen] = useState(
     localStorage.getItem('navOpen') === 'true',
   );
@@ -157,7 +192,7 @@ const TopBar = ({
   });
   const [menuOpen, setMenuOpen] = useState({ open: false, anchorEl: null });
   const [openDrawer, setOpenDrawer] = useState(false);
-  const handleOpenMenu = (event) => {
+  const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     setMenuOpen({ open: true, anchorEl: event.currentTarget });
   };
@@ -169,9 +204,14 @@ const TopBar = ({
       mutation: logoutMutation,
       variables: {},
       onCompleted: () => window.location.reload(),
+      updater: undefined,
+      optimisticUpdater: undefined,
+      optimisticResponse: undefined,
+      onError: undefined,
+      setSubmitting: undefined,
     });
   };
-  const handleSearch = (searchKeyword) => {
+  const handleSearch = (searchKeyword: string) => {
     if (searchKeyword.length > 0) {
       // With need to double encode because of react router.
       // Waiting for history 5.0 integrated to react router.
@@ -189,12 +229,7 @@ const TopBar = ({
   };
 
   return (
-    <AppBar
-      position="fixed"
-      className={classes.appBar}
-      variant="elevation"
-      elevation={1}
-    >
+    <AppBar position="fixed" className={classes.appBar} variant="elevation" elevation={1}>
       <Toolbar>
         <div className={classes.logoContainer}>
           <Link to="/dashboard">
@@ -374,146 +409,92 @@ const TopBar = ({
         </div>
         <div className={classes.barRight}>
           <Security needs={[KNOWLEDGE]}>
-            <div className={classes.barRightContainer}>
-              <SearchInput
-                onSubmit={handleSearch}
-                keyword={keyword}
-                variant="topBar"
-              />
-              <Filters
-                variant="dialog"
-                availableFilterKeys={[
-                  'entity_type',
-                  'markedBy',
-                  'labelledBy',
-                  'createdBy',
-                  'confidence',
-                  'x_opencti_organization_type',
-                  'created_start_date',
-                  'created_end_date',
-                  'created_at_start_date',
-                  'created_at_end_date',
-                  'creator',
-                ]}
-                disabled={location.pathname.includes('/dashboard/search/')}
-              />
-              <Tooltip title={t('Bulk search')}>
-                <IconButton
-                  component={Link}
-                  to="/dashboard/search_bulk"
-                  variant={
-                    location.pathname.includes('/dashboard/search_bulk')
-                      ? 'contained'
-                      : 'text'
-                  }
-                  color={
-                    location.pathname.includes('/dashboard/search_bulk')
-                      ? 'secondary'
-                      : 'default'
-                  }
-                  size="medium"
-                >
-                  <ContentPasteSearchOutlined fontSize="medium" />
-                </IconButton>
-              </Tooltip>
-            </div>
-            <Divider className={classes.divider} orientation="vertical" />
+            <React.Fragment>
+              <div className={classes.barRightContainer}>
+                <SearchInput
+                  onSubmit={handleSearch}
+                  keyword={keyword}
+                  variant="topBar"
+                />
+                <Filters
+                  variant="dialog"
+                  availableFilterKeys={[
+                    'entity_type',
+                    'markedBy',
+                    'labelledBy',
+                    'createdBy',
+                    'confidence',
+                    'x_opencti_organization_type',
+                    'created_start_date',
+                    'created_end_date',
+                    'created_at_start_date',
+                    'created_at_end_date',
+                    'creator',
+                  ]}
+                  disabled={location.pathname.includes('/dashboard/search/')}
+                />
+                <Tooltip title={t('Bulk search')}>
+                  <IconButton component={Link} to="/dashboard/search_bulk"
+                    color={location.pathname.includes('/dashboard/search_bulk') ? 'secondary' : 'default'}
+                    size="medium">
+                    <ContentPasteSearchOutlined fontSize="medium" />
+                  </IconButton>
+                </Tooltip>
+              </div>
+              <Divider className={classes.divider} orientation="vertical" />
+            </React.Fragment>
           </Security>
           <div className={classes.barRightContainer}>
             <Security needs={[EXPLORE]}>
-              <Tooltip title={t('Custom dashboards')}>
-                <IconButton
-                  component={Link}
-                  to="/dashboard/workspaces/dashboards"
-                  variant={
-                    location.pathname.includes(
-                      '/dashboard/workspaces/dashboards',
-                    )
-                      ? 'contained'
-                      : 'text'
-                  }
-                  color={
-                    location.pathname.includes(
-                      '/dashboard/workspaces/dashboards',
-                    )
-                      ? 'secondary'
-                      : 'default'
-                  }
-                  size="medium"
-                >
-                  <InsertChartOutlined fontSize="medium" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={t('Investigations')}>
-                <IconButton
-                  component={Link}
-                  to="/dashboard/workspaces/investigations"
-                  variant={
-                    location.pathname.includes(
-                      '/dashboard/workspaces/investigations',
-                    )
-                      ? 'contained'
-                      : 'text'
-                  }
-                  color={
-                    location.pathname.includes(
-                      '/dashboard/workspaces/investigations',
-                    )
-                      ? 'secondary'
-                      : 'default'
-                  }
-                  size="medium"
-                >
-                  <ExploreOutlined fontSize="medium" />
-                </IconButton>
-              </Tooltip>
+              <React.Fragment>
+                <Tooltip title={t('Custom dashboards')}>
+                  <IconButton component={Link} to="/dashboard/workspaces/dashboards"
+                    color={location.pathname.includes('/dashboard/workspaces/dashboards') ? 'secondary' : 'default'}
+                    size="medium">
+                    <InsertChartOutlined fontSize="medium" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={t('Investigations')}>
+                  <IconButton component={Link} to="/dashboard/workspaces/investigations"
+                    color={location.pathname.includes('/dashboard/workspaces/investigations') ? 'secondary' : 'default'}
+                    size="medium">
+                    <ExploreOutlined fontSize="medium" />
+                  </IconButton>
+                </Tooltip>
+              </React.Fragment>
             </Security>
             <Security needs={[KNOWLEDGE_KNASKIMPORT]}>
               <Tooltip title={t('Data import')}>
-                <IconButton
-                  component={Link}
-                  to="/dashboard/import"
-                  variant={
-                    location.pathname.includes('/dashboard/import')
-                      ? 'contained'
-                      : 'text'
-                  }
-                  color={
-                    location.pathname.includes('/dashboard/import')
-                      ? 'secondary'
-                      : 'default'
-                  }
-                  size="medium"
-                >
+                <IconButton component={Link} to="/dashboard/import"
+                  color={location.pathname.includes('/dashboard/import') ? 'secondary' : 'default'}
+                  size="medium">
                   <UploadOutline fontSize="medium" />
                 </IconButton>
               </Tooltip>
             </Security>
-            <IconButton
-              size="medium"
+            <IconButton size="medium"
               classes={{ root: classes.button }}
-              aria-owns={menuOpen.open ? 'menu-appbar' : null}
+              aria-owns={menuOpen.open ? 'menu-appbar' : undefined}
               aria-haspopup="true"
-              onClick={handleOpenMenu}
-            >
+              onClick={handleOpenMenu}>
               <AccountCircleOutlined fontSize="medium" />
             </IconButton>
-            <Menu
-              id="menu-appbar"
+            <Menu id="menu-appbar"
               anchorEl={menuOpen.anchorEl}
               open={menuOpen.open}
-              onClose={handleCloseMenu}
-            >
-              <MenuItem
-                component={Link}
-                to="/dashboard/profile"
-                onClick={handleCloseMenu}
-              >
+              onClose={handleCloseMenu}>
+              <MenuItem component={Link} to="/dashboard/profile" onClick={handleCloseMenu}>
                 {t('Profile')}
               </MenuItem>
               <MenuItem onClick={handleOpenDrawer}>{t('Feedback')}</MenuItem>
               <MenuItem onClick={handleLogout}>{t('Logout')}</MenuItem>
             </Menu>
+            <IconButton size="medium" classes={{ root: classes.button }} aria-haspopup="true"
+                        component={Link} to="/dashboard/notification">
+              <Badge color="secondary" variant="dot" invisible={!isNewNotif}>
+                <NotificationsOutlined fontSize="medium"/>
+              </Badge>
+            </IconButton>
           </div>
         </div>
       </Toolbar>

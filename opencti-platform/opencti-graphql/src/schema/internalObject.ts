@@ -57,7 +57,10 @@ const INTERNAL_OBJECTS = [
   ENTITY_TYPE_HISTORY,
 ];
 const HISTORY_OBJECTS = [ENTITY_TYPE_WORK];
-
+export const registerInternalType = (type: string) => {
+  INTERNAL_OBJECTS.push(type);
+};
+schemaTypes.register(ABSTRACT_INTERNAL_OBJECT, INTERNAL_OBJECTS);
 export const isInternalObject = (type: string) => R.includes(type, INTERNAL_OBJECTS) || type === ABSTRACT_INTERNAL_OBJECT;
 export const isDatedInternalObject = (type: string) => R.includes(type, DATED_INTERNAL_OBJECTS);
 export const isHistoryObject = (type: string) => R.includes(type, HISTORY_OBJECTS);
