@@ -62,7 +62,8 @@ const processNotificationEvent = async (
     const platform_uri = baseUrl + basePath;
     const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);
     const platformOpts = { doc_uri, platform_uri, background_color };
-    const templateData = { title: notification.name, content, notification, settings, user, data, ...platformOpts };
+    const title = `New ${notification_type} notification for ${notification.name}`;
+    const templateData = { title, content, notification, settings, user, data, ...platformOpts };
     // endregion
     if (outcome_type === 'UI') {
       const createNotification = { notification_name, notification_type, user_id: user.user_id, content, is_read: false };
@@ -76,8 +77,7 @@ const processNotificationEvent = async (
     if (outcome_type === 'EMAIL') {
       const { template } = configuration ?? {};
       const generatedEmail = ejs.render(template, templateData);
-      const subject = `New ${notification_type} notification for ${notification.name}`;
-      const mail = { from: settings.platform_email, to: user.user_email, subject, html: generatedEmail };
+      const mail = { from: settings.platform_email, to: user.user_email, subject: title, html: generatedEmail };
       sendMail(mail).then(() => {
         // eslint-disable-next-line no-console
         console.log(`[${name}] ${user.user_email}`);

@@ -124,9 +124,15 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
       template: `{
         "@context": "https://schema.org/extensions",
         "@type": "MessageCard",
+        "summary": "Summary",
         "themeColor": "<%=background_color%>",
         "title": "<%=title%>",
-        "text": "<%=message%>"
+        "sections": [
+          <% content.forEach((line)=> { %>
+              {"text": "<strong><%= line.title %></strong>"},
+              {"text": "<ul><% line.messages.forEach((message)=> { %><li><%= message %></li><% }) %></ul>"}
+          <% }) %>
+        ]
       }`
     }
   },
@@ -248,7 +254,7 @@ const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
       objectContains: [{ id: '50767ae3-dbe6-4847-a3c1-4553ca157f97', value: 'Energy' }],
     },
     // outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
-    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822']
+    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288654f']
   },
   {
     internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
