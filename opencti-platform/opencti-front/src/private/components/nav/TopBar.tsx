@@ -144,7 +144,12 @@ const logoutMutation = graphql`
 const notificationSubscription = graphql`
   subscription TopBarNotificationSubscription {
     notification {
-      messages
+      notification_name
+      notification_type
+      content {
+        title
+        messages
+      }
       is_read
     }
   }
@@ -167,8 +172,16 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
 
   const [isNewNotif, setIsNewNotif] = useState(false);
   const notificationListener = (payload: TopBarNotificationSubscription$data | null | undefined) => {
-    if (payload && payload.notification && payload.notification.messages.length > 0) {
-      MESSAGING$.notifySuccess(payload.notification.messages.join(' | '));
+    if (payload && payload.notification && payload.notification.content.length > 0) {
+      const { content, notification_name, notification_type } = payload.notification;
+      if (notification_type === 'digest') {
+        MESSAGING$.notifySuccess(`New digest available for ${notification_name}`);
+      } else {
+        const { title, messages } = content.at(0) ?? {};
+        const message = `${title} > ${(messages ?? []).at(0)}...`;
+        MESSAGING$.notifySuccess(message);
+      }
+
       setIsNewNotif(true);
     }
   };

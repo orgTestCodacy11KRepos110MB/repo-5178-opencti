@@ -46,11 +46,10 @@ import type {
   DataEvent,
   DeleteEvent,
   DependenciesDeleteEvent,
-  Event,
   MergeEvent,
-  RuleEvent,
-  StreamEvent,
-  UpdateEvent
+  BaseEvent,
+  StreamDataEvent,
+  UpdateEvent, SseEvent
 } from '../types/event';
 import { getActivatedRules, RULES_DECLARATION } from '../domain/rules';
 import { executionContext, RULE_MANAGER_USER } from '../utils/access';
@@ -75,7 +74,7 @@ export const getManagerInfo = async (context: AuthContext, user: AuthUser): Prom
   return { activated: ENABLED_RULE_ENGINE, ...ruleStatus };
 };
 
-export const buildInternalEvent = (type: string, stix: StixCoreObject): Event => {
+export const buildInternalEvent = (type: 'update' | 'create' | 'delete', stix: StixCoreObject): StreamDataEvent => {
   return {
     version: EVENT_CURRENT_VERSION,
     type,
@@ -86,9 +85,9 @@ export const buildInternalEvent = (type: string, stix: StixCoreObject): Event =>
   };
 };
 
-const ruleMergeHandler = async (context: AuthContext, event: MergeEvent): Promise<Array<Event>> => {
+const ruleMergeHandler = async (context: AuthContext, event: MergeEvent): Promise<Array<BaseEvent>> => {
   const { data, context: eventContext } = event;
-  const events: Array<Event> = [];
+  const events: Array<BaseEvent> = [];
   // region 01 - Generate events for deletion
   // -- sources
   const sourceDeleteEvents = (eventContext.sources || []).map((s) => buildInternalEvent(EVENT_TYPE_DELETE, s));
@@ -189,7 +188,7 @@ const isMatchRuleFilters = (rule: RuleDefinition, element: StixCoreObject): bool
   return evaluations.reduce((a, b) => a || b);
 };
 
-const handleRuleError = async (event: RuleEvent, error: unknown) => {
+const handleRuleError = async (event: BaseEvent, error: unknown) => {
   const { type } = event;
   logApp.error(`[OPENCTI-MODULE] Rule error applying ${type} event`, { event, error });
 };
@@ -204,7 +203,7 @@ const applyCleanupOnDependencyIds = async (deletionIds: Array<string>) => {
   await elList<BasicStoreCommon>(context, RULE_MANAGER_USER, READ_DATA_INDICES, { filters, callback });
 };
 
-export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, events: Array<RuleEvent>, forRules: Array<RuleRuntime> = []) => {
+export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, events: Array<DataEvent>, forRules: Array<RuleRuntime> = []) => {
   if (isEmptyField(events) || events.length === 0) {
     return;
   }
@@ -298,7 +297,7 @@ export const rulesCleanHandler = async (
   }
 };
 
-const ruleStreamHandler = async (streamEvents: Array<StreamEvent<DataEvent>>, lastEventId: string) => {
+const ruleStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>>, lastEventId: string) => {
   const context = executionContext('rule_manager', RULE_MANAGER_USER);
   // Create list of events to process
   // Events must be in a compatible version and not inferences events
@@ -312,7 +311,7 @@ const ruleStreamHandler = async (streamEvents: Array<StreamEvent<DataEvent>>, la
     return !(event.data?.data?.extensions[STIX_EXT_OCTI].is_inferred ?? false);
   });
   if (compatibleEvents.length > 0) {
-    const ruleEvents: Array<Event> = compatibleEvents.map((e) => e.data);
+    const ruleEvents: Array<BaseEvent> = compatibleEvents.map((e) => e.data);
     // Execute the events
     await rulesApplyHandler(context, RULE_MANAGER_USER, ruleEvents);
   }

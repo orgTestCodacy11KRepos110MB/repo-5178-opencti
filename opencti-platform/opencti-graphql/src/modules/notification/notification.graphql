@@ -1,11 +1,17 @@
+type NotificationContent {
+    title: String!
+    messages: [String!]!
+}
+
 type Notification implements BasicObject {
     id: ID! # internal_id
     standard_id: String!
     entity_type: String!
+    notification_name: String!
+    notification_type: String!
     parent_types: [String]!
-    messages: [String!]!
+    content: [NotificationContent!]!
     is_read: Boolean!
-    # NotificationTrigger
 }
 
 # Ordering

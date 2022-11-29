@@ -29,12 +29,12 @@ import { convertStoreToStix } from './stix-converter';
 import type { StoreObject, StoreRelation } from '../types/store';
 import type { AuthContext, AuthUser } from '../types/user';
 import type {
-  CreateEventOpts, DataEvent,
+  BaseEvent,
+  CreateEventOpts,
   DeleteEvent,
-  Event,
   EventOpts,
-  MergeEvent,
-  StreamEvent,
+  MergeEvent, SseEvent,
+  StreamDataEvent,
   UpdateEvent,
   UpdateEventOpts
 } from '../types/event';
@@ -387,7 +387,7 @@ const mapJSToStream = (event: any) => {
   });
   return cmdArgs;
 };
-const pushToStream = async (context: AuthContext, user: AuthUser, client: Redis, instance: StoreObject, event: Event, opts: EventOpts) => {
+const pushToStream = async (context: AuthContext, user: AuthUser, client: Redis, instance: StoreObject, event: BaseEvent, opts: EventOpts) => {
   if (isStreamPublishable(instance, opts)) {
     const pushToStreamFn = async () => {
       if (streamTrimming) {
@@ -486,7 +486,7 @@ export const storeUpdateEvent = async (context: AuthContext, user: AuthUser, pre
   }
 };
 // Create
-export const buildCreateEvent = (user: AuthUser, instance: StoreObject, message: string): Event => {
+export const buildCreateEvent = (user: AuthUser, instance: StoreObject, message: string): StreamDataEvent => {
   const stix = convertStoreToStix(instance) as StixCoreObject;
   return {
     version: EVENT_CURRENT_VERSION,
@@ -559,7 +559,7 @@ export const storeDeleteEvent = async (context: AuthContext, user: AuthUser, ins
 };
 export const deleteStream = () => clientBase.call('DEL', REDIS_STREAM_NAME);
 
-const mapStreamToJS = ([id, data]: any): StreamEvent<any> => {
+const mapStreamToJS = ([id, data]: any): SseEvent<any> => {
   const count = data.length / 2;
   const obj: any = {};
   for (let i = 0; i < count; i += 1) {
@@ -601,10 +601,10 @@ interface StreamOption {
   streamName: string;
 }
 
-export const createStreamProcessor = (
+export const createStreamProcessor = <T extends BaseEvent> (
   user: AuthUser,
   provider: string,
-  callback: (events: Array<StreamEvent<DataEvent>>, lastEventId: string) => void,
+  callback: (events: Array<SseEvent<T>>, lastEventId: string) => void,
   opts: StreamOption = { withInternal: false, streamName: REDIS_STREAM_NAME }
 ): StreamProcessor => {
   let client: Redis;
@@ -683,10 +683,10 @@ export const createStreamProcessor = (
 export const storeNotificationEvent = async (context: AuthContext, event: any) => {
   await clientBase.call('XADD', NOTIFICATION_STREAM_NAME, 'MAXLEN', '~', notificationTrimming, '*', ...mapJSToStream(event));
 };
-export const fetchRangeNotifications = async <T extends Event> (start: Date, end: Date): Promise<Array<StreamEvent<T>>> => {
+export const fetchRangeNotifications = async <T extends BaseEvent> (start: Date, end: Date): Promise<Array<T>> => {
   const streamResult = await clientBase.call('XRANGE', NOTIFICATION_STREAM_NAME, start.getTime(), end.getTime()) as any[];
-  const streamElements: Array<StreamEvent<T>> = R.map((r) => mapStreamToJS(r), streamResult);
-  return streamElements.filter((s) => s.event === 'notification');
+  const streamElements: Array<SseEvent<T>> = R.map((r) => mapStreamToJS(r), streamResult);
+  return streamElements.filter((s) => s.event === 'live').map((e) => e.data);
 };
 // endregion
 

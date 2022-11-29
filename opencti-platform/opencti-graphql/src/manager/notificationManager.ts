@@ -2,9 +2,10 @@ import * as R from 'ramda';
 import * as jsonpatch from 'fast-json-patch';
 import { Promise as Bluebird } from 'bluebird';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
+import type { Moment } from 'moment';
 import {
   createStreamProcessor,
-  // fetchRangeNotifications,
+  fetchRangeNotifications,
   lockResource,
   storeNotificationEvent,
   StreamProcessor
@@ -12,7 +13,7 @@ import {
 import conf, { logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
-import type { DataEvent, Event, StreamEvent, UpdateEvent } from '../types/event';
+import type { DataEvent, SseEvent, StreamNotifEvent, UpdateEvent } from '../types/event';
 import type { BasicFilterValue } from '../utils/sseFiltering';
 import { isInstanceMatchFilters } from '../utils/sseFiltering';
 import type { AuthContext, AuthUser } from '../types/user';
@@ -23,6 +24,7 @@ import { ES_MAX_CONCURRENCY } from '../database/engine';
 import { resolveUserById } from '../domain/user';
 import { utcDate } from '../utils/format';
 import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE } from '../database/utils';
+import type { StixCoreObject } from '../types/stix-common';
 
 const EVENT_NOTIFICATION_VERSION = '1';
 const NOTIFICATION_ENGINE_KEY = conf.get('notification_manager:lock_key');
@@ -42,52 +44,58 @@ Subscribe to new malware used by a threat (uses)
 export type FrontendFilter = Record<string, Array<BasicFilterValue>>;
 
 interface Notification {
-  internal_id: string;
-  name: string;
-  user_id?: string;
-  group_ids?: Array<string>;
-  notification_type: 'notification' | 'digest'
-  event_types: Array<string>;
-  outcomes: Array<string>;
+  internal_id: string
+  name: string
+  user_ids?: Array<string>
+  group_ids?: Array<string>
+  notification_type: 'live' | 'digest'
+  outcomes: Array<string>
 }
 
-interface LiveNotification extends Notification {
-  notification_type: 'notification';
-  filters: FrontendFilter;
+export interface LiveNotification extends Notification {
+  notification_type: 'live'
+  event_types: Array<string>
+  filters: FrontendFilter
 }
 
-interface DigestNotification extends Notification {
-  notification_type: 'digest';
-  period: 'hour' | 'day' | 'week' | 'month';
-  trigger_time: string;
-  notifications: Array<string>;
+export interface DigestNotification extends Notification {
+  notification_type: 'digest'
+  period: 'hour' | 'day' | 'week' | 'month'
+  trigger_time?: string
+  notifications: Array<string>
 }
 
 interface ResolvedNotification {
-  users: Array<AuthUser>;
-  notification: Notification;
+  users: Array<AuthUser>
+  notification: Notification
 }
 
 interface ResolvedLive {
-  users: Array<AuthUser>;
-  notification: LiveNotification;
+  users: Array<AuthUser>
+  notification: LiveNotification
 }
 
-interface ResolvedDigest {
-  users: Array<AuthUser>;
-  notification: DigestNotification;
+export interface ResolvedDigest {
+  users: Array<AuthUser>
+  notification: DigestNotification
 }
 
-interface NotificationUser {
-  user_id: string;
-  user_email: string;
-  outcomes: Array<string>;
+export interface NotificationUser {
+  user_id: string
+  user_email: string
+  outcomes: Array<string>
 }
 
-export interface NotificationEvent extends Event {
-  notification_id: string;
-  type: string;
-  targets: Array<{ user: NotificationUser, type: string }>;
+export interface NotificationEvent extends StreamNotifEvent {
+  type: 'live'
+  targets: Array<{ user: NotificationUser, type: string }>
+  data: StixCoreObject
+}
+
+export interface DigestEvent extends StreamNotifEvent {
+  type: 'digest'
+  target: NotificationUser
+  data: Array<{ notification_id: string, instance: StixCoreObject, type: string }>
 }
 
 interface NotificationOutcome {
@@ -185,11 +193,18 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
                                       </table>
                                   </td>
                               </tr>
+                              <% content.forEach((contentLine)=> { %>
                               <tr>
-                                  <td bgcolor="#ffffff" style="padding:10px 20px; background: #ffffff; background-color: #ffffff;" valign="top"><%=message%></td>
+                                <td bgcolor="#ffffff" style="padding:10px 20px; background: #ffffff; background-color: #ffffff;" valign="top">
+                                    <p style="margin: 0 0 10pt 0; padding: 0; color:#999999; font-size:18pt;"><%= contentLine.title %></p>
+                                    <p style="margin: 0 0 10pt 0; padding: 0; font-size:12pt;">
+                                        <%= contentLine.messages.join("<br/>"); %>
+                                    </p>
+                                </td>
                               </tr>
+                              <% }) %>
                               <tr>
-                                  <td bgcolor="#f26422" style="padding:20px 20px 15px 20px; background-color:<%=background_color%>; background:<%=background_color%>;">
+                                  <td bgcolor="<%=background_color%>" style="padding:20px 20px 15px 20px; background-color:<%=background_color%>; background:<%=background_color%>;">
                                       <table cellpadding="0" cellspacing="0" style="width: 100%; border-collapse:collapse; font-family:Tahoma; font-weight:normal; font-size:12px; line-height:15pt; color:#FFFFFF;">
                                           <tr>
                                               <td style="width:340px; padding:0 20px 0 0;">
@@ -218,40 +233,42 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
   }
 ];
 
+// - When sending the daily ? Midnight doesn't seem interesting -> need to be choose by the user
+// - Do we talk about align on day start or sliding period? -> Sliding
+// - What about user timezone ? -> need to be taken into account
 const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
   {
     internal_id: '1c449a99-4a7e-4fc6-a091-8935a8bfe2f8',
     name: 'Report <-> Energy',
-    user_id: 'd6c75e52-00f4-4216-ac31-98a0dd826fa4', // Julien
-    notification_type: 'notification', // or digest
-    event_types: ['create', 'update'],
+    user_ids: ['d6c75e52-00f4-4216-ac31-98a0dd826fa4'], // Julien
+    notification_type: 'live', // or digest
+    event_types: ['create', 'delete'],
     filters: {
       entity_type: [{ id: 'Report', value: 'Report' }],
       objectContains: [{ id: '50767ae3-dbe6-4847-a3c1-4553ca157f97', value: 'Energy' }],
     },
-    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
+    // outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
+    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822']
   },
   {
     internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
     name: 'Daily digest Report <-> Energy',
     group_ids: ['d8304260-5ebc-48da-b6db-91428d2c8bd2'], // GR group
     notification_type: 'digest',
-    event_types: ['create'],
     period: 'hour',
-    trigger_time: '2020-01-20T20:30:00.000Z',
     notifications: ['1c449a99-4a7e-4fc6-a091-8935a8bfe2f8'],
-    outcomes: ['44fcf1f4-8e31-4b31-8dbc-cd6993e1b822']
+    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d']
   }
 ];
 
 export const isDefine = (elem: any): elem is any => {
   return elem !== undefined;
 };
-export const isLive = (n: ResolvedNotification): n is ResolvedLive => n.notification.notification_type === 'notification';
+export const isLive = (n: ResolvedNotification): n is ResolvedLive => n.notification.notification_type === 'live';
 export const isDigest = (n: ResolvedNotification): n is ResolvedDigest => n.notification.notification_type === 'digest';
 
 export const getNotifications = async (context: AuthContext): Promise<Array<ResolvedNotification>> => {
-  const notificationUserIds: Array<string> = STATIC_NOTIFICATIONS.map((l) => l.user_id).filter(isDefine);
+  const notificationUserIds: Array<string> = STATIC_NOTIFICATIONS.map((l) => l.user_ids).flat().filter(isDefine);
   const groupsIds = STATIC_NOTIFICATIONS.map((l) => (l.group_ids ?? [])).flat();
   const membersRel = await listAllRelations<BasicStoreRelation>(context, SYSTEM_USER, RELATION_MEMBER_OF, { toId: groupsIds });
   const userIdGroup: Array<{ group: string; user: string; }> = membersRel.map((rel) => ({
@@ -259,7 +276,7 @@ export const getNotifications = async (context: AuthContext): Promise<Array<Reso
     user: rel.fromId
   }));
   const groupUserIds = R.groupBy((userGroup) => userGroup.group, userIdGroup);
-  const allUserIds: Array<string> = [...notificationUserIds, ...Object.values(groupUserIds).flat().map((v) => v.user)];
+  const allUserIds = new Set([...notificationUserIds, ...Object.values(groupUserIds).flat().map((v) => v.user)]);
   const userMaps = new Map();
   const userResolver = async (userId: string) => {
     const user = await resolveUserById(context, userId);
@@ -267,8 +284,8 @@ export const getNotifications = async (context: AuthContext): Promise<Array<Reso
   };
   await Bluebird.map(allUserIds, userResolver, { concurrency: ES_MAX_CONCURRENCY });
   return STATIC_NOTIFICATIONS.map((notification) => {
-    const userIds = new Set([notification.user_id, ...(notification.group_ids ?? [])
-      .map((id) => groupUserIds[id]).flat()].filter(isDefine));
+    const userFromGroups = (notification.group_ids ?? []).map((id) => groupUserIds[id].map((g) => g.user)).flat();
+    const userIds = new Set([...(notification.user_ids ?? []), ...userFromGroups].filter(isDefine));
     const users = Array.from(userIds).map((i) => userMaps.get(i));
     return { users, notification };
   });
@@ -279,9 +296,41 @@ export const getLiveNotifications = async (context: AuthContext): Promise<Array<
   return liveNotifications.filter(isLive);
 };
 
-export const getDigestNotifications = async (context: AuthContext): Promise<Array<ResolvedDigest>> => {
-  const liveNotifications = await getNotifications(context);
-  return liveNotifications.filter(isDigest);
+export const isTimeTrigger = (digest: ResolvedDigest, baseDate: Moment): boolean => {
+  const now = baseDate.clone().startOf('minutes'); // 2022-11-25T19:11:00.000Z
+  const { notification } = digest;
+  const triggerTime = notification.trigger_time;
+  switch (notification.period) {
+    case 'hour': {
+      // Need to check if time is aligned on the perfect hour
+      const nowHourAlign = now.clone().startOf('hours');
+      return now.isSame(nowHourAlign);
+    }
+    case 'day': {
+      // Need to check if time is aligned on the day hour (like 19:11:00.000Z)
+      const dayTime = `${now.clone().format('HH:mm:ss.SSS')}Z`;
+      return triggerTime === dayTime;
+    }
+    case 'week': {
+      // Need to check if time is aligned on the week hour (like 1-19:11:00.000Z)
+      // 1 being Monday and 7 being Sunday.
+      const weekTime = `${now.clone().isoWeekday()}-${now.clone().format('HH:mm:ss.SSS')}Z`;
+      return triggerTime === weekTime;
+    }
+    case 'month': {
+      // Need to check if time is aligned on the month hour (like 22-19:11:00.000Z)
+      // 1 being Monday and 7 being Sunday.
+      const monthTime = `${now.clone().date()}-${now.clone().format('HH:mm:ss.SSS')}Z`;
+      return triggerTime === monthTime;
+    }
+    default:
+      return false;
+  }
+};
+
+export const getDigestNotifications = async (context: AuthContext, baseDate: Moment): Promise<Array<ResolvedDigest>> => {
+  const notifications = await getNotifications(context);
+  return notifications.filter(isDigest).filter((digest) => isTimeTrigger(digest, baseDate));
 };
 
 const convertToNotificationUser = (user: AuthUser, outcomes: Array<string>): NotificationUser => {
@@ -292,12 +341,12 @@ const convertToNotificationUser = (user: AuthUser, outcomes: Array<string>): Not
   };
 };
 
-const notificationStreamHandler = async (streamEvents: Array<StreamEvent<DataEvent>>) => {
+const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>>) => {
   try {
     const context = executionContext('notification_manager');
     const liveNotifications = await getLiveNotifications(context); // TODO @JRI add caching
     for (let index = 0; index < streamEvents.length; index += 1) {
-      const { data: { data, origin, message, scope }, event: eventType } = streamEvents[index];
+      const { data: { data }, event: eventType } = streamEvents[index];
       // For each event we need to check if
       for (let notifIndex = 0; notifIndex < liveNotifications.length; notifIndex += 1) {
         const { users, notification }: ResolvedLive = liveNotifications[notifIndex];
@@ -312,11 +361,11 @@ const notificationStreamHandler = async (streamEvents: Array<StreamEvent<DataEve
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
             const isPreviousMatch = await isInstanceMatchFilters(context, user, previous, filters);
             const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, filters);
-            if (isPreviousMatch && !isCurrentlyMatch) { // No longer visible
+            if (isPreviousMatch && !isCurrentlyMatch && event_types.includes(EVENT_TYPE_DELETE)) { // No longer visible
               targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_DELETE });
-            } else if (!isPreviousMatch && isCurrentlyMatch) { // Newly visible
+            } else if (!isPreviousMatch && isCurrentlyMatch && event_types.includes(EVENT_TYPE_CREATE)) { // Newly visible
               targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_CREATE });
-            } else if (isCurrentlyMatch) { // Just an update
+            } else if (isCurrentlyMatch && event_types.includes(EVENT_TYPE_UPDATE)) { // Just an update
               targets.push({ user: convertToNotificationUser(user, outcomes), type: eventType });
             }
           }
@@ -331,9 +380,8 @@ const notificationStreamHandler = async (streamEvents: Array<StreamEvent<DataEve
           }
         }
         if (targets.length > 0) {
-          const baseEventData = { data, origin, message, scope };
           const version = EVENT_NOTIFICATION_VERSION;
-          const notificationEvent: NotificationEvent = { version, notification_id, type, targets, ...baseEventData };
+          const notificationEvent: NotificationEvent = { version, notification_id, type, targets, data };
           await storeNotificationEvent(context, notificationEvent);
         }
       }
@@ -345,25 +393,36 @@ const notificationStreamHandler = async (streamEvents: Array<StreamEvent<DataEve
 
 const notificationDigestHandler = async () => {
   const context = executionContext('notification_manager');
-  // Minimal digest scheduling is 1 hour. Could also be 1 day, 1 week or 1 month.
-  const digestNotifications = await getDigestNotifications(context);
-  // Cron is trigger every minute
-  const now = utcDate().startOf('seconds'); // 2022-11-25T19:11:00.000Z
-  const nowHourAlign = now.clone().startOf('hours'); // 2022-11-25T19:00:00.000Z
-  if (now.isSame(nowHourAlign)) {
-    // Trigger digest hour based
+  const baseDate = utcDate().startOf('minutes');
+  // Get digest that need to be executed
+  const digestNotifications = await getDigestNotifications(context, baseDate);
+  // Iter on each digest an generate the output
+  for (let index = 0; index < digestNotifications.length; index += 1) {
+    const { notification, users } = digestNotifications[index];
+    const { period, notifications, outcomes, internal_id: notification_id, notification_type: type } = notification;
+    const fromDate = baseDate.clone().subtract(1, period).toDate();
+    const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(fromDate, baseDate.toDate());
+    const digestContent = rangeNotifications.filter((n) => notifications.includes(n.notification_id));
+    if (digestContent.length > 0) {
+      // Range of results must filtered to keep only data related to the digest
+      // And related to the users participating to the digest
+      for (let userIndex = 0; userIndex < users.length; userIndex += 1) {
+        const user = users[userIndex];
+        const userNotifications = digestContent.filter((d) => d.targets
+          .map((t) => t.user.user_id).includes(user.internal_id));
+        if (userNotifications.length > 0) {
+          const version = EVENT_NOTIFICATION_VERSION;
+          const target = convertToNotificationUser(user, outcomes);
+          const data = userNotifications.map((n) => {
+            const userTarget = n.targets.find((t) => t.user.user_id === user.internal_id);
+            return ({ notification_id: n.notification_id, type: userTarget?.type ?? type, instance: n.data });
+          });
+          const digestEvent: DigestEvent = { version, notification_id, type, target, data };
+          await storeNotificationEvent(context, digestEvent);
+        }
+      }
+    }
   }
-  // For daily, open questions.
-  // - When sending the daily ? Midnight doesn't seem interesting -> need to be choose by the user
-  // - Do we talk about align on day start or sliding period? -> Sliding
-  // - What about user timezone ? -> need to be taken into account
-
-  // Each type of matching range must be fetched on one.
-  // const start = now.clone().subtract(1, 'hours');
-  // const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(start.toDate(), now.toDate());
-
-  // For each user, events in the range must be filtered
-  // console.log(`>>>>>>>>>> cronScheduler ${start.toISOString()} ${now.toISOString()}`, rangeNotifications);
 };
 
 const initNotificationManager = () => {

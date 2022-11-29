@@ -6,7 +6,7 @@ import { EVENT_TYPE_UPDATE, INDEX_HISTORY, isEmptyField, isNotEmptyField } from 
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
-import type { StreamEvent, UpdateEvent } from '../types/event';
+import type { StreamDataEvent, UpdateEvent } from '../types/event';
 import { utcDate } from '../utils/format';
 import { elIndexElements } from '../database/engine';
 import type { StixRelation, StixSighting } from '../types/stix-sro';
@@ -44,7 +44,7 @@ interface HistoryData extends BasicStoreEntity {
   context_data: HistoryContext;
 }
 
-export const eventsApplyHandler = async (context: AuthContext, events: Array<StreamEvent>) => {
+export const eventsApplyHandler = async (context: AuthContext, events: Array<StreamDataEvent>) => {
   if (isEmptyField(events) || events.length === 0) {
     return;
   }
@@ -118,7 +118,7 @@ export const eventsApplyHandler = async (context: AuthContext, events: Array<Str
   await elIndexElements(context, SYSTEM_USER, `history (${historyElements.length})`, historyElements);
 };
 
-const historyStreamHandler = async (streamEvents: Array<StreamEvent>) => {
+const historyStreamHandler = async (streamEvents: Array<StreamDataEvent>) => {
   try {
     // Create list of events to process
     // Events must be in a compatible version and not inferences events
