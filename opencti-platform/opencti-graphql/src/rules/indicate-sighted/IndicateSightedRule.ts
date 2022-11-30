@@ -3,7 +3,7 @@ import * as R from 'ramda';
 import def from './IndicateSightedDefinition';
 import { STIX_SIGHTING_RELATIONSHIP } from '../../schema/stixSightingRelationship';
 import type { StixRelation, StixSighting } from '../../types/stix-sro';
-import type { Event, RelationCreation } from '../../types/event';
+import type { BaseEvent, RelationCreation } from '../../types/event';
 import { STIX_EXT_OCTI } from '../../types/stix-extensions';
 import { buildPeriodFromDates, computeRangeIntersection } from '../../utils/format';
 import type { BasicStoreRelation, StoreObject } from '../../types/store';
@@ -26,9 +26,9 @@ import type { AuthContext } from '../../types/user';
 
 const indicateSightedRuleBuilder = (): RuleRuntime => {
   // Execution
-  const applyFromStixRelation = async (context: AuthContext, data: StixRelation): Promise<Array<Event>> => {
+  const applyFromStixRelation = async (context: AuthContext, data: StixRelation): Promise<Array<BaseEvent>> => {
     // **indicator A** `indicates` **Malware C**
-    const events: Array<Event> = [];
+    const events: Array<BaseEvent> = [];
     const createdId = data.extensions[STIX_EXT_OCTI].id;
     const fromIndicator = data.extensions[STIX_EXT_OCTI].source_ref;
     const toMalware = data.extensions[STIX_EXT_OCTI].target_ref;
@@ -72,9 +72,9 @@ const indicateSightedRuleBuilder = (): RuleRuntime => {
     await listAllRelations(context, RULE_MANAGER_USER, STIX_SIGHTING_RELATIONSHIP, listFromArgs);
     return events;
   };
-  const applyFromStixSighting = async (context: AuthContext, data: StixSighting): Promise<Array<Event>> => {
+  const applyFromStixSighting = async (context: AuthContext, data: StixSighting): Promise<Array<BaseEvent>> => {
     // **indicator A** `sighted` **identity/location B**
-    const events: Array<Event> = [];
+    const events: Array<BaseEvent> = [];
     const createdId = data.extensions[STIX_EXT_OCTI].id;
     const fromSightingIndicator = data.extensions[STIX_EXT_OCTI].sighting_of_ref;
     const toSightingOrganization = R.head(data.extensions[STIX_EXT_OCTI].where_sighted_refs);
@@ -121,7 +121,7 @@ const indicateSightedRuleBuilder = (): RuleRuntime => {
     await listAllRelations(context, RULE_MANAGER_USER, RELATION_INDICATES, listFromArgs);
     return events;
   };
-  const applyUpsert = async (data: StixRelation | StixSighting): Promise<Array<Event>> => {
+  const applyUpsert = async (data: StixRelation | StixSighting): Promise<Array<BaseEvent>> => {
     const context = executionContext(def.name, RULE_MANAGER_USER);
     if (data.extensions[STIX_EXT_OCTI].type === STIX_SIGHTING_RELATIONSHIP) {
       const sighting: StixSighting = data as StixSighting;
@@ -131,13 +131,13 @@ const indicateSightedRuleBuilder = (): RuleRuntime => {
     return applyFromStixRelation(context, rel);
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<Event>> => {
-    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<Event>>;
+  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
+    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<BaseEvent>>;
   };
-  const insert = async (element: StixRelation): Promise<Array<Event>> => {
+  const insert = async (element: StixRelation): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
-  const update = async (element: StixRelation): Promise<Array<Event>> => {
+  const update = async (element: StixRelation): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
   return { ...def, insert, update, clean };

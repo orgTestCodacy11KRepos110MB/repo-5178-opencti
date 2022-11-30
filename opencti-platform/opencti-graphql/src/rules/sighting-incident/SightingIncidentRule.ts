@@ -15,7 +15,7 @@ import { RELATION_RELATED_TO, RELATION_TARGETS } from '../../schema/stixCoreRela
 import { listAllRelations } from '../../database/middleware-loader';
 import type { StixIndicator } from '../../types/stix-sdo';
 import type { StixSighting } from '../../types/stix-sro';
-import type { Event, RelationCreation } from '../../types/event';
+import type { BaseEvent, RelationCreation } from '../../types/event';
 import { STIX_EXT_OCTI } from '../../types/stix-extensions';
 import type { BasicStoreRelation, StoreObject } from '../../types/store';
 import { executionContext, RULE_MANAGER_USER } from '../../utils/access';
@@ -38,8 +38,8 @@ const ruleSightingIncidentBuilder = () => {
       stixSightingId,
     ];
   };
-  const handleIndicatorUpsert = async (context: AuthContext, indicator: StixIndicator): Promise<Array<Event>> => {
-    const events: Array<Event> = [];
+  const handleIndicatorUpsert = async (context: AuthContext, indicator: StixIndicator): Promise<Array<BaseEvent>> => {
+    const events: Array<BaseEvent> = [];
     const { extensions } = indicator;
     const indicatorId = extensions[STIX_EXT_OCTI].id;
     const { name, pattern, revoked, object_marking_refs, confidence } = indicator;
@@ -60,7 +60,7 @@ const ruleSightingIncidentBuilder = () => {
         const ruleContent = createRuleContent(id, dependencies, explanation, ruleContentData);
         const inferredEntity = await createInferredEntity(context, input, ruleContent, ENTITY_TYPE_INCIDENT);
         if (inferredEntity.event) {
-          events.push(inferredEntity.event as Event);
+          events.push(inferredEntity.event as BaseEvent);
         }
         const ruleRelContent = createRuleContent(id, dependencies, explanation, ruleBaseContent);
         // Create **Incident C** `related-to` **indicator A**
@@ -86,9 +86,9 @@ const ruleSightingIncidentBuilder = () => {
     const sightingIndicator = await stixLoadById(context, RULE_MANAGER_USER, indicatorId);
     return handleIndicatorUpsert(context, sightingIndicator as StixIndicator);
   };
-  const applyUpsert = async (data: StixIndicator | StixSighting): Promise<Array<Event>> => {
+  const applyUpsert = async (data: StixIndicator | StixSighting): Promise<Array<BaseEvent>> => {
     const context = executionContext(def.name, RULE_MANAGER_USER);
-    const events: Array<Event> = [];
+    const events: Array<BaseEvent> = [];
     const entityType = generateInternalType(data);
     if (entityType === ENTITY_TYPE_INDICATOR) {
       return handleIndicatorUpsert(context, data as StixIndicator);
@@ -99,13 +99,13 @@ const ruleSightingIncidentBuilder = () => {
     return events;
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<Event>> => {
-    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<Event>>;
+  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
+    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<BaseEvent>>;
   };
-  const insert = async (element: StixIndicator | StixSighting): Promise<Array<Event>> => {
+  const insert = async (element: StixIndicator | StixSighting): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
-  const update = async (element: StixIndicator | StixSighting): Promise<Array<Event>> => {
+  const update = async (element: StixIndicator | StixSighting): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
   return { ...def, insert, update, clean };

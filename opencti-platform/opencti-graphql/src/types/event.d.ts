@@ -22,7 +22,7 @@ interface UpdateEventOpts extends EventOpts {
 
 interface RelationCreation {
   element: StoreRelation;
-  event: Event | undefined;
+  event: BaseEvent | undefined;
   isCreation: boolean;
 }
 

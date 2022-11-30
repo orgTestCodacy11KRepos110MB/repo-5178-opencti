@@ -6,7 +6,7 @@ import def from './LocalizationOfTargetsDefinition';
 import { createRuleContent } from '../rules';
 import { computeAverage } from '../../database/utils';
 import type { StixRelation } from '../../types/stix-sro';
-import type { Event, RelationCreation } from '../../types/event';
+import type { BaseEvent, RelationCreation } from '../../types/event';
 import { STIX_EXT_OCTI } from '../../types/stix-extensions';
 import type { BasicStoreObject, BasicStoreRelation, StoreObject } from '../../types/store';
 import { RELATION_OBJECT_MARKING } from '../../schema/stixMetaRelationship';
@@ -15,9 +15,9 @@ import { internalLoadById } from '../../database/middleware-loader';
 
 const ruleLocalizationOfTargetsBuilder = () => {
   // Execution
-  const applyUpsert = async (data: StixRelation): Promise<Array<Event>> => {
+  const applyUpsert = async (data: StixRelation): Promise<Array<BaseEvent>> => {
     const context = executionContext(def.name, RULE_MANAGER_USER);
-    const events: Array<Event> = [];
+    const events: Array<BaseEvent> = [];
     const { extensions } = data;
     const createdId = extensions[STIX_EXT_OCTI].id;
     const sourceRef = extensions[STIX_EXT_OCTI].source_ref;
@@ -54,13 +54,13 @@ const ruleLocalizationOfTargetsBuilder = () => {
     return events;
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<Event>> => {
-    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<Event>>;
+  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
+    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<BaseEvent>>;
   };
-  const insert = async (element: StixRelation): Promise<Array<Event>> => {
+  const insert = async (element: StixRelation): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
-  const update = async (element: StixRelation): Promise<Array<Event>> => {
+  const update = async (element: StixRelation): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);
   };
   return { ...def, insert, update, clean };
