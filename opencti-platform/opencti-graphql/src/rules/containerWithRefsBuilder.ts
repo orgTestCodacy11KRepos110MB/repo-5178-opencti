@@ -2,123 +2,145 @@
 import type { AddOperation, Operation, ReplaceOperation } from 'fast-json-patch';
 import * as jsonpatch from 'fast-json-patch';
 import * as R from 'ramda';
-import { createInferredRelation, deleteInferredRuleElement, } from '../database/middleware';
+import { createInferredRelation, deleteInferredRuleElement, stixLoadById, } from '../database/middleware';
 import { RELATION_OBJECT } from '../schema/stixMetaRelationship';
 import { createRuleContent } from './rules';
-import { generateInternalType, getParentTypes } from '../schema/schemaUtils';
+import { generateInternalType } from '../schema/schemaUtils';
 import type { RelationTypes, RuleDefinition, RuleRuntime } from '../types/rules';
 import type { StixId, StixObject } from '../types/stix-common';
 import type { StixReport } from '../types/stix-sdo';
 import type { StixRelation } from '../types/stix-sro';
-import type { BasicStoreEntity, BasicStoreRelation, StoreObject } from '../types/store';
+import type { BasicStoreRelation, StoreObject } from '../types/store';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 import { internalFindByIds, internalLoadById, listAllRelations } from '../database/middleware-loader';
-import type { DependenciesDeleteEvent, RelationCreation, BaseEvent, UpdateEvent } from '../types/event';
+import type { BaseEvent, RelationCreation, UpdateEvent } from '../types/event';
 import {
-  EVENT_TYPE_DELETE_DEPENDENCIES,
+  READ_DATA_INDICES,
   UPDATE_OPERATION_ADD,
   UPDATE_OPERATION_REMOVE,
   UPDATE_OPERATION_REPLACE
 } from '../database/utils';
 import type { AuthContext } from '../types/user';
 import { executionContext, RULE_MANAGER_USER } from '../utils/access';
-import { buildCreateEvent, EVENT_CURRENT_VERSION } from '../database/redis';
+import { buildStixUpdateEvent, publishStixToStream } from '../database/redis';
+import { RULE_PREFIX } from '../schema/general';
 
 const buildContainerRefsRule = (ruleDefinition: RuleDefinition, containerType: string, relationTypes: RelationTypes): RuleRuntime => {
   const { id } = ruleDefinition;
-  const identityRefFilter = (ref: string) => {
+  const leftTypeRefFilter = (ref: string) => {
     const [type] = ref.split('--');
     return type === relationTypes.leftType.toLowerCase();
   };
   const generateDependencies = (reportId: string, partOfFromId: string, partOfId: string, partOfTargetId: string) => {
     return [
       reportId,
-      `${partOfFromId}_ref`,
       partOfFromId,
       partOfId,
       partOfTargetId,
     ];
   };
-  type ArrayRefs = Array<{ partOfFromId: string, partOfId: string, partOfTargetId: string }>;
-  const createObjectRefsInferences = async (context: AuthContext, reportId: string, refs: ArrayRefs): Promise<Array<BaseEvent>> => {
+  type ArrayRefs = Array<{ partOfFromId: string, partOfId: string, partOfStandardId: StixId; partOfTargetId: string; partOfTargetStandardId: StixId }>;
+  // eslint-disable-next-line max-len
+  const createObjectRefsInferences = async (context: AuthContext, report: StixReport, refs: ArrayRefs, deletedTargets: Array<BasicStoreRelation>): Promise<Array<BaseEvent>> => {
     const events:Array<BaseEvent> = [];
-    const report = await internalLoadById(context, RULE_MANAGER_USER, reportId) as unknown as BasicStoreEntity;
-    const reportObjectRefIds = report[RELATION_OBJECT] ?? [];
+    if (refs.length === 0 && deletedTargets.length === 0) {
+      return events;
+    }
     const opts = { publishStreamEvent: false };
+    const createdTargets: Array<StixId> = [];
+    const { id: reportId, object_refs } = report.extensions[STIX_EXT_OCTI];
+    const reportObjectRefIds = [...(report.object_refs ?? []), ...(object_refs ?? [])];
+    // region handle creation
     for (let index = 0; index < refs.length; index += 1) {
-      const { partOfFromId, partOfId, partOfTargetId } = refs[index];
+      const { partOfFromId, partOfId, partOfStandardId, partOfTargetId, partOfTargetStandardId } = refs[index];
       // When generating inferences, no need to listen internal generated events
       // relationships are internal meta so creation will be in the stream directly
       const dependencies = generateDependencies(reportId, partOfFromId, partOfId, partOfTargetId);
-      if (!reportObjectRefIds.includes(partOfId)) {
+      if (!reportObjectRefIds.includes(partOfStandardId)) {
         const ruleRelationContent = createRuleContent(id, dependencies, [reportId, partOfId], {});
         const inputForRelation = { fromId: reportId, toId: partOfId, relationship_type: RELATION_OBJECT };
         const inferredRelation = await createInferredRelation(context, inputForRelation, ruleRelationContent, opts) as RelationCreation;
         if (inferredRelation.isCreation) {
-          const event = buildCreateEvent(RULE_MANAGER_USER, inferredRelation.element, '');
-          events.push(event);
+          createdTargets.push(inferredRelation.element.standard_id);
         }
       }
       // -----------------------------------------------------------------------------------------------------------
-      if (!reportObjectRefIds.includes(partOfTargetId)) {
+      if (!reportObjectRefIds.includes(partOfTargetStandardId)) {
         const ruleIdentityContent = createRuleContent(id, dependencies, [reportId, partOfTargetId], {});
         const inputForIdentity = { fromId: reportId, toId: partOfTargetId, relationship_type: RELATION_OBJECT };
-        const inferredTarget = await createInferredRelation(context, inputForIdentity, ruleIdentityContent, opts) as RelationCreation;
+        const inferredTarget = await createInferredRelation(context, inputForIdentity, ruleIdentityContent) as RelationCreation;
         if (inferredTarget.isCreation) {
-          const event = buildCreateEvent(RULE_MANAGER_USER, inferredTarget.element, '');
-          events.push(event);
+          createdTargets.push(inferredTarget.element.standard_id);
         }
       }
     }
+    // endregion
+    // region handle deletion
+    const deletedTargetRefs: Array<StixId> = [];
+    for (let indexDeletion = 0; indexDeletion < deletedTargets.length; indexDeletion += 1) {
+      const inferenceToDelete = deletedTargets[indexDeletion];
+      const event = await deleteInferredRuleElement(id, inferenceToDelete, [], opts);
+      if (event?.type === 'delete') {
+        // if delete really occurs
+        const deletedTarget = await internalLoadById(context, RULE_MANAGER_USER, inferenceToDelete.toId) as unknown as StoreObject;
+        deletedTargetRefs.push(deletedTarget.standard_id);
+      }
+    }
+    // endregion
+    if (createdTargets.length > 0 || deletedTargetRefs.length > 0) {
+      const updatedReport = { ...report };
+      const refsWithoutDeletion = (object_refs ?? []).filter((o) => deletedTargetRefs.includes(o));
+      updatedReport.extensions[STIX_EXT_OCTI].object_refs = [...refsWithoutDeletion, ...createdTargets];
+      const updateEvent = buildStixUpdateEvent(RULE_MANAGER_USER, report, updatedReport, '');
+      await publishStixToStream(context, RULE_MANAGER_USER, updateEvent);
+    }
     return events;
   };
-  const handleReportCreation = async (context: AuthContext, report: StixReport, addedIdentityRefs: Array<string>): Promise<Array<BaseEvent>> => {
-    const objectRefsToCreate: ArrayRefs = [];
+  const handleReportCreation = async (context: AuthContext, report: StixReport, addedRefs: Array<string>, removedRefs: Array<string>): Promise<Array<BaseEvent>> => {
+    const addedTargets: ArrayRefs = [];
     const { id: reportId } = report.extensions[STIX_EXT_OCTI];
-    const identities = await internalFindByIds(context, RULE_MANAGER_USER, addedIdentityRefs) as Array<StoreObject>;
+    const identities = await internalFindByIds(context, RULE_MANAGER_USER, addedRefs) as Array<StoreObject>;
     const fromIds = identities.map((i) => i.internal_id);
+    const fromIdsMap = new Map(identities.map((i) => [i.internal_id, i.standard_id]));
     // Find all identities part of current identities
-    const listFromCallback = async (relationships: Array<BasicStoreRelation>) => {
-      for (let relIndex = 0; relIndex < relationships.length; relIndex += 1) {
-        const { internal_id: partOfId, fromId: partOfFromId, toId: partOfTargetId } = relationships[relIndex];
-        objectRefsToCreate.push({ partOfFromId, partOfId, partOfTargetId });
+    const listFromArgs = { fromId: fromIds, toTypes: [relationTypes.rightType] };
+    const relations = await listAllRelations<BasicStoreRelation>(context, RULE_MANAGER_USER, relationTypes.creationType, listFromArgs);
+    if (relations.length > 0) {
+      const targets = await internalFindByIds(context, RULE_MANAGER_USER, R.uniq(relations.map((r) => r.toId))) as Array<StoreObject>;
+      const toIdsMap = new Map(targets.map((i) => [i.internal_id, i.standard_id]));
+      for (let relIndex = 0; relIndex < relations.length; relIndex += 1) {
+        const { internal_id: partOfId, fromId: partOfFromId, toId: partOfTargetId } = relations[relIndex];
+        const partOfStandardId = fromIdsMap.get(partOfFromId);
+        const partOfTargetStandardId = toIdsMap.get(partOfTargetId);
+        if (partOfStandardId && partOfTargetStandardId) {
+          addedTargets.push({ partOfFromId, partOfId, partOfStandardId, partOfTargetId, partOfTargetStandardId });
+        }
       }
-    };
-    const listFromArgs = { fromId: fromIds, toTypes: [relationTypes.rightType], callback: listFromCallback };
-    await listAllRelations(context, RULE_MANAGER_USER, relationTypes.creationType, listFromArgs);
+    }
+    // Find all current inferences that need to be deleted
+    const filters = [{ key: `${RULE_PREFIX}*.dependencies`, values: removedRefs, operator: 'wildcard' }];
+    const deletedTargets = await listAllRelations<BasicStoreRelation>(context, RULE_MANAGER_USER, RELATION_OBJECT, { filters, indices: READ_DATA_INDICES });
     // update the report
-    return createObjectRefsInferences(context, reportId, objectRefsToCreate);
+    return createObjectRefsInferences(context, reportId, addedTargets, deletedTargets);
   };
   const handlePartOfRelationCreation = async (context: AuthContext, partOfRelation: StixRelation): Promise<Array<BaseEvent>> => {
     const events: Array<BaseEvent> = [];
     const { id: partOfId, source_ref: partOfFromId, target_ref: partOfTargetId } = partOfRelation.extensions[STIX_EXT_OCTI];
+    const partOfSource = await internalLoadById(context, RULE_MANAGER_USER, partOfFromId) as unknown as StoreObject;
+    const partOfStandardId = partOfSource.standard_id;
+    const partOfTarget = await internalLoadById(context, RULE_MANAGER_USER, partOfTargetId) as unknown as StoreObject;
+    const partOfTargetStandardId = partOfTarget.standard_id;
     const listFromCallback = async (relationships: Array<BasicStoreRelation>) => {
       for (let objectRefIndex = 0; objectRefIndex < relationships.length; objectRefIndex += 1) {
         const { fromId: reportId } = relationships[objectRefIndex];
-        const inferredEvents = await createObjectRefsInferences(context, reportId, [{ partOfFromId, partOfId, partOfTargetId }]);
+        const report = await stixLoadById(context, RULE_MANAGER_USER, reportId) as StixReport;
+        const addedRefs = [{ partOfFromId, partOfId, partOfStandardId, partOfTargetId, partOfTargetStandardId }];
+        const inferredEvents = await createObjectRefsInferences(context, report, addedRefs, []);
         events.push(...inferredEvents);
       }
     };
     const listReportArgs = { fromTypes: [containerType], toId: partOfFromId, callback: listFromCallback };
     await listAllRelations(context, RULE_MANAGER_USER, RELATION_OBJECT, listReportArgs);
-    return events;
-  };
-  const handleObjectRelationCreation = async (context: AuthContext, objectRelation: StixRelation): Promise<Array<BaseEvent>> => {
-    const events: Array<BaseEvent> = [];
-    const { source_ref: reportId, target_type, target_ref: targetId } = objectRelation.extensions[STIX_EXT_OCTI];
-    if (target_type === relationTypes.leftType || getParentTypes(target_type).includes(relationTypes.leftType)) {
-      const listFromCallback = async (relationships: Array<BasicStoreRelation>) => {
-        // Get the list of interesting part-of
-        for (let objectRefIndex = 0; objectRefIndex < relationships.length; objectRefIndex += 1) {
-          const { fromId: partOfFromId, internal_id: partOfId, toId: partOfTargetId } = relationships[objectRefIndex];
-          const inferredEvents = await createObjectRefsInferences(context, reportId, [{ partOfFromId, partOfId, partOfTargetId }]);
-          events.push(...inferredEvents);
-        }
-      };
-      // List all partOf from this indicator to observables
-      const listReportArgs = { fromId: targetId, toTypes: [relationTypes.rightType], callback: listFromCallback };
-      await listAllRelations(context, RULE_MANAGER_USER, relationTypes.creationType, listReportArgs);
-    }
     return events;
   };
   const applyInsert = async (data: StixObject): Promise<Array<BaseEvent>> => {
@@ -129,18 +151,15 @@ const buildContainerRefsRule = (ruleDefinition: RuleDefinition, containerType: s
       const report = data as StixReport;
       const { object_refs: reportObjectRefs } = report;
       // Get all identities from the report refs
-      const identityRefs = (reportObjectRefs ?? []).filter(identityRefFilter);
-      if (identityRefs.length > 0) {
-        return handleReportCreation(context, report, identityRefs);
+      const leftRefs = (reportObjectRefs ?? []).filter(leftTypeRefFilter);
+      if (leftRefs.length > 0) {
+        return handleReportCreation(context, report, leftRefs, []);
       }
     }
     const upsertRelation = data as StixRelation;
     const { relationship_type: relationType } = upsertRelation;
     if (relationType === relationTypes.creationType) {
       return handlePartOfRelationCreation(context, upsertRelation);
-    }
-    if (relationType === RELATION_OBJECT) { // This event can be generated internally
-      return handleObjectRelationCreation(context, upsertRelation);
     }
     return events;
   };
@@ -196,23 +215,11 @@ const buildContainerRefsRule = (ruleDefinition: RuleDefinition, containerType: s
       }
       // Apply operations
       // For added identities
-      const addedIdentityRefs = addedRefs.filter(identityRefFilter);
-      if (addedIdentityRefs.length > 0) {
-        const createEvents = await handleReportCreation(context, report, addedIdentityRefs);
+      const leftAddedRefs = addedRefs.filter(leftTypeRefFilter);
+      const removedLeftRefs = removedRefs.filter(leftTypeRefFilter);
+      if (leftAddedRefs.length > 0 || removedLeftRefs.length > 0) {
+        const createEvents = await handleReportCreation(context, report, leftAddedRefs, removedLeftRefs);
         events.push(...createEvents);
-      }
-      // For removed identities
-      const removedIdentityRefs = removedRefs.filter(identityRefFilter);
-      if (removedIdentityRefs.length > 0) {
-        // For meta deletion, generate deletion events
-        const removedRefIdentities = await internalFindByIds(context, RULE_MANAGER_USER, removedIdentityRefs) as Array<StoreObject>;
-        const removedIds = removedRefIdentities.map((i) => i.internal_id);
-        const deleteEvent: DependenciesDeleteEvent = {
-          version: EVENT_CURRENT_VERSION,
-          type: EVENT_TYPE_DELETE_DEPENDENCIES,
-          data: { ids: removedIds.map((ref) => `${ref}_ref`) }
-        };
-        events.push(deleteEvent);
       }
       return events;
     }
@@ -221,9 +228,8 @@ const buildContainerRefsRule = (ruleDefinition: RuleDefinition, containerType: s
     return events;
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
-    const cleanPromiseEvents = deleteInferredRuleElement(id, element, deletedDependencies);
-    return cleanPromiseEvents as unknown as Promise<Array<BaseEvent>>;
+  const clean = (element: StoreObject, deletedDependencies: Array<string>): Promise<BaseEvent> => {
+    return deleteInferredRuleElement(id, element, deletedDependencies) as Promise<BaseEvent>;
   };
   const insert = async (element: StixObject): Promise<Array<BaseEvent>> => applyInsert(element);
   const update = async (element: StixObject, event: UpdateEvent): Promise<Array<BaseEvent>> => applyUpdate(element, event);

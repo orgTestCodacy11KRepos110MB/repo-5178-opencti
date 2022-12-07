@@ -129,8 +129,8 @@ const sightingIndicatorRuleBuilder = (): RuleRuntime => {
     return applyFromStixRelation(context, rel);
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
-    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<Array<BaseEvent>>;
+  const clean = (element: StoreObject, deletedDependencies: Array<string>): Promise<BaseEvent> => {
+    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<BaseEvent>;
   };
   const insert = async (element: StixRelation): Promise<Array<BaseEvent>> => {
     return applyUpsert(element);

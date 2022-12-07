@@ -51,7 +51,6 @@ const DEFAULT_LIVE_STREAM = 'live';
 const ONE_HOUR = 1000 * 60 * 60;
 const MAX_CACHE_TIME = (conf.get('app:live_stream:cache_max_time') ?? 1) * ONE_HOUR;
 const MAX_CACHE_SIZE = conf.get('app:live_stream:cache_max_size') ?? 5000;
-const INCLUDE_INFERENCES = booleanConf('redis:include_inferences', false);
 
 const createBroadcastClient = (channel) => {
   let lastHeartbeat;
@@ -429,12 +428,6 @@ const createSeeMiddleware = () => {
       const publishDeletion = noDelete === false;
       const withInferences = (req.query['with-inferences'] || req.headers['with-inferences']) === 'true';
       if (withInferences) {
-        // Check if platform option is enable
-        if (!INCLUDE_INFERENCES) {
-          res.statusMessage = 'This live stream requires activated redis include_inferences option';
-          res.status(400).end();
-          return;
-        }
         queryIndices.push(READ_INDEX_INFERRED_ENTITIES, READ_INDEX_INFERRED_RELATIONSHIPS);
       }
       // Build filters

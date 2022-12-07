@@ -146,11 +146,6 @@ const ruleObserveSightingBuilder = (): RuleRuntime => {
     }
     return events;
   };
-  const handleObservedDataRelationUpsert = async (context: AuthContext, objectRelation: StixRelation) => {
-    const { source_ref: observedDataId } = objectRelation.extensions[STIX_EXT_OCTI];
-    const observedData = (await stixLoadById(context, RULE_MANAGER_USER, observedDataId)) as unknown as StixObservedData;
-    return handleObservedDataUpsert(context, observedData);
-  };
   const handleObservableRelationUpsert = async (context: AuthContext, baseOnRelation: StixRelation) => {
     const { source_ref: indicatorId } = baseOnRelation.extensions[STIX_EXT_OCTI];
     const baseOnIndicator = (await stixLoadById(context, RULE_MANAGER_USER, indicatorId)) as unknown as StixIndicator;
@@ -171,15 +166,11 @@ const ruleObserveSightingBuilder = (): RuleRuntime => {
     if (relationType === RELATION_BASED_ON) {
       return handleObservableRelationUpsert(context, upsertRelation);
     }
-    if (relationType === RELATION_OBJECT) {
-      return handleObservedDataRelationUpsert(context, upsertRelation);
-    }
     return events;
   };
   // Contract
-  const clean = async (element: StoreObject, deletedDependencies: Array<string>): Promise<Array<BaseEvent>> => {
-    const cleanPromiseEvents = deleteInferredRuleElement(def.id, element, deletedDependencies);
-    return cleanPromiseEvents as unknown as Promise<Array<BaseEvent>>;
+  const clean = (element: StoreObject, deletedDependencies: Array<string>): Promise<BaseEvent> => {
+    return deleteInferredRuleElement(def.id, element, deletedDependencies) as Promise<BaseEvent>;
   };
   const insert = async (element: StixObject): Promise<Array<BaseEvent>> => applyUpsert(element);
   const update = async (element: StixObject): Promise<Array<BaseEvent>> => applyUpsert(element);

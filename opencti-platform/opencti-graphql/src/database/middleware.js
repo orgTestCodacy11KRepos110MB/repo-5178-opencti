@@ -15,7 +15,6 @@ import {
 import {
   buildPagination,
   computeAverage,
-  EVENT_TYPE_DELETE_DEPENDENCIES,
   fillTimeSeries,
   generateCreateMessage,
   generateUpdateMessage,
@@ -3277,7 +3276,6 @@ export const deleteInferredRuleElement = async (rule, instance, deletedDependenc
   }
   const monoRule = rules.length === 1;
   // Cleanup all explanation that match the dependency id
-  const derivedEvents = [];
   const elementsRule = instance[completeRuleName];
   const rebuildRuleContent = [];
   for (let index = 0; index < elementsRule.length; index += 1) {
@@ -3294,48 +3292,27 @@ export const deleteInferredRuleElement = async (rule, instance, deletedDependenc
       // If current inference is only base on one rule, we can safely delete it.
       if (monoRule) {
         logApp.info('Delete inferred element', { rule, id: instance.id });
-        // If inference is a meta relationship just delete and generate an internal event
-        if (isStixMetaRelationship(instance.entity_type)) {
-          // Delete the meta and start an unshare background task if needed
-          const deletionPromise = elDeleteElements(context, RULE_MANAGER_USER, [instance], storeLoadByIdWithRefs);
-          const taskPromise = createContainerSharingTask(context, ACTION_TYPE_UNSHARE, instance);
-          await Promise.all([deletionPromise, taskPromise]);
-          // Deleting meta must be converted to a special dependency deletion
-          // This type of event will be handle by the stream to cleanup inferences.
-          const deleteEvent = {
-            type: EVENT_TYPE_DELETE_DEPENDENCIES,
-            data: { ids: [`${instance.to.internal_id}_ref`] }
-          };
-          derivedEvents.push(deleteEvent);
-        } else {
-          const deletionData = await internalDeleteElementById(context, RULE_MANAGER_USER, instance.id, opts);
-          derivedEvents.push(deletionData.event);
-        }
+        const deletionData = await internalDeleteElementById(context, RULE_MANAGER_USER, instance.id, opts);
         logApp.info('Delete inferred element', { id: instance.id, type: instance.entity_type });
-      } else {
-        // If not we need to clean the rule and keep the element for other rules.
-        logApp.info('Cleanup inferred element', { rule, id: instance.id });
-        const input = { [completeRuleName]: null };
-        const upsertOpts = { fromRule, ruleOverride: true };
-        const { event } = await upsertRelationRule(context, instance, input, upsertOpts);
-        if (event) {
-          derivedEvents.push(event);
-        }
+        return deletionData.event;
       }
-    } else {
-      logApp.info('Upsert inferred element', { rule, id: instance.id });
-      // Rule still have other explanation, update the rule
-      const input = { [completeRuleName]: rebuildRuleContent };
-      const ruleOpts = { fromRule, ruleOverride: true };
-      const { event } = await upsertRelationRule(context, instance, input, ruleOpts);
-      if (event) {
-        derivedEvents.push(event);
-      }
+      // If not we need to clean the rule and keep the element for other rules.
+      logApp.info('Cleanup inferred element', { rule, id: instance.id });
+      const input = { [completeRuleName]: null };
+      const upsertOpts = { fromRule, ruleOverride: true };
+      const { event } = await upsertRelationRule(context, instance, input, upsertOpts);
+      return event;
     }
+    logApp.info('Upsert inferred element', { rule, id: instance.id });
+    // Rule still have other explanation, update the rule
+    const input = { [completeRuleName]: rebuildRuleContent };
+    const ruleOpts = { fromRule, ruleOverride: true };
+    const { event } = await upsertRelationRule(context, instance, input, ruleOpts);
+    return event;
   } catch (e) {
     logApp.error('Error deleting inference', { error: e.message });
   }
-  return derivedEvents;
+  return undefined;
 };
 export const deleteRelationsByFromAndTo = async (context, user, fromId, toId, relationshipType, scopeType, opts = {}) => {
   /* istanbul ignore if */

@@ -61,7 +61,7 @@ export const convertFiltersFrontendFormat = async (context, filters) => {
       const workingKey = key.replace('_not_eq', '');
       adaptedFilters.push({ key: workingKey, operator: 'not_eq', values, filterMode: 'and' });
     } else if (RESOLUTION_FILTERS.includes(key)) {
-      const mappedValues = values.map((v) => ({ id: resolvedMap.get(v.id), value: v.value }));
+      const mappedValues = values.map((v) => [v, { id: resolvedMap.get(v.id), value: v.value }]).flat();
       adaptedFilters.push({ key, operator: 'eq', values: mappedValues });
     } else {
       adaptedFilters.push({ key, operator: 'eq', values, filterMode: 'or' });

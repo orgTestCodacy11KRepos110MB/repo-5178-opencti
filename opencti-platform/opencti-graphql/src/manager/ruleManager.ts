@@ -20,7 +20,6 @@ import {
 import {
   EVENT_TYPE_CREATE,
   EVENT_TYPE_DELETE,
-  EVENT_TYPE_DELETE_DEPENDENCIES,
   EVENT_TYPE_MERGE,
   EVENT_TYPE_UPDATE,
   isEmptyField,
@@ -228,11 +227,6 @@ export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, ev
         const deletionIds = [internalId, ...contextDeletionsIds];
         await applyCleanupOnDependencyIds(deletionIds);
       }
-      // In case of direct dependencies deletion (refs), call clean on every dependencies
-      if (type === EVENT_TYPE_DELETE_DEPENDENCIES) {
-        const deleteEvent = event as DependenciesDeleteEvent;
-        await applyCleanupOnDependencyIds(deleteEvent.data.ids);
-      }
       // In case of update apply the event on every rules
       if (type === EVENT_TYPE_UPDATE) {
         const updateEvent = event as UpdateEvent;
@@ -251,8 +245,7 @@ export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, ev
           }
           // Rule match, need to apply
           if (isCurrentMatched) {
-            const derivedEvents = await rule.update(data, updateEvent);
-            await rulesApplyHandler(context, user, derivedEvents);
+            await rule.update(data, updateEvent);
           }
         }
       }
@@ -262,8 +255,7 @@ export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, ev
           const rule = rules[ruleIndex];
           const isImpactedElement = isMatchRuleFilters(rule, data);
           if (isImpactedElement) {
-            const derivedEvents = await rule.insert(data);
-            await rulesApplyHandler(context, user, derivedEvents);
+            await rule.insert(data);
           }
         }
       }
@@ -289,8 +281,8 @@ export const rulesCleanHandler = async (
         const processingElement: StoreObject = await storeLoadByIdWithRefs(context, RULE_MANAGER_USER, instance.internal_id);
         // In case of "inference of inference", element can be recursively cleanup by the deletion system
         if (processingElement) {
-          const derivedEvents = await rule.clean(processingElement, deletedDependencies);
-          await rulesApplyHandler(context, user, derivedEvents);
+          const derivedEvent = await rule.clean(processingElement, deletedDependencies);
+          await rulesApplyHandler(context, user, [derivedEvent]);
         }
       }
     }

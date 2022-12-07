@@ -63,5 +63,5 @@ interface RuleRuntime extends RuleDefinition {
   activated?: boolean;
   insert: (element: StixEntities | StixRelation) => Promise<Array<BaseEvent>>;
   update: (element: StixEntities | StixRelation, event: UpdateEvent) => Promise<Array<BaseEvent>>;
-  clean: (element: StoreObject, deletedDependencies: Array<string>) => Promise<Array<BaseEvent>>;
+  clean: (element: StoreObject, deletedDependencies: Array<string>) => Promise<BaseEvent>;
 }

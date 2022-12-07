@@ -246,7 +246,7 @@ const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
   {
     internal_id: '1c449a99-4a7e-4fc6-a091-8935a8bfe2f8',
     name: 'Report <-> Energy',
-    user_ids: ['d6c75e52-00f4-4216-ac31-98a0dd826fa4'], // Julien
+    user_ids: ['4c1b46af-51d4-44aa-94c2-52d20612f0b1'], // Julien
     notification_type: 'live', // or digest
     event_types: ['create', 'delete'],
     filters: {
@@ -259,7 +259,7 @@ const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
   {
     internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
     name: 'Daily digest Report <-> Energy',
-    group_ids: ['d8304260-5ebc-48da-b6db-91428d2c8bd2'], // GR group
+    group_ids: ['1130302f-6aa1-4d8a-b6d7-78b8d816ba8a'], // GR group
     notification_type: 'digest',
     period: 'hour',
     notifications: ['1c449a99-4a7e-4fc6-a091-8935a8bfe2f8'],
@@ -393,41 +393,45 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
       }
     }
   } catch (e) {
-    logApp.error('[OPENCTI-MODULE] Error executing notification manager', { error: e });
+    logApp.error('[OPENCTI-MODULE] Error executing notification manager (live)', { error: e });
   }
 };
 
 const notificationDigestHandler = async () => {
   const context = executionContext('notification_manager');
   const baseDate = utcDate().startOf('minutes');
-  // Get digest that need to be executed
-  const digestNotifications = await getDigestNotifications(context, baseDate);
-  // Iter on each digest an generate the output
-  for (let index = 0; index < digestNotifications.length; index += 1) {
-    const { notification, users } = digestNotifications[index];
-    const { period, notifications, outcomes, internal_id: notification_id, notification_type: type } = notification;
-    const fromDate = baseDate.clone().subtract(1, period).toDate();
-    const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(fromDate, baseDate.toDate());
-    const digestContent = rangeNotifications.filter((n) => notifications.includes(n.notification_id));
-    if (digestContent.length > 0) {
-      // Range of results must filtered to keep only data related to the digest
-      // And related to the users participating to the digest
-      for (let userIndex = 0; userIndex < users.length; userIndex += 1) {
-        const user = users[userIndex];
-        const userNotifications = digestContent.filter((d) => d.targets
-          .map((t) => t.user.user_id).includes(user.internal_id));
-        if (userNotifications.length > 0) {
-          const version = EVENT_NOTIFICATION_VERSION;
-          const target = convertToNotificationUser(user, outcomes);
-          const data = userNotifications.map((n) => {
-            const userTarget = n.targets.find((t) => t.user.user_id === user.internal_id);
-            return ({ notification_id: n.notification_id, type: userTarget?.type ?? type, instance: n.data });
-          });
-          const digestEvent: DigestEvent = { version, notification_id, type, target, data };
-          await storeNotificationEvent(context, digestEvent);
+  try {
+    // Get digest that need to be executed
+    const digestNotifications = await getDigestNotifications(context, baseDate);
+    // Iter on each digest an generate the output
+    for (let index = 0; index < digestNotifications.length; index += 1) {
+      const { notification, users } = digestNotifications[index];
+      const { period, notifications, outcomes, internal_id: notification_id, notification_type: type } = notification;
+      const fromDate = baseDate.clone().subtract(1, period).toDate();
+      const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(fromDate, baseDate.toDate());
+      const digestContent = rangeNotifications.filter((n) => notifications.includes(n.notification_id));
+      if (digestContent.length > 0) {
+        // Range of results must filtered to keep only data related to the digest
+        // And related to the users participating to the digest
+        for (let userIndex = 0; userIndex < users.length; userIndex += 1) {
+          const user = users[userIndex];
+          const userNotifications = digestContent.filter((d) => d.targets
+            .map((t) => t.user.user_id).includes(user.internal_id));
+          if (userNotifications.length > 0) {
+            const version = EVENT_NOTIFICATION_VERSION;
+            const target = convertToNotificationUser(user, outcomes);
+            const data = userNotifications.map((n) => {
+              const userTarget = n.targets.find((t) => t.user.user_id === user.internal_id);
+              return ({ notification_id: n.notification_id, type: userTarget?.type ?? type, instance: n.data });
+            });
+            const digestEvent: DigestEvent = { version, notification_id, type, target, data };
+            await storeNotificationEvent(context, digestEvent);
+          }
         }
       }
     }
+  } catch (e) {
+    logApp.error('[OPENCTI-MODULE] Error executing notification manager (digest)', { error: e });
   }
 };
 

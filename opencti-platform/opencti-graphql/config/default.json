@@ -116,7 +116,6 @@
     "ca": [],
     "port": 6379,
     "trimming": 0,
-    "include_inferences": false,
     "use_as_cache": false
   },
   "elasticsearch": {
