@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { FunctionComponent } from 'react';
 import * as R from 'ramda';
 import { Link } from 'react-router-dom';
-import { graphql, createFragmentContainer } from 'react-relay';
+import { createFragmentContainer, graphql } from 'react-relay';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -17,8 +17,19 @@ import ItemMarking from '../../../../components/ItemMarking';
 import ContainerStixCoreObjectPopover from './ContainerStixCoreObjectPopover';
 import StixCoreObjectLabels from '../stix_core_objects/StixCoreObjectLabels';
 import { renderObservableValue } from '../../../../utils/String';
+import { Theme } from '../../../../components/Theme';
+import {
+  StixCyberObservableLine_node$data,
+} from '../../observations/stix_cyber_observables/__generated__/StixCyberObservableLine_node.graphql';
+import { DataColumns } from '../../../../components/list_lines';
+import {
+  ContainerStixCyberObservableLine_node$data,
+} from './__generated__/ContainerStixCyberObservableLine_node.graphql';
+import {
+  ContainerStixCyberObservablesLinesQuery$variables,
+} from './__generated__/ContainerStixCyberObservablesLinesQuery.graphql';
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles<Theme>((theme) => ({
   item: {
     paddingLeft: 10,
     height: 50,
@@ -36,28 +47,40 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: 5,
   },
   itemIconDisabled: {
-    color: theme.palette.grey[700],
+    color: theme.palette.grey?.[700],
   },
   placeholder: {
     display: 'inline-block',
     height: '1em',
-    backgroundColor: theme.palette.grey[700],
+    backgroundColor: theme.palette.grey?.[700],
   },
 }));
 
-const ContainerStixCyberObservableLineComponent = (props) => {
-  const {
-    node,
-    types,
-    dataColumns,
-    containerId,
-    paginationOptions,
-    onToggleEntity,
-    selectedElements,
-    deSelectedElements,
-    selectAll,
-    setSelectedElements,
-  } = props;
+interface ContainerStixCyberObservableLineComponentProps {
+  node?: StixCyberObservableLine_node$data,
+  types: string[],
+  dataColumns: DataColumns,
+  containerId: string,
+  paginationOptions: ContainerStixCyberObservablesLinesQuery$variables,
+  onToggleEntity: (entity: StixCyberObservableLine_node$data, event: React.SyntheticEvent) => void,
+  selectedElements: Record<string, StixCyberObservableLine_node$data>,
+  deSelectedElements: Record<string, StixCyberObservableLine_node$data>,
+  selectAll: boolean,
+  setSelectedElements: (selectedElements: Record<string, StixCyberObservableLine_node$data>) => void,
+}
+
+const ContainerStixCyberObservableLineComponent: FunctionComponent<ContainerStixCyberObservableLineComponentProps> = ({
+  node,
+  types,
+  dataColumns,
+  containerId,
+  paginationOptions,
+  onToggleEntity,
+  selectedElements,
+  deSelectedElements,
+  selectAll,
+  setSelectedElements,
+}) => {
   const classes = useStyles();
   const { t, fd } = useFormatter();
   const refTypes = types ?? ['manual'];
@@ -70,14 +93,13 @@ const ContainerStixCyberObservableLineComponent = (props) => {
       button={true}
       component={Link}
       to={`/dashboard/observations/${
-        node.entity_type === 'Artifact' ? 'artifacts' : 'observables'
-      }/${node.id}`}
+        node?.entity_type === 'Artifact' ? 'artifacts' : 'observables'
+      }/${node?.id}`}
     >
       <ListItemIcon
         classes={{ root: classes.itemIcon }}
         style={{ minWidth: 40 }}
-        onClick={(event) => !isOnlyThroughInference && onToggleEntity(node, event)
-        }
+        onClick={node ? (event) => !isOnlyThroughInference && onToggleEntity(node, event) : () => {} }
       >
         <Checkbox
           edge="start"
@@ -85,8 +107,8 @@ const ContainerStixCyberObservableLineComponent = (props) => {
           checked={
             (selectAll
               && !isOnlyThroughInference
-              && !(node.id in (deSelectedElements)))
-            || node.id in (selectedElements)
+              && (node?.id ? !(node.id in (deSelectedElements)) : true))
+            || (node?.id ? node.id in (selectedElements) : false)
           }
           disableRipple={true}
         />
@@ -101,7 +123,7 @@ const ContainerStixCyberObservableLineComponent = (props) => {
               className={classes.bodyItem}
               style={{ width: dataColumns.entity_type.width }}
             >
-              {t(`entity_${node.entity_type}`)}
+              {t(`entity_${node?.entity_type}`)}
             </div>
             <div
               className={classes.bodyItem}
@@ -115,7 +137,7 @@ const ContainerStixCyberObservableLineComponent = (props) => {
             >
               <StixCoreObjectLabels
                 variant="inList"
-                labels={node.objectLabel}
+                labels={node?.objectLabel}
               />
             </div>
             <div
@@ -128,13 +150,13 @@ const ContainerStixCyberObservableLineComponent = (props) => {
               className={classes.bodyItem}
               style={{ width: dataColumns.created_at.width }}
             >
-              {fd(node.created_at)}
+              {fd(node?.created_at)}
             </div>
             <div
               className={classes.bodyItem}
               style={{ width: dataColumns.objectMarking.width }}
             >
-              {R.take(1, R.pathOr([], ['objectMarking', 'edges'], node)).map(
+              {R.take(1, node?.objectMarking?.edges ?? []).map(
                 (markingDefinition) => (
                   <ItemMarking
                     key={markingDefinition.node.id}
@@ -156,7 +178,7 @@ const ContainerStixCyberObservableLineComponent = (props) => {
         ) : (
           <ContainerStixCoreObjectPopover
             containerId={containerId}
-            toId={node.id}
+            toId={node?.id ?? ''}
             menuDisable={isOnlyThroughInference}
             relationshipType="object"
             paginationKey="Pagination_objects"
@@ -230,8 +252,7 @@ export const ContainerStixCyberObservableLine = createFragmentContainer(
   },
 );
 
-export const ContainerStixCyberObservableLineDummy = (props) => {
-  const { dataColumns } = props;
+export const ContainerStixCyberObservableLineDummy = ({ dataColumns }: { dataColumns: DataColumns }) => {
   const classes = useStyles();
   return (
     <ListItem classes={{ root: classes.item }} divider={true}>

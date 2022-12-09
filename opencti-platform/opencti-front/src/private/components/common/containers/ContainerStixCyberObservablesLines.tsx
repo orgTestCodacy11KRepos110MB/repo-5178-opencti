@@ -20,6 +20,7 @@ import {
   ContainerStixCyberObservablesLines_container$key,
 } from './__generated__/ContainerStixCyberObservablesLines_container.graphql';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
+import { ContainerStixCyberObservableLine_node$data } from './__generated__/ContainerStixCyberObservableLine_node.graphql';
 
 const nbOfRowsToLoad = 50;
 
@@ -34,16 +35,16 @@ export const containerStixCyberObservablesLinesQuery = graphql`
         $orderMode: OrderingMode
         $filters: [StixObjectOrStixRelationshipsFiltering]
     ) {
-            ...ContainerStixCyberObservablesLines_container
-            @arguments(
-                types: $types
-                search: $search
-                count: $count
-                cursor: $cursor
-                orderBy: $orderBy
-                orderMode: $orderMode
-                filters: $filters
-            )
+        ...ContainerStixCyberObservablesLines_container
+        @arguments(
+            types: $types
+            search: $search
+            count: $count
+            cursor: $cursor
+            orderBy: $orderBy
+            orderMode: $orderMode
+            filters: $filters
+        )
     }
 `;
 
@@ -61,32 +62,32 @@ const ContainerStixCyberObservablesLinesFragment = graphql`
         orderMode: { type: "OrderingMode", defaultValue: asc }
         filters: { type: "[StixObjectOrStixRelationshipsFiltering]" }
     ) @refetchable(queryName: "ContainerStixCyberObservablesLinesRefetchQuery") {
-    container (id: $id) {
-        id
-        objects(
-            types: $types
-            search: $search
-            first: $count
-            after: $cursor
-            orderBy: $orderBy
-            orderMode: $orderMode
-            filters: $filters
-        ) @connection(key: "Pagination_objects") {
-            edges {
-                types
-                node {
-                  ... on StixCyberObservable {
-                    id
-                  }
-                  ...ContainerStixCyberObservableLine_node
+        container (id: $id) {
+            id
+            objects(
+                types: $types
+                search: $search
+                first: $count
+                after: $cursor
+                orderBy: $orderBy
+                orderMode: $orderMode
+                filters: $filters
+            ) @connection(key: "Pagination_objects") {
+                edges {
+                    types
+                    node {
+                        ... on StixCyberObservable {
+                            id
+                        }
+                        ...ContainerStixCyberObservableLine_node
+                    }
                 }
-            }
-            pageInfo {
-                endCursor
-                hasNextPage
-                globalCount
-            }
-        }}
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                    globalCount
+                }
+            }}
     }
 `;
 
@@ -144,11 +145,18 @@ const ContainerStixCyberObservablesLines: FunctionComponent<ContainerStixCyberOb
         globalCount={numberOfElements ?? nbOfRowsToLoad}
         LineComponent={
           <ContainerStixCyberObservableLine
-            containerId={data?.container?.id}
+            containerId={data?.container?.id ?? ''}
             setSelectedElements={setSelectedElements}
+            dataColumns={dataColumns}
+            paginationOptions={paginationOptions}
+            onToggleEntity={onToggleEntity}
+            selectedElements={selectedElements}
+            deSelectedElements={deSelectedElements}
+            selectAll={selectAll}
+            types={[]}
           />
         }
-        DummyLineComponent={<ContainerStixCyberObservableLineDummy />}
+        DummyLineComponent={<ContainerStixCyberObservableLineDummy dataColumns={dataColumns}/>}
         dataColumns={dataColumns}
         nbOfRowsToLoad={nbOfRowsToLoad}
         selectedElements={selectedElements}

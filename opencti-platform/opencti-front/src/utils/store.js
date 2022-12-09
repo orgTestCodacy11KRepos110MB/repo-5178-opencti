@@ -32,8 +32,8 @@ export const insertNode = (store, key, filters, rootField) => {
   }
 };
 
-export const deleteNode = (store, key, filters, id) => {
-  const record = store.get(store.getRoot().getDataID());
+export const deleteNodeFromId = (store, fromId, key, filters, id) => {
+  const record = store.get(fromId);
 
   // Connections cannot use count as a filter because we NEED to update the count when we remove new elements
   const params = { ...filters };
@@ -46,6 +46,10 @@ export const deleteNode = (store, key, filters, id) => {
   } else {
     throw new Error(`Delete node connection not found ${{ key, params, id }}`);
   }
+};
+
+export const deleteNode = (store, key, filters, id) => {
+  deleteNodeFromId(store, store.getRoot().getDataID(), filters, id);
 };
 
 export const deleteNodeFromEdge = (store, path, rootId, deleteId) => {
