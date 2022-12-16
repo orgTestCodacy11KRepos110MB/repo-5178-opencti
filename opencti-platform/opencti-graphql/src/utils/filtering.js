@@ -1,4 +1,4 @@
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import {
   RELATION_CREATED_BY,
   RELATION_OBJECT,
@@ -9,11 +9,11 @@ import { RELATION_INDICATES } from '../schema/stixCoreRelationship';
 
 // eslint-disable-next-line import/prefer-default-export
 export const GlobalFilters = {
-  createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-  markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-  labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-  indicates: buildRefRelationKey(RELATION_INDICATES),
-  containedBy: buildRefRelationKey(RELATION_OBJECT),
+  createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+  markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+  labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+  indicates: buildRefRelationSearchKey(RELATION_INDICATES),
+  objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
   creator: 'creator_id',
 };
 

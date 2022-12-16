@@ -4,7 +4,7 @@ import { listEntities } from '../database/middleware-loader';
 import { BUS_TOPICS } from '../config/conf';
 import { notify } from '../database/redis';
 import { ENTITY_TYPE_INCIDENT } from '../schema/stixDomainObject';
-import { ABSTRACT_STIX_DOMAIN_OBJECT, buildRefRelationKey } from '../schema/general';
+import { ABSTRACT_STIX_DOMAIN_OBJECT, buildRefRelationSearchKey } from '../schema/general';
 import { now } from '../utils/format';
 
 export const findById = (context, user, incidentId) => {
@@ -18,7 +18,7 @@ export const findAll = (context, user, args) => {
 // region time series
 export const incidentsTimeSeriesByEntity = async (context, user, args) => {
   const { relationship_type, objectId } = args;
-  const filters = [{ key: [relationship_type.map((n) => buildRefRelationKey(n, '*'))], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: relationship_type.map((n) => buildRefRelationSearchKey(n)), values: [objectId] }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, [ENTITY_TYPE_INCIDENT], { ...args, filters });
 };
 

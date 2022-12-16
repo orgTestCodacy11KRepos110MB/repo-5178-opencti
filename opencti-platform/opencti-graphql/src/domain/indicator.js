@@ -19,7 +19,8 @@ import { isStixCyberObservable } from '../schema/stixCyberObservable';
 import { RELATION_BASED_ON, RELATION_INDICATES } from '../schema/stixCoreRelationship';
 import {
   ABSTRACT_STIX_CYBER_OBSERVABLE,
-  ABSTRACT_STIX_DOMAIN_OBJECT, buildRefRelationKey,
+  ABSTRACT_STIX_DOMAIN_OBJECT,
+  buildRefRelationSearchKey,
   INPUT_CREATED_BY,
   INPUT_EXTERNAL_REFS,
   INPUT_LABELS,
@@ -142,13 +143,13 @@ export const indicatorsNumber = (context, user, args) => ({
 
 export const indicatorsTimeSeriesByEntity = (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_INDICATES, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_INDICATES)], values: [objectId] }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, [ENTITY_TYPE_INDICATOR], { ...args, filters });
 };
 
 export const indicatorsNumberByEntity = (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_INDICATES, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_INDICATES)], values: [objectId] }, ...(args.filters || [])];
   return {
     count: elCount(
       context,
@@ -167,7 +168,7 @@ export const indicatorsNumberByEntity = (context, user, args) => {
 
 export const indicatorsDistributionByEntity = async (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_INDICATES, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_INDICATES)], values: [objectId] }, ...(args.filters || [])];
   return distributionEntities(context, user, [ENTITY_TYPE_INDICATOR], { ...args, filters });
 };
 // endregion

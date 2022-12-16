@@ -8,7 +8,6 @@ import ContainerStixCyberObservablesLines, {
 } from './ContainerStixCyberObservablesLines';
 import StixCyberObservablesRightBar from '../../observations/stix_cyber_observables/StixCyberObservablesRightBar';
 import ToolBar from '../../data/ToolBar';
-import { defaultValue } from '../../../../utils/Graph';
 import useLocalStorage, {
   localStorageToPaginationOptions,
 } from '../../../../utils/hooks/useLocalStorage';
@@ -119,9 +118,7 @@ ContainerStixCyberObservablesComponentProps
   const [selectAll, setSelectAll] = useState<boolean>(false);
 
   const exportFilters = {
-    containedBy: [{ id: container.id, value: defaultValue(container) }],
-    entity_type:
-      types && types.length > 0 ? types.map((n) => ({ id: n, value: n })) : [],
+    entity_type: types && types.length > 0 ? types.map((n) => ({ id: n, value: n })) : [],
     ...filters,
   };
 
@@ -141,7 +138,6 @@ ContainerStixCyberObservablesComponentProps
     numberOfSelectedElements = (numberOfElements?.original ?? 0) - Object.keys(deSelectedElements).length;
   }
   const backgroundTaskFilters = {
-    containedBy: [{ id: container.id, value: defaultValue(container) }],
     entity_type:
       types && types.length > 0
         ? types.map((n) => ({ id: n, value: n }))

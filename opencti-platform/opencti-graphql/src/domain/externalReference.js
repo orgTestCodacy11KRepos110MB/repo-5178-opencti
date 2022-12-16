@@ -1,5 +1,5 @@
-import { assoc } from 'ramda';
 import * as R from 'ramda';
+import { assoc } from 'ramda';
 import { delEditContext, notify, setEditContext } from '../database/redis';
 import {
   createEntity,
@@ -8,15 +8,15 @@ import {
   deleteRelationsByFromAndTo,
   internalLoadById,
   listThings,
-  storeLoadById,
   paginateAllThings,
+  storeLoadById,
   updateAttribute,
 } from '../database/middleware';
 import { listEntities } from '../database/middleware-loader';
 import conf, { BUS_TOPICS } from '../config/conf';
 import { ForbiddenAccess, FunctionalError, ValidationError } from '../config/errors';
 import { ENTITY_TYPE_EXTERNAL_REFERENCE } from '../schema/stixMetaObject';
-import { ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationKey } from '../schema/general';
+import { ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationSearchKey } from '../schema/general';
 import { isStixMetaRelationship, RELATION_EXTERNAL_REFERENCE } from '../schema/stixMetaRelationship';
 import { isEmptyField } from '../database/utils';
 import { BYPASS, BYPASS_REFERENCE } from '../utils/access';
@@ -31,7 +31,7 @@ export const findAll = (context, user, args) => {
 };
 
 export const references = async (context, user, externalReferenceId, args) => {
-  const key = buildRefRelationKey(RELATION_EXTERNAL_REFERENCE);
+  const key = buildRefRelationSearchKey(RELATION_EXTERNAL_REFERENCE);
   let types = ['Stix-Core-Object', 'stix-core-relationship'];
   if (args.types) {
     types = args.types;

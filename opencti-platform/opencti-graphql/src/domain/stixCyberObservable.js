@@ -38,7 +38,8 @@ import {
 } from '../schema/stixCyberObservable';
 import {
   ABSTRACT_STIX_CYBER_OBSERVABLE,
-  ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationKey,
+  ABSTRACT_STIX_META_RELATIONSHIP,
+  buildRefRelationSearchKey,
   INPUT_CREATED_BY,
   INPUT_LABELS,
   INPUT_MARKINGS
@@ -385,7 +386,7 @@ export const stixCyberObservableDistribution = async (context, user, args) => {
 
 export const stixCyberObservableDistributionByEntity = async (context, user, args) => {
   const { relationship_type, objectId, types = [ABSTRACT_STIX_CYBER_OBSERVABLE] } = args;
-  const filters = [{ key: [relationship_type.map((n) => buildRefRelationKey(n, '*'))], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [relationship_type.map((n) => buildRefRelationSearchKey(n))], values: [objectId] }, ...(args.filters || [])];
   return distributionEntities(context, user, types, { ...args, filters });
 };
 

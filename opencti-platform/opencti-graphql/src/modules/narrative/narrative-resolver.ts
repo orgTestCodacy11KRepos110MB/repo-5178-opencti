@@ -1,11 +1,19 @@
 import type { Resolvers } from '../../generated/graphql';
-import { addNarrative, findById, findAll, batchIsSubNarrative, batchParentNarratives, batchSubNarratives } from './narrative-domain';
-import { buildRefRelationKey } from '../../schema/general';
+import {
+  addNarrative,
+  batchIsSubNarrative,
+  batchParentNarratives,
+  batchSubNarratives,
+  findAll,
+  findById
+} from './narrative-domain';
+import { buildRefRelationSearchKey } from '../../schema/general';
 import { RELATION_CREATED_BY, RELATION_OBJECT_LABEL, RELATION_OBJECT_MARKING } from '../../schema/stixMetaRelationship';
 import {
   stixDomainObjectAddRelation,
   stixDomainObjectCleanContext,
-  stixDomainObjectDelete, stixDomainObjectDeleteRelation,
+  stixDomainObjectDelete,
+  stixDomainObjectDeleteRelation,
   stixDomainObjectEditContext,
   stixDomainObjectEditField
 } from '../../domain/stixDomainObject';
@@ -26,9 +34,9 @@ const narrativeResolvers: Resolvers = {
     isSubNarrative: (narrative, _, context) => isSubNarrativeLoader.load(narrative.id, context, context.user),
   },
   NarrativesFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
   },
   Mutation: {
     narrativeAdd: (_, { input }, context) => {

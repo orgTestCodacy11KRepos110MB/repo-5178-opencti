@@ -25,7 +25,7 @@ import {
   RELATION_OBJECT_LABEL,
   RELATION_OBJECT_MARKING,
 } from '../schema/stixMetaRelationship';
-import { buildRefRelationKey, KNOWLEDGE_COLLABORATION, KNOWLEDGE_UPDATE } from '../schema/general';
+import { buildRefRelationSearchKey, KNOWLEDGE_COLLABORATION, KNOWLEDGE_UPDATE } from '../schema/general';
 import { BYPASS, isUserHasCapability } from '../utils/access';
 import { ForbiddenAccess } from '../config/errors';
 import { addIndividual } from '../domain/individual';
@@ -72,10 +72,10 @@ const noteResolvers = {
     },
   },
   NotesFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT, '*')
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT, '*')
   },
   Mutation: {
     noteEdit: (_, { id }, context) => ({

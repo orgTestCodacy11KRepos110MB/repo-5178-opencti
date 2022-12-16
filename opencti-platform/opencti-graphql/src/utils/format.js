@@ -1,13 +1,16 @@
 import Moment from 'moment';
+import crypto from 'node:crypto';
 import { extendMoment } from 'moment-range';
 import * as R from 'ramda';
 import {
-  ENTITY_AUTONOMOUS_SYSTEM, ENTITY_BANK_ACCOUNT,
+  ENTITY_AUTONOMOUS_SYSTEM,
+  ENTITY_BANK_ACCOUNT,
   ENTITY_DIRECTORY,
   ENTITY_EMAIL_MESSAGE,
   ENTITY_HASHED_OBSERVABLE_ARTIFACT,
   ENTITY_HASHED_OBSERVABLE_STIX_FILE,
-  ENTITY_HASHED_OBSERVABLE_X509_CERTIFICATE, ENTITY_MEDIA_CONTENT,
+  ENTITY_HASHED_OBSERVABLE_X509_CERTIFICATE,
+  ENTITY_MEDIA_CONTENT,
   ENTITY_MUTEX,
   ENTITY_NETWORK_TRAFFIC,
   ENTITY_PAYMENT_CARD,
@@ -17,6 +20,7 @@ import {
   ENTITY_WINDOWS_REGISTRY_KEY,
   ENTITY_WINDOWS_REGISTRY_VALUE_TYPE
 } from '../schema/stixCyberObservable';
+import { SHARDED_TYPES } from '../schema/general';
 
 const moment = extendMoment(Moment);
 
@@ -110,6 +114,15 @@ export const observableValue = (stixCyberObservable) => {
     default:
       return stixCyberObservable.value || stixCyberObservable.name || 'Unknown';
   }
+};
+export const generatedUuidShardingIndex = (type, data) => {
+  if (!SHARDED_TYPES.includes(type)) {
+    return 0;
+  }
+  const buf = Buffer.from(data.replace(/-/g, ''), 'hex');
+  const hash = crypto.createHash('sha256').update(buf).digest();
+  const int = hash.readIntBE(0, 6);
+  return Math.abs(int % 32);
 };
 
 // Be careful to align this script with the previous function

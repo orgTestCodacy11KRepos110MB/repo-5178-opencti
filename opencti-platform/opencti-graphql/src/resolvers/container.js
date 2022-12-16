@@ -7,13 +7,6 @@ import {
   stixDomainObjectEditContext,
   stixDomainObjectEditField,
 } from '../domain/stixDomainObject';
-import {
-  RELATION_CREATED_BY,
-  RELATION_OBJECT,
-  RELATION_OBJECT_LABEL,
-  RELATION_OBJECT_MARKING,
-} from '../schema/stixMetaRelationship';
-import { buildRefRelationKey } from '../schema/general';
 
 const containerResolvers = {
   Query: {
@@ -28,14 +21,8 @@ const containerResolvers = {
       }
       return 'Unknown';
     },
-    objects: (container, args, context) => objects(context, context.user, container.id, args),
+    objects: (container, args, context) => objects(context, context.user, container, args),
     relatedContainers: (container, args, context) => relatedContainers(context, context.user, container.id, args),
-  },
-  ContainersFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT, '*'),
   },
   Mutation: {
     containerEdit: (_, { id }, context) => ({

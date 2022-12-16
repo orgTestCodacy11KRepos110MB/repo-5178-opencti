@@ -27,7 +27,7 @@ import {
   RELATION_OBJECT_LABEL,
   RELATION_OBJECT_MARKING,
 } from '../schema/stixMetaRelationship';
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import { distributionEntities } from '../database/middleware';
 import { ENTITY_TYPE_CONTAINER_REPORT } from '../schema/stixDomainObject';
 
@@ -67,10 +67,10 @@ const reportResolvers = {
     deleteWithElementsCount: (report, args, context) => reportDeleteElementsCount(context, context.user, report.id)
   },
   ReportsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT, '*')
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
   },
   Mutation: {
     reportEdit: (_, { id }, context) => ({

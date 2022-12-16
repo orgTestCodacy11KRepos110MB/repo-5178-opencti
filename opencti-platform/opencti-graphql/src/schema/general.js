@@ -39,8 +39,17 @@ export const STIX_META_RELATIONSHIPS_INPUTS = [INPUT_CREATED_BY, ...MULTIPLE_MET
 export const REL_INDEX_PREFIX = 'rel_';
 export const INTERNAL_PREFIX = 'i_';
 export const RULE_PREFIX = 'i_rule_';
-export const buildRefRelationKey = (type, field = ID_INTERNAL) => `${REL_INDEX_PREFIX}${type}.${field}`;
-export const buildRefRelationSearchKey = (type, field = ID_INTERNAL) => `${buildRefRelationKey(type, field)}.keyword`;
+export const SHARDED_TYPES = ['object', 'related-to', 'uses', 'targets'];
+
+export const buildRefRelationKey = (type, field, shard = 0) => {
+  if (shard > 0) {
+    return `${REL_INDEX_PREFIX}${type}.${field}_${shard}`;
+  }
+  return `${REL_INDEX_PREFIX}${type}.${field}`;
+};
+export const buildRefRelationSearchKey = (type) => {
+  return `${REL_INDEX_PREFIX}${type}.*.keyword`;
+};
 
 // Connectors
 export const CONNECTOR_INTERNAL_ENRICHMENT = 'INTERNAL_ENRICHMENT'; // Entity types to support (Report, Hash, ...) -> enrich-

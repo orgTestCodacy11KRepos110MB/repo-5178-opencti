@@ -76,7 +76,7 @@ import { getInstanceIds, INTERNAL_FROM_FIELD, INTERNAL_TO_FIELD } from '../schem
 import { BYPASS } from '../utils/access';
 import { cacheDel, cacheGet, cachePurge, cacheSet } from './redis';
 import { isSingleStixEmbeddedRelationship, } from '../schema/stixEmbeddedRelationship';
-import { now, runtimeFieldObservableValueScript } from '../utils/format';
+import { generatedUuidShardingIndex, now, runtimeFieldObservableValueScript } from '../utils/format';
 import { ENTITY_TYPE_MARKING_DEFINITION } from '../schema/stixMetaObject';
 import { getEntityFromCache } from './cache';
 import { ENTITY_TYPE_SETTINGS } from '../schema/internalObject';
@@ -1110,13 +1110,6 @@ const elQueryBodyBuilder = async (context, user, options) => {
               throw UnsupportedError('Must have only one field', validKeys);
             }
             valuesFiltering.push({ exists: { field: R.head(validKeys) } });
-          } else if (operator === 'eq') {
-            valuesFiltering.push({
-              multi_match: {
-                fields: validKeys.map((k) => `${(dateAttributes.includes(k) || numericOrBooleanAttributes.includes(k)) ? k : `${k}.keyword`}`),
-                query: values[i].toString(),
-              },
-            });
           } else if (operator === 'match') {
             valuesFiltering.push({
               multi_match: {
@@ -1124,7 +1117,7 @@ const elQueryBodyBuilder = async (context, user, options) => {
                 query: values[i].toString(),
               },
             });
-          } else if (operator === 'wildcard') {
+          } else if (operator === 'wildcard' || validKeys.some((v) => v.startsWith(REL_INDEX_PREFIX))) {
             valuesFiltering.push({
               query_string: {
                 query: `"${values[i].toString()}"`,
@@ -1135,6 +1128,13 @@ const elQueryBodyBuilder = async (context, user, options) => {
             valuesFiltering.push({
               script: {
                 script: values[i].toString()
+              },
+            });
+          } else if (operator === 'eq') {
+            valuesFiltering.push({
+              multi_match: {
+                query: values[i].toString(),
+                fields: validKeys.map((k) => `${(dateAttributes.includes(k) || numericOrBooleanAttributes.includes(k)) ? k : `${k}.keyword`}`),
               },
             });
           } else {
@@ -1754,32 +1754,27 @@ export const elDeleteInstances = async (instances) => {
 const elRemoveRelationConnection = async (context, user, relsFromTo) => {
   if (relsFromTo.length > 0) {
     const idsToResolve = R.uniq(
-      relsFromTo
-        .map(({ relation, isFromCleanup, isToCleanup }) => {
-          const ids = [];
-          if (isFromCleanup) ids.push(relation.fromId);
-          if (isToCleanup) ids.push(relation.toId);
-          return ids;
-        })
-        .flat()
+      relsFromTo.map(({ relation, isFromCleanup, isToCleanup }) => {
+        const ids = [];
+        if (isFromCleanup) ids.push(relation.fromId);
+        if (isToCleanup) ids.push(relation.toId);
+        return ids;
+      }).flat()
     );
     const dataIds = await elFindByIds(context, user, idsToResolve);
     const indexCache = R.mergeAll(dataIds.map((element) => ({ [element.internal_id]: element._index })));
     const bodyUpdateRaw = relsFromTo.map(({ relation, isFromCleanup, isToCleanup }) => {
-      const refField = isStixMetaRelationship(relation.entity_type)
-      && isInferredIndex(relation._index) ? ID_INFERRED : ID_INTERNAL;
-      const type = buildRefRelationKey(relation.entity_type, refField);
+      const refField = isStixMetaRelationship(relation.entity_type) && isInferredIndex(relation._index) ? ID_INFERRED : ID_INTERNAL;
       const updates = [];
       const fromIndex = indexCache[relation.fromId];
       if (isFromCleanup && fromIndex) {
+        const shard = generatedUuidShardingIndex(relation.entity_type, relation.toId);
+        const type = buildRefRelationKey(relation.entity_type, refField, shard);
         let source = `if (ctx._source['${type}'] != null) ctx._source['${type}'].removeIf(rel -> rel == params.key);`;
         if (isStixMetaRelationship(relation.entity_type)) {
           source += 'ctx._source[\'updated_at\'] = params.updated_at;';
         }
-        const script = {
-          source,
-          params: { key: relation.toId, updated_at: now() },
-        };
+        const script = { source, params: { key: relation.toId, updated_at: now() } };
         updates.push([
           { update: { _index: fromIndex, _id: relation.fromId, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
           { script },
@@ -1788,6 +1783,8 @@ const elRemoveRelationConnection = async (context, user, relsFromTo) => {
       // Update to to entity
       const toIndex = indexCache[relation.toId];
       if (isToCleanup && toIndex) {
+        const shard = generatedUuidShardingIndex(relation.entity_type, relation.fromId);
+        const type = buildRefRelationKey(relation.entity_type, refField, shard);
         const script = {
           source: `if (ctx._source['${type}'] != null) ctx._source['${type}'].removeIf(rel -> rel == params.key);`,
           params: { key: relation.fromId, updated_at: now() },
@@ -1969,26 +1966,35 @@ export const elIndexElements = async (context, user, message, elements) => {
         return { relation: relType, field: refField, elements: resolvedData };
       }, Object.keys(targetsByRelation));
       // Create params and scripted update
+      let source = '';
       const params = { updated_at: now() };
-      const sources = targetsElements.map((t) => {
-        const field = buildRefRelationKey(t.relation, t.field);
-        let script = `if (ctx._source['${field}'] == null) ctx._source['${field}'] = [];`;
-        script += `ctx._source['${field}'].addAll(params['${field}'])`;
-        if (isStixMetaRelationship(t.relation)) {
-          const fromSide = R.find((e) => e.side === 'from', t.elements);
-          if (fromSide && isUpdatedAtObject(fromSide.type)) {
-            script += '; ctx._source[\'updated_at\'] = params.updated_at';
-          }
-          if (fromSide && isModifiedObject(fromSide.type)) {
-            script += '; ctx._source[\'modified\'] = params.updated_at';
-          }
-        }
-        return script;
-      });
-      const source = sources.length > 1 ? R.join(';', sources) : `${R.head(sources)};`;
       for (let index = 0; index < targetsElements.length; index += 1) {
         const targetElement = targetsElements[index];
-        params[buildRefRelationKey(targetElement.relation, targetElement.field)] = targetElement.elements.map((e) => e.id);
+        const idWithShard = targetElement.elements
+          .map((e) => ({ shard: generatedUuidShardingIndex(targetElement.relation, e.id), id: e.id }));
+        const shardGroup = R.groupBy((g) => g.shard)(idWithShard);
+        const groupShardKeys = Object.keys(shardGroup);
+        for (let i = 0; i < groupShardKeys.length; i += 1) {
+          const groupShardKey = groupShardKeys[i];
+          const field = buildRefRelationKey(targetElement.relation, targetElement.field, groupShardKey);
+          // source += `if (ctx._source['${field}'] == null) { ctx._source['${field}'] = []; } `;
+          // source += `ctx._source['${field}'].addAll(params['${field}']);`;
+          source += `if (ctx._source['${field}'] == null) { 
+            ctx._source['${field}'] = params['${field}']; 
+          } else {
+            ctx._source['${field}'].addAll(params['${field}']);
+          }`;
+          if (isStixMetaRelationship(targetElement.relation)) {
+            const fromSide = R.find((e) => e.side === 'from', targetElement.elements);
+            if (fromSide && isUpdatedAtObject(fromSide.type)) {
+              source += 'ctx._source[\'updated_at\'] = params.updated_at;';
+            }
+            if (fromSide && isModifiedObject(fromSide.type)) {
+              source += 'ctx._source[\'modified\'] = params.updated_at;';
+            }
+          }
+          params[field] = shardGroup[groupShardKey].map((s) => s.id);
+        }
       }
       return { ...entity, id: entityId, data: { script: { source, params } } };
     });
@@ -2049,45 +2055,53 @@ export const elUpdateRelationConnections = async (elements) => {
   }
 };
 export const elUpdateEntityConnections = async (elements) => {
-  if (elements.length > 0) {
-    const source = `if (ctx._source[params.key] == null) {
-      ctx._source[params.key] = [params.to];
-    } else if (params.from == null) {
-      ctx._source[params.key].addAll(params.to);
+  const bodyUpdate = elements.flatMap((doc) => {
+    let source = '';
+    const params = {};
+    const refField = isStixMetaRelationship(doc.relationType) && isInferredIndex(doc._index) ? ID_INFERRED : ID_INTERNAL;
+    if (doc.toReplace !== null) {
+      // Element must be replaced by another id.
+      // Old element must be removed from the current shard
+      // New element must be added in the right shard
+      const currentShard = generatedUuidShardingIndex(doc.relationType, doc.toReplace);
+      const currentField = buildRefRelationKey(doc.relationType, refField, currentShard);
+      params[currentField] = [doc.toReplace];
+      const newShard = generatedUuidShardingIndex(doc.relationType, doc.data.internal_id);
+      const newField = buildRefRelationKey(doc.relationType, refField, newShard);
+      params[newField] = [doc.data.internal_id];
+      source += `if (ctx._source['${currentField}'] != null) { 
+            ctx._source['${currentField}'].removeAll(params['${currentField}']); 
+          } 
+          if (ctx._source['${newField}'] != null) { 
+            ctx._source['${newField}'].addAll(params['${newField}']);
+          } else {
+            ctx._source['${newField}'] = params['${newField}'];
+          }`;
     } else {
-      def values = [params.to];
-      for (current in ctx._source[params.key]) {
-        if (current != params.from) { values.add(current); }
+      // Element must be completed with some ids that can be related to different shards
+      const newIds = Array.isArray(doc.data.internal_id) ? doc.data.internal_id : [doc.data.internal_id];
+      const idWithShard = newIds.map((id) => ({ shard: generatedUuidShardingIndex(doc.relationType, id), id }));
+      const shardGroup = R.groupBy((g) => g.shard)(idWithShard);
+      const groupShardKeys = Object.keys(shardGroup);
+      for (let i = 0; i < groupShardKeys.length; i += 1) {
+        const groupShardKey = groupShardKeys[i];
+        const field = buildRefRelationKey(doc.relationType, refField, groupShardKey);
+        params[field] = shardGroup[groupShardKey].map((s) => s.id);
+        source += `if (ctx._source['${field}'] == null) { 
+            ctx._source['${field}'] = params['${field}']; 
+          } else {
+            ctx._source['${field}'].addAll(params['${field}']);
+          }`;
       }
-      ctx._source[params.key] = values;
     }
-  `;
-    const addMultipleFormat = (doc) => {
-      if (doc.toReplace === null && !Array.isArray(doc.data.internal_id)) {
-        return [doc.data.internal_id];
-      }
-      return doc.data.internal_id;
-    };
-    const bodyUpdate = elements.flatMap((doc) => {
-      const refField = isStixMetaRelationship(doc.relationType) && isInferredIndex(doc._index) ? ID_INFERRED : ID_INTERNAL;
-      return [
-        { update: { _index: doc._index, _id: doc.id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
-        {
-          script: {
-            source,
-            params: {
-              key: buildRefRelationKey(doc.relationType, refField),
-              from: doc.toReplace,
-              to: addMultipleFormat(doc)
-            },
-          },
-        },
-      ];
-    });
-    const bulkPromise = elBulk({ refresh: true, timeout: BULK_TIMEOUT, body: bodyUpdate });
-    const cachePromise = cacheDel(elements);
-    await Promise.all([cachePromise, bulkPromise]);
-  }
+    return [
+      { update: { _index: doc._index, _id: doc.id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
+      { script: { source, params } },
+    ];
+  });
+  const bulkPromise = elBulk({ refresh: true, timeout: BULK_TIMEOUT, body: bodyUpdate });
+  const cachePromise = cacheDel(elements);
+  await Promise.all([cachePromise, bulkPromise]);
 };
 
 export const elUpdateConnectionsOfElement = async (documentId, documentBody) => {

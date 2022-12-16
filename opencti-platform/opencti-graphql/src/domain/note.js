@@ -11,7 +11,7 @@ import { BUS_TOPICS } from '../config/conf';
 import { notify } from '../database/redis';
 import { ENTITY_TYPE_CONTAINER_NOTE } from '../schema/stixDomainObject';
 import { RELATION_CREATED_BY, RELATION_OBJECT } from '../schema/stixMetaRelationship';
-import { ABSTRACT_STIX_DOMAIN_OBJECT, buildRefRelationKey } from '../schema/general';
+import { ABSTRACT_STIX_DOMAIN_OBJECT, buildRefRelationSearchKey } from '../schema/general';
 import { elCount } from '../database/engine';
 import { READ_INDEX_STIX_DOMAIN_OBJECTS } from '../database/utils';
 import { isStixId } from '../schema/schemaUtils';
@@ -30,7 +30,7 @@ export const noteContainsStixObjectOrStixRelationship = async (context, user, no
   const args = {
     filters: [
       { key: 'internal_id', values: [noteId] },
-      { key: buildRefRelationKey(RELATION_OBJECT), values: [resolvedThingId] },
+      { key: buildRefRelationSearchKey(RELATION_OBJECT), values: [resolvedThingId] },
     ],
   };
   const noteFound = await findAll(context, user, args);
@@ -54,19 +54,19 @@ export const notesNumber = (context, user, args) => ({
 
 export const notesTimeSeriesByEntity = (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_OBJECT, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_OBJECT)], values: [objectId] }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, [ENTITY_TYPE_CONTAINER_NOTE], { ...args, filters });
 };
 
 export const notesTimeSeriesByAuthor = async (context, user, args) => {
   const { authorId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_CREATED_BY, '*')], values: [authorId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_CREATED_BY)], values: [authorId] }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, [ENTITY_TYPE_CONTAINER_NOTE], { ...args, filters });
 };
 
 export const notesNumberByEntity = (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_OBJECT, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_OBJECT)], values: [objectId] }, ...(args.filters || [])];
   return {
     count: elCount(
       context,
@@ -85,7 +85,7 @@ export const notesNumberByEntity = (context, user, args) => {
 
 export const notesDistributionByEntity = async (context, user, args) => {
   const { objectId } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_OBJECT, '*')], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_OBJECT)], values: [objectId] }, ...(args.filters || [])];
   return distributionEntities(context, user, [ENTITY_TYPE_CONTAINER_NOTE], { ...args, filters });
 };
 // endregion

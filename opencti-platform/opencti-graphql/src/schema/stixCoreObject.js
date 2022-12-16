@@ -2,11 +2,17 @@ import { isStixCyberObservable } from './stixCyberObservable';
 import { isStixDomainObject } from './stixDomainObject';
 import { isStixMetaObject } from './stixMetaObject';
 import { isInternalObject } from './internalObject';
-import { ABSTRACT_BASIC_OBJECT, ABSTRACT_STIX_CORE_OBJECT, ABSTRACT_STIX_OBJECT, buildRefRelationKey } from './general';
+import {
+  ABSTRACT_BASIC_OBJECT,
+  ABSTRACT_STIX_CORE_OBJECT,
+  ABSTRACT_STIX_OBJECT,
+  buildRefRelationSearchKey
+} from './general';
 import { isBasicRelationship, isStixRelationShipExceptMeta } from './stixRelationship';
 import {
   RELATION_CREATED_BY,
-  RELATION_EXTERNAL_REFERENCE, RELATION_KILL_CHAIN_PHASE,
+  RELATION_EXTERNAL_REFERENCE,
+  RELATION_KILL_CHAIN_PHASE,
   RELATION_OBJECT,
   RELATION_OBJECT_LABEL,
   RELATION_OBJECT_MARKING
@@ -25,14 +31,13 @@ export const isBasicData = (instance) => isBasicObject(instance.entity_type) || 
 
 export const stixCoreObjectOptions = {
   StixCoreObjectsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT),
-    containedBy: buildRefRelationKey(RELATION_OBJECT),
-    hasExternalReference: buildRefRelationKey(RELATION_EXTERNAL_REFERENCE),
-    killChainPhase: buildRefRelationKey(RELATION_KILL_CHAIN_PHASE),
-    indicates: buildRefRelationKey(RELATION_INDICATES),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
+    hasExternalReference: buildRefRelationSearchKey(RELATION_EXTERNAL_REFERENCE),
+    killChainPhase: buildRefRelationSearchKey(RELATION_KILL_CHAIN_PHASE),
+    indicates: buildRefRelationSearchKey(RELATION_INDICATES),
     creator: 'creator_id',
   },
   StixCoreObjectsOrdering: {

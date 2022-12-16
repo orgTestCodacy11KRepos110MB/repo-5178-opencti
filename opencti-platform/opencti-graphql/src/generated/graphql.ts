@@ -17475,7 +17475,6 @@ export enum StixCoreObjectsFilter {
   Abstract = 'abstract',
   Aliases = 'aliases',
   Confidence = 'confidence',
-  ContainedBy = 'containedBy',
   Context = 'context',
   Created = 'created',
   CreatedBy = 'createdBy',
@@ -18206,7 +18205,6 @@ export enum StixCyberObservableRelationshipsOrdering {
 
 export enum StixCyberObservablesFilter {
   Confidence = 'confidence',
-  ContainedBy = 'containedBy',
   Created = 'created',
   CreatedBy = 'createdBy',
   CreatedAt = 'created_at',
@@ -18219,7 +18217,7 @@ export enum StixCyberObservablesFilter {
   MarkedBy = 'markedBy',
   Modified = 'modified',
   Name = 'name',
-  ObjectContained = 'objectContained',
+  ObjectContains = 'objectContains',
   RelatedTo = 'relatedTo',
   SightedBy = 'sightedBy',
   Subject = 'subject',
@@ -18511,7 +18509,6 @@ export type StixDomainObjectEditMutationsRelationsAddArgs = {
 export enum StixDomainObjectsFilter {
   Aliases = 'aliases',
   Confidence = 'confidence',
-  ContainedBy = 'containedBy',
   Context = 'context',
   Created = 'created',
   CreatedBy = 'createdBy',
@@ -18919,7 +18916,6 @@ export type StixObjectOrStixRelationshipRefEdge = {
 
 export enum StixObjectOrStixRelationshipsFilter {
   Confidence = 'confidence',
-  ContainedBy = 'containedBy',
   Created = 'created',
   CreatedBy = 'createdBy',
   CreatedAt = 'created_at',
@@ -18932,7 +18928,6 @@ export enum StixObjectOrStixRelationshipsFilter {
   MarkedBy = 'markedBy',
   Modified = 'modified',
   Name = 'name',
-  ObjectContained = 'objectContained',
   RelatedTo = 'relatedTo',
   RelationshipType = 'relationship_type',
   SightedBy = 'sightedBy',

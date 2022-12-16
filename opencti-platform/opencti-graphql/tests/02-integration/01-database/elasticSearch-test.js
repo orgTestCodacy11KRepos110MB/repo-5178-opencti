@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import { expect, it, describe, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as R from 'ramda';
 import moment from 'moment';
 import {
@@ -19,7 +19,8 @@ import {
   searchEngineInit,
 } from '../../../src/database/engine';
 import {
-  ES_INDEX_PREFIX, READ_DATA_INDICES,
+  ES_INDEX_PREFIX,
+  READ_DATA_INDICES,
   READ_ENTITIES_INDICES,
   READ_INDEX_INTERNAL_OBJECTS,
   READ_INDEX_INTERNAL_RELATIONSHIPS,
@@ -34,7 +35,7 @@ import {
 } from '../../../src/database/utils';
 import { utcDate } from '../../../src/utils/format';
 import { ADMIN_USER, testContext } from '../../utils/testQuery';
-import { BASE_TYPE_RELATION, buildRefRelationKey, ENTITY_TYPE_IDENTITY } from '../../../src/schema/general';
+import { BASE_TYPE_RELATION, buildRefRelationSearchKey, ENTITY_TYPE_IDENTITY } from '../../../src/schema/general';
 import { storeLoadByIdWithRefs } from '../../../src/database/middleware';
 import { RELATION_OBJECT_LABEL, RELATION_OBJECT_MARKING } from '../../../src/schema/stixMetaRelationship';
 import { RELATION_USES } from '../../../src/schema/stixCoreRelationship';
@@ -159,7 +160,7 @@ describe('Elasticsearch computation', () => {
       {
         types: ['Stix-Domain-Object'],
         field: 'entity_type',
-        filters: [{ key: [buildRefRelationKey(RELATION_OBJECT_MARKING)], values: [marking.internal_id] }]
+        filters: [{ key: [buildRefRelationSearchKey(RELATION_OBJECT_MARKING)], values: [marking.internal_id] }]
       }
     );
     const aggregationMap = new Map(malwaresAggregation.map((i) => [i.label, i.value]));
@@ -271,7 +272,7 @@ describe('Elasticsearch computation', () => {
         interval: 'year',
         startDate: '2019-09-23T00:00:00.000Z',
         endDate: '2020-03-02T00:00:00.000Z',
-        filters: [{ key: [buildRefRelationKey(RELATION_USES)], values: [attackPattern.internal_id] }]
+        filters: [{ key: [buildRefRelationSearchKey(RELATION_USES)], values: [attackPattern.internal_id] }]
       }
     );
     expect(data.length).toEqual(1);
@@ -290,7 +291,7 @@ describe('Elasticsearch computation', () => {
         interval: 'year',
         startDate: '2019-09-23T00:00:00.000Z',
         endDate: '2020-03-02T00:00:00.000Z',
-        filters: [{ key: [buildRefRelationKey('*')], values: [attackPattern.internal_id] }]
+        filters: [{ key: [buildRefRelationSearchKey('*')], values: [attackPattern.internal_id] }]
       }
     );
     expect(data.length).toEqual(2);
@@ -560,7 +561,7 @@ describe('Elasticsearch pagination', () => {
   it('should not break on null', async () => {
     const data = await elPaginate(testContext, ADMIN_USER, READ_INDEX_INTERNAL_OBJECTS, {
       filters: [{
-        key: [buildRefRelationKey(RELATION_OBJECT_LABEL)],
+        key: [buildRefRelationSearchKey(RELATION_OBJECT_LABEL)],
         operator: 'eq',
         values: [null],
       }]

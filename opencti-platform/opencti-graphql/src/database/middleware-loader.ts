@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import { offsetToCursor, READ_DATA_INDICES, READ_ENTITIES_INDICES, READ_RELATIONSHIPS_INDICES } from './utils';
 import { elPaginate, elQueryCount } from './engine';
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import type { AuthContext, AuthUser } from '../types/user';
 import type { BasicStoreCommon, BasicStoreEntity, StoreEntityConnection, StoreProxyRelation } from '../types/store';
 import { UnsupportedError } from '../config/errors';
@@ -130,7 +130,7 @@ const buildRelationsFilter = <T extends BasicStoreCommon>(relationshipTypes: str
   const finalFilters = filters ?? [];
   if (relationFilter) {
     const { relation, id, relationId } = relationFilter;
-    finalFilters.push({ key: buildRefRelationKey(relation), values: [id] });
+    finalFilters.push({ key: buildRefRelationSearchKey(relation), values: [id] });
     if (relationId) {
       finalFilters.push({ key: 'internal_id', values: [relationId] });
     }

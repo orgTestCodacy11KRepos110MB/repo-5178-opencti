@@ -15,7 +15,7 @@ import {
 import { fetchEditContext, pubsub } from '../database/redis';
 import withCancel from '../graphql/subscriptionWrapper';
 import { RELATION_EXTERNAL_REFERENCE } from '../schema/stixMetaRelationship';
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import { worksForSource } from '../domain/work';
 import { filesListing, loadFile } from '../database/file-storage';
 import { askElementEnrichmentForConnector, stixCoreObjectImportPush } from '../domain/stixCoreObject';
@@ -27,7 +27,7 @@ const externalReferenceResolvers = {
     externalReferences: (_, args, context) => findAll(context, context.user, args),
   },
   ExternalReferencesFilter: {
-    usedBy: buildRefRelationKey(RELATION_EXTERNAL_REFERENCE),
+    usedBy: buildRefRelationSearchKey(RELATION_EXTERNAL_REFERENCE),
   },
   ExternalReference: {
     url: (externalReference) => (externalReference.fileId ? (baseUrl + externalReference.url) : externalReference.url),

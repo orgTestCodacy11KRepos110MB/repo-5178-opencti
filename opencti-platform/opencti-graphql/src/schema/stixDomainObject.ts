@@ -4,7 +4,7 @@ import {
   ABSTRACT_STIX_DOMAIN_OBJECT,
   ABSTRACT_STIX_META_OBJECT,
   ABSTRACT_STIX_META_RELATIONSHIP,
-  buildRefRelationKey,
+  buildRefRelationSearchKey,
   ENTITY_TYPE_CONTAINER,
   ENTITY_TYPE_IDENTITY,
   ENTITY_TYPE_LOCATION,
@@ -172,13 +172,12 @@ export const STIX_ORGANIZATIONS_UNRESTRICTED = [
 
 export const stixDomainObjectOptions = {
   StixDomainObjectsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT),
-    containedBy: buildRefRelationKey(RELATION_OBJECT),
-    hasExternalReference: buildRefRelationKey(RELATION_EXTERNAL_REFERENCE),
-    indicates: buildRefRelationKey(RELATION_INDICATES),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
+    hasExternalReference: buildRefRelationSearchKey(RELATION_EXTERNAL_REFERENCE),
+    indicates: buildRefRelationSearchKey(RELATION_INDICATES),
     creator: 'creator_id',
   },
   StixDomainObjectsOrdering: {

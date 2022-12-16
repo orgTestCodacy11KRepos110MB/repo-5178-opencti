@@ -18,7 +18,7 @@ import {
 } from '../domain/stixDomainObject';
 import { batchKillChainPhases } from '../domain/stixCoreObject';
 import { RELATION_CREATED_BY, RELATION_OBJECT_LABEL, RELATION_OBJECT_MARKING } from '../schema/stixMetaRelationship';
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import { batchLoader } from '../database/middleware';
 import { RELATION_MITIGATES } from '../schema/stixCoreRelationship';
 
@@ -43,10 +43,10 @@ const attackPatternResolvers = {
     dataComponents: (attackPattern, _, context) => dataComponentsLoader.load(attackPattern.id, context, context.user),
   },
   AttackPatternsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    mitigatedBy: buildRefRelationKey(RELATION_MITIGATES),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    mitigatedBy: buildRefRelationSearchKey(RELATION_MITIGATES),
   },
   Mutation: {
     attackPatternEdit: (_, { id }, context) => ({

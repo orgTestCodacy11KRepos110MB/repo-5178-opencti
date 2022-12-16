@@ -25,7 +25,7 @@ import { isStixCoreObject, stixCoreObjectOptions } from '../schema/stixCoreObjec
 import {
   ABSTRACT_STIX_CORE_OBJECT,
   ABSTRACT_STIX_META_RELATIONSHIP,
-  buildRefRelationKey,
+  buildRefRelationSearchKey,
   ENTITY_TYPE_IDENTITY,
   INPUT_EXTERNAL_REFS,
 } from '../schema/general';
@@ -192,7 +192,7 @@ export const stixCoreObjectsTimeSeries = (context, user, args) => {
 export const stixCoreObjectsTimeSeriesByAuthor = (context, user, args) => {
   const { authorId, types } = args;
   const filters = [{
-    key: [buildRefRelationKey(RELATION_CREATED_BY, '*')],
+    key: [buildRefRelationSearchKey(RELATION_CREATED_BY)],
     values: [authorId]
   }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, types ?? [ABSTRACT_STIX_CORE_OBJECT], { ...args, filters });
@@ -227,7 +227,7 @@ export const stixCoreObjectsDistribution = async (context, user, args) => {
 export const stixCoreObjectsDistributionByEntity = async (context, user, args) => {
   const { relationship_type, objectId, types } = args;
   const filters = [{
-    key: (relationship_type ?? [RELATION_RELATED_TO]).map((n) => buildRefRelationKey(n, '*')),
+    key: (relationship_type ?? [RELATION_RELATED_TO]).map((n) => buildRefRelationSearchKey(n)),
     values: [objectId]
   }, ...(args.filters || [])];
   return distributionEntities(context, user, types ?? [ABSTRACT_STIX_CORE_OBJECT], { ...args, filters });

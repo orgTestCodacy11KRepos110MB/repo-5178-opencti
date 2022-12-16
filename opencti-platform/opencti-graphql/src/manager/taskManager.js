@@ -49,7 +49,7 @@ import { FunctionalError, TYPE_LOCK_ERROR } from '../config/errors';
 import {
   ABSTRACT_BASIC_RELATIONSHIP,
   ABSTRACT_STIX_RELATIONSHIP,
-  buildRefRelationKey,
+  buildRefRelationSearchKey,
   ENTITY_TYPE_CONTAINER,
   INPUT_OBJECTS,
   RULE_PREFIX
@@ -327,7 +327,7 @@ const executeShare = async (context, user, actionContext, element) => {
   const { values } = actionContext;
   for (let indexCreate = 0; indexCreate < values.length; indexCreate += 1) {
     const target = values[indexCreate];
-    const currentGrants = element[buildRefRelationKey(RELATION_GRANTED_TO)] ?? [];
+    const currentGrants = element[buildRefRelationSearchKey(RELATION_GRANTED_TO)] ?? [];
     if (!currentGrants.includes(target)) {
       await createRelation(context, user, { fromId: element.id, toId: target, relationship_type: RELATION_GRANTED_TO });
     }
@@ -338,9 +338,9 @@ const executeUnshare = async (context, user, actionContext, element) => {
   for (let indexCreate = 0; indexCreate < values.length; indexCreate += 1) {
     const target = values[indexCreate];
     // resolve all containers of this element
-    const args = { filters: [{ key: buildRefRelationKey(RELATION_OBJECT), values: [element.id] }], };
+    const args = { filters: [{ key: buildRefRelationSearchKey(RELATION_OBJECT), values: [element.id] }], };
     const containers = await listAllThings(context, user, [ENTITY_TYPE_CONTAINER], args);
-    const grantedTo = containers.map((n) => n[buildRefRelationKey(RELATION_GRANTED_TO)]).flat();
+    const grantedTo = containers.map((n) => n[buildRefRelationSearchKey(RELATION_GRANTED_TO)]).flat();
     if (!grantedTo.includes(target)) {
       await deleteRelationsByFromAndTo(context, user, element.id, target, RELATION_GRANTED_TO, ABSTRACT_BASIC_RELATIONSHIP);
     }

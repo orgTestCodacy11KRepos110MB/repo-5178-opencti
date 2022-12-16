@@ -1,4 +1,4 @@
-import { ABSTRACT_STIX_CORE_RELATIONSHIP, buildRefRelationKey, schemaTypes } from './general';
+import { ABSTRACT_STIX_CORE_RELATIONSHIP, buildRefRelationSearchKey, schemaTypes } from './general';
 import {
   RELATION_CREATED_BY,
   RELATION_KILL_CHAIN_PHASE,
@@ -109,10 +109,10 @@ export const isStixCoreRelationship = (type: string): boolean => [...STIX_CORE_R
 export const stixCoreRelationshipOptions = {
   StixCoreRelationshipsFilter: {
     creator: 'creator_id',
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    killChainPhase: buildRefRelationKey(RELATION_KILL_CHAIN_PHASE),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    killChainPhase: buildRefRelationSearchKey(RELATION_KILL_CHAIN_PHASE),
   },
   StixCoreRelationshipsOrdering: {
     creator: 'creator_id',

@@ -4,7 +4,12 @@ import { READ_DATA_INDICES } from '../database/utils';
 import { ENTITY_TYPE_INDICATOR } from '../schema/stixDomainObject';
 import { BULK_TIMEOUT, elBulk, elList, ES_MAX_CONCURRENCY, MAX_SPLIT } from '../database/engine';
 import { logApp } from '../config/conf';
-import { ABSTRACT_STIX_CORE_OBJECT, ABSTRACT_STIX_CORE_RELATIONSHIP, buildRefRelationKey } from '../schema/general';
+import {
+  ABSTRACT_STIX_CORE_OBJECT,
+  ABSTRACT_STIX_CORE_RELATIONSHIP,
+  ID_INTERNAL,
+  REL_INDEX_PREFIX
+} from '../schema/general';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import { RELATION_INDICATES } from '../schema/stixCoreRelationship';
 
@@ -19,13 +24,13 @@ export const up = async (next) => {
       .map((att) => {
         return [
           { update: { _index: att._index, _id: att.id } },
-          { doc: { [buildRefRelationKey(RELATION_INDICATES)]: null } },
+          { doc: { [`${REL_INDEX_PREFIX}${RELATION_INDICATES}.${ID_INTERNAL}`]: null } },
         ];
       })
       .flat();
     bulkOperations.push(...op);
   };
-  const filters = [{ key: buildRefRelationKey(RELATION_INDICATES), values: ['EXISTS'] }];
+  const filters = [{ key: `${REL_INDEX_PREFIX}${RELATION_INDICATES}.${ID_INTERNAL}`, values: ['EXISTS'] }];
   const opts = { types: [ABSTRACT_STIX_CORE_OBJECT, ABSTRACT_STIX_CORE_RELATIONSHIP], filters, callback };
   await elList(context, SYSTEM_USER, READ_DATA_INDICES, opts);
   // Apply operations.

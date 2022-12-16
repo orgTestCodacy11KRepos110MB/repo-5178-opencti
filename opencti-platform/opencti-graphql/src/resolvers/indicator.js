@@ -19,7 +19,7 @@ import {
 } from '../domain/stixDomainObject';
 import { RELATION_CREATED_BY, RELATION_OBJECT_LABEL, RELATION_OBJECT_MARKING } from '../schema/stixMetaRelationship';
 import { RELATION_BASED_ON, RELATION_INDICATES } from '../schema/stixCoreRelationship';
-import { buildRefRelationKey } from '../schema/general';
+import { buildRefRelationSearchKey } from '../schema/general';
 import { distributionEntities, batchLoader } from '../database/middleware';
 import { ENTITY_TYPE_INDICATOR } from '../schema/stixDomainObject';
 import { batchKillChainPhases } from '../domain/stixCoreObject';
@@ -52,12 +52,12 @@ const indicatorResolvers = {
     },
   },
   IndicatorsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    basedOn: buildRefRelationKey(RELATION_BASED_ON),
-    indicates: buildRefRelationKey(RELATION_INDICATES),
-    sightedBy: buildRefRelationKey(STIX_SIGHTING_RELATIONSHIP),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    basedOn: buildRefRelationSearchKey(RELATION_BASED_ON),
+    indicates: buildRefRelationSearchKey(RELATION_INDICATES),
+    sightedBy: buildRefRelationSearchKey(STIX_SIGHTING_RELATIONSHIP),
   },
   Indicator: {
     killChainPhases: (indicator, _, context) => killChainPhasesLoader.load(indicator.id, context, context.user),

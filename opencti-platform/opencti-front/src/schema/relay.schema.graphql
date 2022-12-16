@@ -1789,7 +1789,6 @@ enum StixCoreObjectsFilter {
   killChainPhase
   hasExternalReference
   objectContains
-  containedBy
   indicates
   confidence
   valid_from
@@ -1896,7 +1895,6 @@ enum StixDomainObjectsFilter {
   labelledBy
   hasExternalReference
   objectContains
-  containedBy
   indicates
   confidence
   valid_from
@@ -5118,8 +5116,7 @@ enum StixCyberObservablesFilter {
   markedBy
   labelledBy
   relatedTo
-  objectContained
-  containedBy
+  objectContains
   hasExternalReference
   sightedBy
   value
@@ -6832,8 +6829,6 @@ enum StixObjectOrStixRelationshipsFilter {
   created
   modified
   relatedTo
-  objectContained
-  containedBy
   hasExternalReference
   sightedBy
   value

@@ -15,6 +15,7 @@ export const RELATION_OBJECT_MARKING = 'object-marking';
 export const RELATION_OBJECT_LABEL = 'object-label';
 
 export const RELATION_OBJECT = 'object'; // object_refs
+export const RELATION_OBJECT_INFERRED = 'object-inferred'; // object_refs
 export const RELATION_EXTERNAL_REFERENCE = 'external-reference'; // external_references
 export const RELATION_KILL_CHAIN_PHASE = 'kill-chain-phase'; // kill_chain_phases
 export const RELATION_GRANTED_TO = 'granted'; // granted_refs (OpenCTI)

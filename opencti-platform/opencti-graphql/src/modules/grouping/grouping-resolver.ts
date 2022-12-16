@@ -1,8 +1,8 @@
 import type { Resolvers } from '../../generated/graphql';
 import {
   addGrouping,
-  findById,
   findAll,
+  findById,
   groupingContainsStixObjectOrStixRelationship,
   groupingsDistributionByEntity,
   groupingsNumber,
@@ -12,7 +12,7 @@ import {
   groupingsTimeSeriesByAuthor,
   groupingsTimeSeriesByEntity
 } from './grouping-domain';
-import { buildRefRelationKey } from '../../schema/general';
+import { buildRefRelationSearchKey } from '../../schema/general';
 import {
   RELATION_CREATED_BY,
   RELATION_OBJECT,
@@ -63,10 +63,10 @@ const groupingResolvers: Resolvers = {
     },
   },
   GroupingsFilter: {
-    createdBy: buildRefRelationKey(RELATION_CREATED_BY),
-    markedBy: buildRefRelationKey(RELATION_OBJECT_MARKING),
-    labelledBy: buildRefRelationKey(RELATION_OBJECT_LABEL),
-    objectContains: buildRefRelationKey(RELATION_OBJECT),
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
   },
   Mutation: {
     groupingAdd: (_, { input }, context) => {

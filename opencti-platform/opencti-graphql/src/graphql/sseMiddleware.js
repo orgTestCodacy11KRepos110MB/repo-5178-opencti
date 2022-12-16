@@ -32,7 +32,7 @@ import { stixRefsExtractor } from '../schema/stixEmbeddedRelationship';
 import {
   ABSTRACT_STIX_CORE_RELATIONSHIP,
   ABSTRACT_STIX_CYBER_OBSERVABLE_RELATIONSHIP,
-  buildRefRelationKey,
+  buildRefRelationSearchKey,
   ENTITY_TYPE_CONTAINER
 } from '../schema/general';
 import { convertStoreToStix } from '../database/stix-converter';
@@ -641,7 +641,7 @@ const createSeeMiddleware = () => {
                   // Entity can be part of a container that is authorized by the filters
                   // If it's the case, the element must be published
                   const elementInternalId = stix.extensions[STIX_EXT_OCTI].id;
-                  const filters = [{ key: [buildRefRelationKey(RELATION_OBJECT)], values: [elementInternalId] }];
+                  const filters = [{ key: [buildRefRelationSearchKey(RELATION_OBJECT)], values: [elementInternalId] }];
                   const args = { connectionFormat: false, filters };
                   const containers = await listEntities(context, user, [ENTITY_TYPE_CONTAINER], args);
                   let isContainerMatching = false;

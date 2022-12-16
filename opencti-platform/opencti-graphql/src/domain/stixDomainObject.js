@@ -33,7 +33,8 @@ import {
 import {
   ABSTRACT_STIX_CYBER_OBSERVABLE,
   ABSTRACT_STIX_DOMAIN_OBJECT,
-  ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationKey,
+  ABSTRACT_STIX_META_RELATIONSHIP,
+  buildRefRelationSearchKey,
   STIX_META_RELATIONSHIPS_INPUTS,
 } from '../schema/general';
 import { isStixMetaRelationship, RELATION_CREATED_BY } from '../schema/stixMetaRelationship';
@@ -69,7 +70,7 @@ export const stixDomainObjectsTimeSeries = (context, user, args) => {
 
 export const stixDomainObjectsTimeSeriesByAuthor = (context, user, args) => {
   const { authorId, types = [ABSTRACT_STIX_DOMAIN_OBJECT] } = args;
-  const filters = [{ key: [buildRefRelationKey(RELATION_CREATED_BY, '*')], values: [authorId] }, ...(args.filters || [])];
+  const filters = [{ key: [buildRefRelationSearchKey(RELATION_CREATED_BY)], values: [authorId] }, ...(args.filters || [])];
   return timeSeriesEntities(context, user, types, { ...args, filters });
 };
 
@@ -80,7 +81,7 @@ export const stixDomainObjectsNumber = (context, user, args) => ({
 
 export const stixDomainObjectsDistributionByEntity = async (context, user, args) => {
   const { relationship_type, objectId, types = [ABSTRACT_STIX_DOMAIN_OBJECT] } = args;
-  const filters = [{ key: [relationship_type.map((n) => buildRefRelationKey(n, '*'))], values: [objectId] }, ...(args.filters || [])];
+  const filters = [{ key: [relationship_type.map((n) => buildRefRelationSearchKey(n))], values: [objectId] }, ...(args.filters || [])];
   return distributionEntities(context, user, types, { ...args, filters });
 };
 // endregion

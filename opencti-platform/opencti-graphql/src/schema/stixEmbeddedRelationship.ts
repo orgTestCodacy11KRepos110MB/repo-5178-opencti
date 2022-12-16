@@ -2,21 +2,21 @@ import * as R from 'ramda';
 import {
   FIELD_META_STIX_RELATIONS_TO_STIX_ATTRIBUTE,
   isSingleStixMetaRelationship,
+  isSingleStixMetaRelationshipInput,
   isStixMetaRelationship,
   STIX_ATTRIBUTE_TO_META_RELATIONS_FIELD,
   STIX_META_RELATION_TO_FIELD,
-  isSingleStixMetaRelationshipInput,
 } from './stixMetaRelationship';
 import {
   FIELD_CYBER_RELATIONS_TO_STIX_ATTRIBUTE,
   isSingleStixCyberObservableRelationship,
+  isSingleStixCyberObservableRelationshipInput,
   isStixCyberObservableRelationship,
   STIX_ATTRIBUTE_TO_CYBER_OBSERVABLE_FIELD,
   STIX_CYBER_OBSERVABLE_RELATION_TO_FIELD,
-  isSingleStixCyberObservableRelationshipInput,
 } from './stixCyberObservableRelationship';
 import type { BasicStoreObject } from '../types/store';
-import { buildRefRelationKey, ID_INFERRED, ID_INTERNAL } from './general';
+import { ID_INFERRED, ID_INTERNAL, REL_INDEX_PREFIX } from './general';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 
 export const INPUTS_RELATIONS_TO_STIX_ATTRIBUTE: { [k: string]: string } = {
@@ -52,8 +52,8 @@ export const isSingleStixEmbeddedRelationshipInput = (input: string): boolean =>
 
 // eslint-disable-next-line
 export const instanceMetaRefsExtractor = (relationshipType: string, isInferred: boolean, data: BasicStoreObject) => {
-  const refField = isStixMetaRelationship(relationshipType) && isInferred ? ID_INFERRED : ID_INTERNAL;
-  const field = buildRefRelationKey(relationshipType, refField);
+  const index = isInferred ? ID_INFERRED : ID_INTERNAL;
+  const field = `${REL_INDEX_PREFIX}${relationshipType}.${index}`;
   const anyData = data as any; // TODO JRI Find a way to not use any
   return anyData[field] ?? [];
 };

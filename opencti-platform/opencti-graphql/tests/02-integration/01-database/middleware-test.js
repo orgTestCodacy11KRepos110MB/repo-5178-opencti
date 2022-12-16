@@ -1,29 +1,24 @@
-import { expect, it, describe } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as R from 'ramda';
 import {
+  createEntity,
   createRelation,
   deleteElementById,
   deleteRelationsByFromAndTo,
   distributionEntities,
   distributionRelations,
   internalLoadById,
-  storeLoadById,
   mergeEntities,
   patchAttribute,
   querySubTypes,
+  storeLoadById,
+  storeLoadByIdWithRefs,
   timeSeriesEntities,
   timeSeriesRelations,
   updateAttribute,
-  createEntity,
-  storeLoadByIdWithRefs,
 } from '../../../src/database/middleware';
 import { attributeEditField, getRuntimeAttributeValues } from '../../../src/domain/attribute';
-import {
-  elFindByIds,
-  elLoadById,
-  ES_IGNORE_THROTTLED,
-  elRawSearch
-} from '../../../src/database/engine';
+import { elFindByIds, elLoadById, elRawSearch, ES_IGNORE_THROTTLED } from '../../../src/database/engine';
 import { ADMIN_USER, testContext } from '../../utils/testQuery';
 import {
   ENTITY_TYPE_CAMPAIGN,
@@ -35,7 +30,7 @@ import {
   ENTITY_TYPE_MALWARE,
   ENTITY_TYPE_THREAT_ACTOR,
 } from '../../../src/schema/stixDomainObject';
-import { ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationKey } from '../../../src/schema/general';
+import { ABSTRACT_STIX_META_RELATIONSHIP, buildRefRelationSearchKey } from '../../../src/schema/general';
 import {
   RELATION_ATTRIBUTED_TO,
   RELATION_MITIGATES,
@@ -542,7 +537,7 @@ describe('Entities time series', () => {
   it('should start time relation time series', async () => {
     // const { startDate, endDate, operation, field, interval, inferred = false } = options;
     const intrusionSet = await elLoadById(testContext, ADMIN_USER, 'intrusion-set--18854f55-ac7c-4634-bd9a-352dd07613b7');
-    const filters = [{ key: [buildRefRelationKey(RELATION_ATTRIBUTED_TO)], values: [intrusionSet.internal_id] }];
+    const filters = [{ key: [buildRefRelationSearchKey(RELATION_ATTRIBUTED_TO)], values: [intrusionSet.internal_id] }];
     const options = {
       field: 'first_seen',
       operation: 'count',

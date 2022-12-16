@@ -6,8 +6,8 @@ import {
   deleteElementById,
   deleteRelationsByFromAndTo,
   internalLoadById,
-  paginateAllThings,
   listThings,
+  paginateAllThings,
   storeLoadById,
   updateAttribute,
 } from '../database/middleware';
@@ -16,7 +16,7 @@ import { BUS_TOPICS } from '../config/conf';
 import { delEditContext, notify, setEditContext } from '../database/redis';
 import { ENTITY_TYPE_WORKSPACE } from '../schema/internalObject';
 import { FunctionalError } from '../config/errors';
-import { ABSTRACT_INTERNAL_RELATIONSHIP, buildRefRelationKey } from '../schema/general';
+import { ABSTRACT_INTERNAL_RELATIONSHIP, buildRefRelationSearchKey } from '../schema/general';
 import { isInternalRelationship, RELATION_HAS_REFERENCE } from '../schema/internalRelationship';
 import { generateInternalId } from '../schema/identifier';
 
@@ -29,7 +29,7 @@ export const findAll = (context, user, args) => {
 };
 
 export const objects = async (context, user, workspaceId, args) => {
-  const key = buildRefRelationKey(RELATION_HAS_REFERENCE);
+  const key = buildRefRelationSearchKey(RELATION_HAS_REFERENCE);
   let types = ['Stix-Meta-Object', 'Stix-Core-Object', 'stix-relationship'];
   if (args.types) {
     types = args.types;
