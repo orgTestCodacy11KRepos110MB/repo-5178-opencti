@@ -1,5 +1,4 @@
 import Moment from 'moment';
-import crypto from 'node:crypto';
 import { extendMoment } from 'moment-range';
 import * as R from 'ramda';
 import {
@@ -20,7 +19,6 @@ import {
   ENTITY_WINDOWS_REGISTRY_KEY,
   ENTITY_WINDOWS_REGISTRY_VALUE_TYPE
 } from '../schema/stixCyberObservable';
-import { SHARDED_TYPES } from '../schema/general';
 
 const moment = extendMoment(Moment);
 
