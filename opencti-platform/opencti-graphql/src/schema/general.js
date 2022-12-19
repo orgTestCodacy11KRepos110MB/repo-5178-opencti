@@ -37,7 +37,7 @@ export const MULTIPLE_META_RELATIONSHIPS_INPUTS = [
 export const STIX_META_RELATIONSHIPS_INPUTS = [INPUT_CREATED_BY, ...MULTIPLE_META_RELATIONSHIPS_INPUTS];
 
 // Shard
-const SHARD_SIZE = 32;
+const REL_SHARD_SIZE = 32;
 export const SHARDED_TYPES = ['object', 'located-to', 'related-to', 'uses', 'targets'];
 
 // Specific prefix
@@ -45,6 +45,8 @@ export const REL_INDEX_PREFIX = 'rel_';
 export const INTERNAL_PREFIX = 'i_';
 export const RULE_PREFIX = 'i_rule_';
 
+// eslint-disable-next-line no-bitwise
+const hashCode = (str) => str.split('').reduce((s, c) => Math.imul(31, s) + c.charCodeAt(0) | 0, 0);
 export const buildRefRelationKey = (type, field, shard = 0) => {
   if (shard > 0) {
     return `${REL_INDEX_PREFIX}${type}.${field}_${shard}`;
@@ -56,10 +58,9 @@ export const buildRefRelationSearchKey = (type) => {
 };
 export const generatedUuidShardingIndex = (type, data) => {
   if (!SHARDED_TYPES.includes(type)) return 0;
-  const buf = Buffer.from(data.replace(/-/g, ''), 'hex');
-  const hash = crypto.createHash('sha256').update(buf).digest();
-  const int = hash.readIntBE(0, 6);
-  return Math.abs(int % SHARD_SIZE);
+  const hash = crypto.createHash('sha256').update(data.replace(/-/g, '')).digest('hex');
+  const int = hashCode(hash);
+  return Math.abs(int % REL_SHARD_SIZE);
 };
 
 // Connectors

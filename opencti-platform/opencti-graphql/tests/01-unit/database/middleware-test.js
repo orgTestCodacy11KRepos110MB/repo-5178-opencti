@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { v4 as uuid } from 'uuid';
 import { hashMergeValidation } from '../../../src/database/middleware';
 import { RELATION_OBJECT } from '../../../src/schema/stixMetaRelationship';
-import { generatedUuidShardingIndex } from '../../../src/schema/general';
+import { generatedUuidShardingIndex, SHARDED_TYPES } from '../../../src/schema/general';
 
 describe.concurrent('middleware', () => {
   it('should hashes allowed to merge', () => {
@@ -27,15 +27,17 @@ describe.concurrent('middleware', () => {
 
   it('should uuids correctly sharded', () => {
     const result = {};
+    const shardType = RELATION_OBJECT;
+    const isSharded = SHARDED_TYPES.includes(shardType);
     for (let index = 0; index < 500; index += 1) {
       const data = uuid();
-      const shard = generatedUuidShardingIndex(RELATION_OBJECT, data);
+      const shard = generatedUuidShardingIndex(shardType, data);
       if (result[shard]) {
         result[shard] = [...result[shard], data];
       } else {
         result[shard] = [data];
       }
     }
-    expect(Object.keys(result).length).toBe(32);
+    expect(Object.keys(result).length).toBe(isSharded ? 32 : 1);
   });
 });

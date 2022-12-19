@@ -1977,8 +1977,6 @@ export const elIndexElements = async (context, user, message, elements) => {
         for (let i = 0; i < groupShardKeys.length; i += 1) {
           const groupShardKey = groupShardKeys[i];
           const field = buildRefRelationKey(targetElement.relation, targetElement.field, groupShardKey);
-          // source += `if (ctx._source['${field}'] == null) { ctx._source['${field}'] = []; } `;
-          // source += `ctx._source['${field}'].addAll(params['${field}']);`;
           source += `if (ctx._source['${field}'] == null) { 
             ctx._source['${field}'] = params['${field}']; 
           } else {
@@ -2059,23 +2057,24 @@ export const elUpdateEntityConnections = async (elements) => {
     let source = '';
     const params = {};
     const refField = isStixMetaRelationship(doc.relationType) && isInferredIndex(doc._index) ? ID_INFERRED : ID_INTERNAL;
-    if (doc.toReplace !== null) {
+    if (doc.toReplace) {
       // Element must be replaced by another id.
       // Old element must be removed from the current shard
       // New element must be added in the right shard
       const currentShard = generatedUuidShardingIndex(doc.relationType, doc.toReplace);
       const currentField = buildRefRelationKey(doc.relationType, refField, currentShard);
-      params[currentField] = [doc.toReplace];
+      params[`old_${currentField}`] = doc.toReplace;
       const newShard = generatedUuidShardingIndex(doc.relationType, doc.data.internal_id);
       const newField = buildRefRelationKey(doc.relationType, refField, newShard);
-      params[newField] = [doc.data.internal_id];
-      source += `if (ctx._source['${currentField}'] != null) { 
-            ctx._source['${currentField}'].removeAll(params['${currentField}']); 
+      params[`new_${newField}`] = doc.data.internal_id;
+      source += `
+          if (ctx._source['${currentField}'] != null) { 
+            ctx._source['${currentField}'].removeIf(rel -> rel == params['old_${currentField}']);
           } 
-          if (ctx._source['${newField}'] != null) { 
-            ctx._source['${newField}'].addAll(params['${newField}']);
+          if (ctx._source['${newField}'] != null && !ctx._source['${newField}'].contains(params['new_${newField}'])) { 
+            ctx._source['${newField}'].add(params['new_${newField}']);
           } else {
-            ctx._source['${newField}'] = params['${newField}'];
+            ctx._source['${newField}'] = [params['new_${newField}']];
           }`;
     } else {
       // Element must be completed with some ids that can be related to different shards
@@ -2087,7 +2086,8 @@ export const elUpdateEntityConnections = async (elements) => {
         const groupShardKey = groupShardKeys[i];
         const field = buildRefRelationKey(doc.relationType, refField, groupShardKey);
         params[field] = shardGroup[groupShardKey].map((s) => s.id);
-        source += `if (ctx._source['${field}'] == null) { 
+        source += `
+          if (ctx._source['${field}'] == null) { 
             ctx._source['${field}'] = params['${field}']; 
           } else {
             ctx._source['${field}'].addAll(params['${field}']);
