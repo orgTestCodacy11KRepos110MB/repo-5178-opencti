@@ -115,15 +115,6 @@ export const observableValue = (stixCyberObservable) => {
       return stixCyberObservable.value || stixCyberObservable.name || 'Unknown';
   }
 };
-export const generatedUuidShardingIndex = (type, data) => {
-  if (!SHARDED_TYPES.includes(type)) {
-    return 0;
-  }
-  const buf = Buffer.from(data.replace(/-/g, ''), 'hex');
-  const hash = crypto.createHash('sha256').update(buf).digest();
-  const int = hash.readIntBE(0, 6);
-  return Math.abs(int % 32);
-};
 
 // Be careful to align this script with the previous function
 export const runtimeFieldObservableValueScript = () => {

@@ -2410,10 +2410,11 @@ const upsertElementRaw = async (context, user, element, type, updatePatch) => {
   // region generic elements
   // -- Upsert multiple refs for other stix elements
   const metaInputFields = STIX_META_RELATIONSHIPS_INPUTS;
+  const metaRelationFields = fieldToMetaRelation();
   for (let fieldIndex = 0; fieldIndex < metaInputFields.length; fieldIndex += 1) {
     const inputField = metaInputFields[fieldIndex];
     if (MULTIPLE_META_RELATIONSHIPS_INPUTS.includes(inputField)) {
-      const relType = fieldToMetaRelation()[inputField];
+      const relType = metaRelationFields[inputField];
       const existingInstances = element[relType] || [];
       const patchInputData = updatePatch[inputField] ?? [];
       const instancesToCreate = R.filter((m) => !existingInstances.includes(m.internal_id), patchInputData);

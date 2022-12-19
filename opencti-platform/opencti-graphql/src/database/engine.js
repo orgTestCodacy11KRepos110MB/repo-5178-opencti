@@ -41,6 +41,7 @@ import {
   buildRefRelationKey,
   buildRefRelationSearchKey,
   ENTITY_TYPE_IDENTITY,
+  generatedUuidShardingIndex,
   ID_INFERRED,
   ID_INTERNAL,
   ID_STANDARD,
@@ -76,7 +77,7 @@ import { getInstanceIds, INTERNAL_FROM_FIELD, INTERNAL_TO_FIELD } from '../schem
 import { BYPASS } from '../utils/access';
 import { cacheDel, cacheGet, cachePurge, cacheSet } from './redis';
 import { isSingleStixEmbeddedRelationship, } from '../schema/stixEmbeddedRelationship';
-import { generatedUuidShardingIndex, now, runtimeFieldObservableValueScript } from '../utils/format';
+import { now, runtimeFieldObservableValueScript } from '../utils/format';
 import { ENTITY_TYPE_MARKING_DEFINITION } from '../schema/stixMetaObject';
 import { getEntityFromCache } from './cache';
 import { ENTITY_TYPE_SETTINGS } from '../schema/internalObject';
@@ -664,8 +665,8 @@ const elDataConverter = (esHit) => {
   const ruleInferences = [];
   for (let index = 0; index < entries.length; index += 1) {
     const [key, val] = entries[index];
-    if (key.startsWith(RULE_PREFIX)) {
-      const rule = key.substr(RULE_PREFIX.length);
+    if (key.startsWith(RULE_PREFIX)) { // Rebuild the rules
+      const rule = key.substring(RULE_PREFIX.length);
       const ruleDefinitions = Object.values(val);
       for (let rIndex = 0; rIndex < ruleDefinitions.length; rIndex += 1) {
         const { inferred, explanation } = ruleDefinitions[rIndex];
@@ -673,9 +674,8 @@ const elDataConverter = (esHit) => {
         ruleInferences.push({ rule, explanation, attributes });
       }
       data[key] = val;
-    } else if (key.startsWith(REL_INDEX_PREFIX)) {
-      // Rebuild rel to stix attributes
-      const rel = key.substr(REL_INDEX_PREFIX.length);
+    } else if (key.startsWith(REL_INDEX_PREFIX)) { // Rebuild rel to stix attributes
+      const rel = key.substring(REL_INDEX_PREFIX.length);
       const [relType] = rel.split('.');
       data[relType] = isSingleStixEmbeddedRelationship(relType) ? R.head(val) : [...(data[relType] ?? []), ...val];
     } else {

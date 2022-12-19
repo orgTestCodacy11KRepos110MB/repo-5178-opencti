@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import crypto from 'node:crypto';
 
 // General
 export const KNOWLEDGE_ORGANIZATION_RESTRICT = 'KNORGARESTRICT';
@@ -35,11 +36,14 @@ export const MULTIPLE_META_RELATIONSHIPS_INPUTS = [
 ];
 export const STIX_META_RELATIONSHIPS_INPUTS = [INPUT_CREATED_BY, ...MULTIPLE_META_RELATIONSHIPS_INPUTS];
 
+// Shard
+const SHARD_SIZE = 32;
+export const SHARDED_TYPES = ['object', 'located-to', 'related-to', 'uses', 'targets'];
+
 // Specific prefix
 export const REL_INDEX_PREFIX = 'rel_';
 export const INTERNAL_PREFIX = 'i_';
 export const RULE_PREFIX = 'i_rule_';
-export const SHARDED_TYPES = ['object', 'related-to', 'uses', 'targets'];
 
 export const buildRefRelationKey = (type, field, shard = 0) => {
   if (shard > 0) {
@@ -49,6 +53,13 @@ export const buildRefRelationKey = (type, field, shard = 0) => {
 };
 export const buildRefRelationSearchKey = (type) => {
   return `${REL_INDEX_PREFIX}${type}.*.keyword`;
+};
+export const generatedUuidShardingIndex = (type, data) => {
+  if (!SHARDED_TYPES.includes(type)) return 0;
+  const buf = Buffer.from(data.replace(/-/g, ''), 'hex');
+  const hash = crypto.createHash('sha256').update(buf).digest();
+  const int = hash.readIntBE(0, 6);
+  return Math.abs(int % SHARD_SIZE);
 };
 
 // Connectors

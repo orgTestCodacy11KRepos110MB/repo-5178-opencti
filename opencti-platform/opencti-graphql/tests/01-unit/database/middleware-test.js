@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { v4 as uuid } from 'uuid';
 import { hashMergeValidation } from '../../../src/database/middleware';
-import { generatedUuidShardingIndex } from '../../../src/utils/format';
-import { RELATION_OBJECT } from "../../../src/schema/stixMetaRelationship";
+import { RELATION_OBJECT } from '../../../src/schema/stixMetaRelationship';
+import { generatedUuidShardingIndex } from '../../../src/schema/general';
 
 describe.concurrent('middleware', () => {
   it('should hashes allowed to merge', () => {
