@@ -1,4 +1,4 @@
-import { findAll, findById, objects, containersObjectsOfObject, relatedContainers } from '../domain/container';
+import { containersObjectsOfObject, findAll, findById, objects, relatedContainers } from '../domain/container';
 import {
   stixDomainObjectAddRelation,
   stixDomainObjectCleanContext,
@@ -7,6 +7,13 @@ import {
   stixDomainObjectEditContext,
   stixDomainObjectEditField,
 } from '../domain/stixDomainObject';
+import { buildRefRelationSearchKey } from '../schema/general';
+import {
+  RELATION_CREATED_BY,
+  RELATION_OBJECT,
+  RELATION_OBJECT_LABEL,
+  RELATION_OBJECT_MARKING
+} from '../schema/stixMetaRelationship';
 
 const containerResolvers = {
   Query: {
@@ -23,6 +30,12 @@ const containerResolvers = {
     },
     objects: (container, args, context) => objects(context, context.user, container, args),
     relatedContainers: (container, args, context) => relatedContainers(context, context.user, container.id, args),
+  },
+  ContainersFilter: {
+    createdBy: buildRefRelationSearchKey(RELATION_CREATED_BY),
+    markedBy: buildRefRelationSearchKey(RELATION_OBJECT_MARKING),
+    labelledBy: buildRefRelationSearchKey(RELATION_OBJECT_LABEL),
+    objectContains: buildRefRelationSearchKey(RELATION_OBJECT),
   },
   Mutation: {
     containerEdit: (_, { id }, context) => ({
