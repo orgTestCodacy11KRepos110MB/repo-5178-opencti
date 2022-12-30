@@ -113,15 +113,9 @@ export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefi
       default:
         throw UnsupportedError('Unsupported category');
     }
-  }
-  if (definition.type.category === ABSTRACT_STIX_DOMAIN_OBJECT) {
-    registerStixDomainType(definition.type.name);
     if (definition.type.aliased) {
       registerStixDomainAliased(definition.type.name);
     }
-  }
-  if (definition.type.category === ABSTRACT_INTERNAL_OBJECT) {
-    registerInternalType(definition.type.name);
   }
   // Register graphQL schema
   registerGraphqlSchema(definition.graphql);

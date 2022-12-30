@@ -1,5 +1,5 @@
 import React, { FunctionComponent, useEffect, useMemo, useState } from 'react';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { Badge } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom-v5-compat';
 import AppBar from '@mui/material/AppBar';
@@ -19,9 +19,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import { graphql, useSubscription } from 'react-relay';
 import { useTheme } from '@mui/styles';
-import { useFormatter } from '../../../components/i18n';
 import makeStyles from '@mui/styles/makeStyles';
 import { GraphQLSubscriptionConfig } from 'relay-runtime';
+import { useFormatter } from '../../../components/i18n';
 import SearchInput from '../../../components/SearchInput';
 import TopMenuDashboard from './TopMenuDashboard';
 import TopMenuSearch from './TopMenuSearch';
@@ -68,6 +68,7 @@ import Security, {
   KNOWLEDGE,
   KNOWLEDGE_KNASKIMPORT,
 } from '../../../utils/Security';
+import Security from '../../../utils/Security';
 import TopMenuCourseOfAction from './TopMenuCourseOfAction';
 import TopMenuWorkspacesDashboards from './TopMenuWorkspacesDashboards';
 import TopMenuWorkspacesInvestigations from './TopMenuWorkspacesInvestigations';
@@ -88,6 +89,7 @@ import {
   TopBarNotificationSubscription$data,
 } from './__generated__/TopBarNotificationSubscription.graphql';
 import { Theme } from '../../../components/Theme';
+import { EXPLORE, KNOWLEDGE, KNOWLEDGE_KNASKIMPORT } from '../../../utils/hooks/useGranted';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   appBar: {
@@ -164,7 +166,7 @@ interface TopBarProps {
 }
 
 const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField, timeField, handleChangeDashboard, dashboard }) => {
-  const theme = useTheme();
+  const theme = useTheme<Theme>();
   const history = useHistory();
   const location = useLocation();
   const classes = useStyles();
@@ -203,7 +205,7 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
       sub.unsubscribe();
     };
   });
-  const [menuOpen, setMenuOpen] = useState({ open: false, anchorEl: null });
+  const [menuOpen, setMenuOpen] = useState<{ open: boolean, anchorEl: HTMLButtonElement | null }>({ open: false, anchorEl: null });
   const [openDrawer, setOpenDrawer] = useState(false);
   const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
@@ -444,8 +446,9 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
                     'created_at_end_date',
                     'creator',
                   ]}
-                  disabled={location.pathname.includes('/dashboard/search/')}
-                />
+                  disabled={location.pathname.includes('/dashboard/search/')} size={undefined} fontSize={undefined}
+                  noDirectFilters={undefined} availableEntityTypes={undefined} availableRelationshipTypes={undefined}
+                  allEntityTypes={undefined} handleAddFilter={undefined} type={undefined} />
                 <Tooltip title={t('Bulk search')}>
                   <IconButton component={Link} to="/dashboard/search_bulk"
                     color={location.pathname.includes('/dashboard/search_bulk') ? 'secondary' : 'default'}

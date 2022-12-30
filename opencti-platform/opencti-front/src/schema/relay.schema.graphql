@@ -7716,6 +7716,8 @@ type Query {
   groupingContainsStixObjectOrStixRelationship(id: String!, stixObjectOrStixRelationshipId: String!): Boolean
   narrative(id: String!): Narrative
   narratives(first: Int, after: ID, orderBy: NarrativesOrdering, orderMode: OrderingMode, filters: [NarrativesFiltering!], filterMode: FilterMode, search: String): NarrativeConnection
+  notification(id: String!): Notification
+  notifications(first: Int, after: ID, orderBy: NotificationsOrdering, orderMode: OrderingMode, filters: [NotificationsFiltering!], filterMode: FilterMode, search: String): NotificationConnection
   dataComponent(id: String!): DataComponent
   dataComponents(first: Int, after: ID, orderBy: DataComponentsOrdering, orderMode: OrderingMode, filters: [DataComponentsFiltering!], filterMode: FilterMode, search: String): DataComponentConnection
   dataSource(id: String!): DataSource
@@ -7748,6 +7750,7 @@ type Subscription {
   stixSightingRelationship(id: ID!): StixSightingRelationship
   stixCyberObservableRelationship(id: ID!): StixCyberObservableRelationship
   externalReference(id: ID!): ExternalReference
+  notification: Notification
 }
 
 type WorkEditMutations {
@@ -8368,6 +8371,8 @@ type Mutation {
   narrativeContextClean(id: ID!): Narrative
   narrativeRelationAdd(id: ID!, input: StixMetaRelationshipAddInput!): StixMetaRelationship
   narrativeRelationDelete(id: ID!, toId: StixRef!, relationship_type: String!): Narrative
+  notificationDelete(id: ID!): ID
+  notificationMarkRead(id: ID!, read: Boolean!): Notification
   dataComponentAdd(input: DataComponentAddInput!): DataComponent
   dataComponentDelete(id: ID!): ID
   dataComponentFieldPatch(id: ID!, input: [EditInput]!, commitMessage: String, references: [String]): DataComponent
@@ -8974,6 +8979,47 @@ input NarrativeAddInput {
   modified: DateTime
   clientMutationId: String
   update: Boolean
+}
+
+type NotificationContent {
+  title: String!
+  messages: [String!]!
+}
+
+type Notification implements BasicObject {
+  id: ID!
+  standard_id: String!
+  entity_type: String!
+  notification_name: String!
+  notification_type: String!
+  parent_types: [String]!
+  content: [NotificationContent!]!
+  is_read: Boolean!
+}
+
+enum NotificationsOrdering {
+  created
+}
+
+enum NotificationFilter {
+  created
+}
+
+input NotificationsFiltering {
+  key: [NotificationFilter!]!
+  values: [String]
+  operator: String
+  filterMode: FilterMode
+}
+
+type NotificationConnection {
+  pageInfo: PageInfo!
+  edges: [NotificationEdge]
+}
+
+type NotificationEdge {
+  cursor: String!
+  node: Notification!
 }
 
 type DataComponent implements BasicObject & StixObject & StixCoreObject & StixDomainObject {

@@ -2,7 +2,7 @@ import * as R from 'ramda';
 import * as jsonpatch from 'fast-json-patch';
 import { Promise } from 'bluebird';
 import LRU from 'lru-cache';
-import conf, { basePath, booleanConf, logApp } from '../config/conf';
+import conf, { basePath, logApp } from '../config/conf';
 import { authenticateUserFromRequest, batchGroups, STREAMAPI } from '../domain/user';
 import { createStreamProcessor, EVENT_CURRENT_VERSION, STREAM_BATCH_TIME } from '../database/redis';
 import { generateInternalId, generateStandardId } from '../schema/identifier';
@@ -32,7 +32,6 @@ import { stixRefsExtractor } from '../schema/stixEmbeddedRelationship';
 import {
   ABSTRACT_STIX_CORE_RELATIONSHIP,
   ABSTRACT_STIX_CYBER_OBSERVABLE_RELATIONSHIP,
-  BASE_TYPE_RELATION,
   buildRefRelationKey,
   ENTITY_TYPE_CONTAINER
 } from '../schema/general';
@@ -255,20 +254,13 @@ const createSeeMiddleware = () => {
       res.status(500).end();
     }
   };
-  const isFullVisibleElement = (instance) => {
-    const isMissingRelation = instance.base_type === BASE_TYPE_RELATION;
-    if (isMissingRelation) {
-      return instance.from && instance.to;
-    }
-    return true;
-  };
   const resolveAndPublishMissingRefs = async (context, cache, channel, req, eventId, stixData) => {
     const refs = stixRefsExtractor(stixData, generateStandardId);
     const missingElements = await resolveMissingReferences(context, req, refs, cache);
     for (let missingIndex = 0; missingIndex < missingElements.length; missingIndex += 1) {
       const missingRef = missingElements[missingIndex];
       const missingInstance = await storeLoadByIdWithRefs(context, req.session.user, missingRef);
-      if (isFullVisibleElement(missingInstance)) {
+      if (missingInstance) {
         const missingData = convertStoreToStix(missingInstance);
         const message = generateCreateMessage(missingInstance);
         const origin = { referer: EVENT_TYPE_DEPENDENCIES };
@@ -289,7 +281,7 @@ const createSeeMiddleware = () => {
         for (let relIndex = 0; relIndex < notCachedRelations.length; relIndex += 1) {
           const relation = notCachedRelations[relIndex];
           const missingRelation = await storeLoadByIdWithRefs(context, req.session.user, relation.id);
-          if (isFullVisibleElement(missingRelation)) {
+          if (missingRelation) {
             const stixRelation = convertStoreToStix(missingRelation);
             // Resolve refs
             await resolveAndPublishMissingRefs(context, cache, channel, req, eventId, stixRelation);
@@ -570,7 +562,7 @@ const createSeeMiddleware = () => {
             const { internal_id: elemId, standard_id: standardId } = elements[index];
             if (!cache.has(standardId)) { // With dependency resolving, id can be added in a previous iteration
               const instance = await storeLoadByIdWithRefs(context, user, elemId);
-              if (isFullVisibleElement(instance)) {
+              if (instance) {
                 const stixData = convertStoreToStix(instance);
                 const stixUpdatedAt = stixData.extensions[STIX_EXT_OCTI].updated_at;
                 const eventId = `${utcDate(stixUpdatedAt).toDate().getTime()}-0`;
