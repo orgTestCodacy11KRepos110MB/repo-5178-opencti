@@ -42,13 +42,13 @@ import type { StixCoreObject } from '../types/stix-common';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 import type { StixRelation, StixSighting } from '../types/stix-sro';
 import type {
+  BaseEvent,
   DataEvent,
   DeleteEvent,
-  DependenciesDeleteEvent,
   MergeEvent,
-  BaseEvent,
+  SseEvent,
   StreamDataEvent,
-  UpdateEvent, SseEvent
+  UpdateEvent
 } from '../types/event';
 import { getActivatedRules, RULES_DECLARATION } from '../domain/rules';
 import { executionContext, RULE_MANAGER_USER } from '../utils/access';

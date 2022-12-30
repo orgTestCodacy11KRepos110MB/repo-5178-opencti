@@ -127,7 +127,6 @@ import {
 } from '../schema/stixCyberObservableRelationship';
 import {
   fieldToMetaRelation,
-  isStixMetaRelationship,
   RELATION_CREATED_BY,
   RELATION_EXTERNAL_REFERENCE,
   RELATION_GRANTED_TO,
