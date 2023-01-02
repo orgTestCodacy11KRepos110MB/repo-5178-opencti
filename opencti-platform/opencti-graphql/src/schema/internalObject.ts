@@ -20,7 +20,6 @@ export const ENTITY_TYPE_SYNC = 'Sync';
 export const ENTITY_TYPE_TAXII_COLLECTION = 'TaxiiCollection';
 export const ENTITY_TYPE_FEED = 'Feed';
 export const ENTITY_TYPE_STREAM_COLLECTION = 'StreamCollection';
-export const ENTITY_TYPE_USER_SUBSCRIPTION = 'UserSubscription';
 export const ENTITY_TYPE_STATUS_TEMPLATE = 'StatusTemplate';
 export const ENTITY_TYPE_STATUS = 'Status';
 const DATED_INTERNAL_OBJECTS = [
@@ -38,7 +37,6 @@ const INTERNAL_OBJECTS = [
   ENTITY_TYPE_TAXII_COLLECTION,
   ENTITY_TYPE_FEED,
   ENTITY_TYPE_STREAM_COLLECTION,
-  ENTITY_TYPE_USER_SUBSCRIPTION,
   ENTITY_TYPE_STATUS_TEMPLATE,
   ENTITY_TYPE_STATUS,
   ENTITY_TYPE_TASK,
@@ -210,16 +208,6 @@ const internalObjectsAttributes = {
   ],
   [ENTITY_TYPE_TAXII_COLLECTION]: ['internal_id', 'standard_id', 'name', 'description', 'filters'],
   [ENTITY_TYPE_STREAM_COLLECTION]: ['internal_id', 'standard_id', 'name', 'description', 'filters'],
-  [ENTITY_TYPE_USER_SUBSCRIPTION]: [
-    'internal_id',
-    'standard_id',
-    'name',
-    'cron',
-    'options',
-    'entities_ids',
-    'filters',
-    'last_run',
-  ],
   [ENTITY_TYPE_STATUS_TEMPLATE]: ['internal_id', 'standard_id', 'name', 'color'],
   [ENTITY_TYPE_STATUS]: ['internal_id', 'standard_id', 'template_id', 'type', 'order'],
   [ENTITY_TYPE_TASK]: [

@@ -21,6 +21,7 @@ import type { BasicStoreSettings } from '../types/store';
 import { addNotification } from '../modules/notification/notification-domain';
 import type { AuthContext } from '../types/user';
 import type { StixCoreObject } from '../types/stix-common';
+import { now } from '../utils/format';
 
 const PUBLISHER_ENGINE_KEY = conf.get('publisher_manager:lock_key');
 const STREAM_SCHEDULE_TIME = 10000;
@@ -35,10 +36,10 @@ const processNotificationEvent = async (
   const outcomes = STATIC_OUTCOMES; // TODO @JRI add database fetching
   const outcomeMap = new Map(outcomes.map((n) => [n.internal_id, n]));
   const notifications = await getNotifications(context); // TODO @JRI add caching
-  const notificationMap = new Map(notifications.map((n) => [n.notification.internal_id, n.notification]));
+  const notificationMap = new Map(notifications.map((n) => [n.trigger.internal_id, n.trigger]));
   const notification = notificationMap.get(notificationId);
   if (!notification) return;
-  const { name: notification_name, notification_type } = notification;
+  const { name: notification_name, trigger_type } = notification;
   for (let outcomeIndex = 0; outcomeIndex < user.outcomes.length; outcomeIndex += 1) {
     const outcome = user.outcomes[outcomeIndex];
     const { outcome_type, name, configuration } = outcomeMap.get(outcome) ?? {};
@@ -62,11 +63,18 @@ const processNotificationEvent = async (
     const platform_uri = baseUrl + basePath;
     const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);
     const platformOpts = { doc_uri, platform_uri, background_color };
-    const title = `New ${notification_type} notification for ${notification.name}`;
+    const title = `New ${trigger_type} notification for ${notification.name}`;
     const templateData = { title, content, notification, settings, user, data, ...platformOpts };
     // endregion
     if (outcome_type === 'UI') {
-      const createNotification = { notification_name, notification_type, user_id: user.user_id, content, is_read: false };
+      const createNotification = {
+        notification_name,
+        notification_type: trigger_type,
+        user_id: user.user_id,
+        content,
+        created: now(),
+        is_read: false
+      };
       addNotification(context, SYSTEM_USER, createNotification).then(() => {
         // eslint-disable-next-line no-console
         console.log(`[${name}] ${user.user_email}`);
@@ -117,17 +125,17 @@ const publisherStreamHandler = async (streamEvents: Array<SseEvent<StreamNotifEv
   try {
     const context = executionContext('publisher_manager');
     const notifications = await getNotifications(context); // TODO @JRI add caching
-    const notificationMap = new Map(notifications.map((n) => [n.notification.internal_id, n.notification]));
+    const notificationMap = new Map(notifications.map((n) => [n.trigger.internal_id, n.trigger]));
     for (let index = 0; index < streamEvents.length; index += 1) {
       const streamEvent = streamEvents[index];
       const { data: { notification_id } } = streamEvent;
       const notification = notificationMap.get(notification_id);
       if (notification) {
-        if (notification.notification_type === 'live') {
+        if (notification.trigger_type === 'live') {
           const liveEvent = streamEvent as SseEvent<NotificationEvent>;
           await processLiveNotificationEvent(context, liveEvent.data);
         }
-        if (notification.notification_type === 'digest') {
+        if (notification.trigger_type === 'digest') {
           const digestEvent = streamEvent as SseEvent<DigestEvent>;
           await processDigestNotificationEvent(context, digestEvent.data);
         }

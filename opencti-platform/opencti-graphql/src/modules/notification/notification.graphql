@@ -1,9 +1,60 @@
+# Outcomes
+
+# Triggers
+enum TriggerType {
+    live
+    digest
+}
+enum TriggerEventType {
+    create
+    update
+    delete
+}
+enum TriggerFilter {
+    created
+}
+input TriggersFiltering {
+    key: [TriggerFilter!]!
+    values: [String]
+    operator: String
+    filterMode: FilterMode
+}
+enum TriggersOrdering {
+    name
+    created
+}
+type Trigger implements InternalObject & BasicObject {
+    id: ID! # internal_id
+    standard_id: String!
+    entity_type: String!
+    parent_types: [String]!
+    created: DateTime
+    modified: DateTime
+    name: String!
+    description: String
+    user_ids: [StixRef!]!
+    trigger_type: TriggerType! # live or digest
+    event_types: [TriggerEventType!]!
+    filters: String
+    outcomes: [StixRef!]!
+}
+
+type TriggerConnection {
+    pageInfo: PageInfo!
+    edges: [TriggerEdge]
+}
+type TriggerEdge {
+    cursor: String!
+    node: Trigger!
+}
+
+# Notifications
 type NotificationContent {
     title: String!
     messages: [String!]!
 }
 
-type Notification implements BasicObject {
+type Notification implements InternalObject & BasicObject {
     id: ID! # internal_id
     standard_id: String!
     entity_type: String!
@@ -42,6 +93,19 @@ type NotificationEdge {
 
 # Queries
 type Query {
+    # Outcomes
+    # Triggers
+    trigger(id: String!): Trigger @auth
+    triggers(
+        first: Int
+        after: ID
+        orderBy: TriggersOrdering
+        orderMode: OrderingMode
+        filters: [TriggersFiltering!]
+        filterMode: FilterMode
+        search: String
+    ): TriggerConnection @auth
+    # Notifications
     notification(id: String!): Notification @auth
     notifications(
         first: Int
@@ -55,12 +119,30 @@ type Query {
 }
 
 # Mutations
+
+input TriggerLiveAddInput {
+    name: String! @constraint(minLength: 1)
+    description: String
+    event_types: [TriggerEventType!]!
+    outcomes: [StixRef!]!
+    filters: String
+}
+
 type Mutation {
+    # Outcomes
+    # Triggers
+    triggerDelete(id: ID!): ID @auth
+    triggerFieldPatch(id: ID!, input: [EditInput!]!): Trigger @auth
+    triggerLiveAdd(input: TriggerLiveAddInput!): Trigger @auth
+    # Notifications
     notificationDelete(id: ID!): ID @auth
     notificationMarkRead(id: ID!, read: Boolean!): Notification @auth
 }
 
 # Subscriptions
 type Subscription {
+    # Outcomes
+    # Triggers
+    # Notifications
     notification: Notification @auth
 }

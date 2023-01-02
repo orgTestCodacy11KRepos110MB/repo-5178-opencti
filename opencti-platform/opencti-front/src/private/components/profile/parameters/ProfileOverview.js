@@ -8,43 +8,40 @@ import { compose, pick } from 'ramda';
 import * as Yup from 'yup';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
-import List from '@mui/material/List';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Link } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import { SendClockOutline } from 'mdi-material-ui';
 import { LockOutlined, NoEncryptionOutlined } from '@mui/icons-material';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
-import ListItem from '@mui/material/ListItem';
 import Alert from '@mui/material/Alert';
 import DialogContent from '@mui/material/DialogContent';
 import Dialog from '@mui/material/Dialog';
 import OtpInput from 'react-otp-input';
 import DialogTitle from '@mui/material/DialogTitle';
 import { useTheme } from '@mui/styles';
-import inject18n, { useFormatter } from '../../../components/i18n';
-import TextField from '../../../components/TextField';
-import SelectField from '../../../components/SelectField';
-import {
-  commitMutation,
-  MESSAGING$,
-  QueryRenderer,
-} from '../../../relay/environment';
-import { OPENCTI_ADMIN_UUID } from '../../../utils/hooks/useGranted';
-import UserSubscriptionCreation from './UserSubscriptionCreation';
-import UserSubscriptionPopover from './UserSubscriptionPopover';
-import Loader from '../../../components/Loader';
-import { convertOrganizations } from '../../../utils/edition';
-import ObjectOrganizationField from '../common/form/ObjectOrganizationField';
+import inject18n, { useFormatter } from '../../../../components/i18n';
+import TextField from '../../../../components/TextField';
+import SelectField from '../../../../components/SelectField';
+import { commitMutation, MESSAGING$, QueryRenderer } from '../../../../relay/environment';
+import { OPENCTI_ADMIN_UUID } from '../../../../utils/hooks/useGranted';
+import Loader from '../../../../components/Loader';
+import { convertOrganizations } from '../../../../utils/edition';
+import ObjectOrganizationField from '../../common/form/ObjectOrganizationField';
 import { OTP_CODE_SIZE } from '../../../public/components/OtpActivation';
 
 const styles = () => ({
   panel: {
     width: '100%',
-    height: '100%',
+    height: 768,
+    margin: '0 auto',
+    marginBottom: 30,
+    padding: '20px 20px 20px 20px',
+    textAlign: 'left',
+    borderRadius: 6,
+    position: 'relative',
+  },
+  classic: {
+    width: '100%',
     margin: '0 auto',
     marginBottom: 30,
     padding: 20,
@@ -231,12 +228,10 @@ const OtpComponent = ({ closeFunction }) => (
 );
 
 const ProfileOverviewComponent = (props) => {
-  const { t, fldt } = useFormatter();
-  const { me, subscriptionStatus, about, settings, classes } = props;
+  const { t, me, classes, about } = props;
   const { external, otp_activated: useOtp } = me;
   const objectOrganization = convertOrganizations(me);
   const [display2FA, setDisplay2FA] = useState(false);
-  const subscriptionEdges = me.userSubscriptions?.edges ?? [];
   const fieldNames = [
     'name',
     'description',
@@ -292,12 +287,10 @@ const ProfileOverviewComponent = (props) => {
 
   return (
     <div>
-      <Dialog
-        open={display2FA}
+      <Dialog open={display2FA}
         PaperProps={{ elevation: 1 }}
         keepMounted={false}
-        onClose={() => setDisplay2FA(false)}
-      >
+        onClose={() => setDisplay2FA(false)}>
         <DialogTitle style={{ textAlign: 'center' }}>
           {t('Enable two-factor authentication')}
         </DialogTitle>
@@ -418,76 +411,7 @@ const ProfileOverviewComponent = (props) => {
           </Paper>
         </Grid>
         <Grid item={true} xs={6}>
-          <Paper classes={{ root: classes.panel }} variant="outlined">
-            <Typography variant="h1" gutterBottom={true}>
-              {t('Subscriptions & digests')}
-            </Typography>
-            <UserSubscriptionCreation
-              userId={me.id}
-              disabled={!subscriptionStatus}
-            />
-            {!subscriptionStatus && (
-              <Alert severity="info" style={{ marginTop: 20 }}>
-                {t(
-                  'To use this feature, your platform administrator must enable the subscription manager in the config.',
-                )}
-              </Alert>
-            )}
-            {subscriptionEdges.length > 0 ? (
-              <div style={{ marginTop: 10 }}>
-                <List>
-                  {subscriptionEdges.map((userSubscriptionEdge) => {
-                    const userSubscription = userSubscriptionEdge.node;
-                    return (
-                      <ListItem
-                        key={userSubscription.id}
-                        classes={{ root: classes.item }}
-                        divider={true}
-                        disabled={!subscriptionStatus}
-                      >
-                        <ListItemIcon classes={{ root: classes.itemIcon }}>
-                          <SendClockOutline />
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={userSubscription.name}
-                          secondary={`${
-                            userSubscription.cron === '5-minutes'
-                              ? t('As it happens')
-                              : userSubscription.cron
-                          } - ${t('Last run:')} ${fldt(
-                            userSubscription.last_run,
-                          )}`}
-                        />
-                        <ListItemSecondaryAction>
-                          <UserSubscriptionPopover
-                            userId={me.id}
-                            userSubscriptionId={userSubscription.id}
-                            paginationOptions={null}
-                            disabled={!subscriptionStatus}
-                          />
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              </div>
-            ) : (
-              <div style={{ display: 'table', height: '100%', width: '100%' }}>
-                <span
-                  style={{
-                    display: 'table-cell',
-                    verticalAlign: 'middle',
-                    textAlign: 'center',
-                  }}
-                >
-                  {t('You have no subscription for the moment.')}
-                </span>
-              </div>
-            )}
-          </Paper>
-        </Grid>
-        <Grid item={true} xs={6}>
-          <Paper classes={{ root: classes.panel }} variant="outlined">
+          <Paper classes={{ root: classes.classic }} variant="outlined">
             <Typography
               variant="h1"
               gutterBottom={true}
@@ -578,9 +502,7 @@ const ProfileOverviewComponent = (props) => {
               )}
             </Formik>
           </Paper>
-        </Grid>
-        <Grid item={true} xs={6}>
-          <Paper classes={{ root: classes.panel }} variant="outlined">
+          <Paper classes={{ root: classes.classic }} variant="outlined">
             <Typography variant="h1" gutterBottom={true}>
               {t('API access')}
             </Typography>
@@ -640,7 +562,6 @@ ProfileOverviewComponent.propTypes = {
   theme: PropTypes.object,
   t: PropTypes.func,
   me: PropTypes.object,
-  subscriptionStatus: PropTypes.bool,
 };
 
 const ProfileOverview = createFragmentContainer(ProfileOverviewComponent, {
@@ -662,135 +583,6 @@ const ProfileOverview = createFragmentContainer(ProfileOverviewComponent, {
         edges {
           node {
             name
-          }
-        }
-      }
-      userSubscriptions(first: 200)
-        @connection(key: "Pagination_userSubscriptions") {
-        edges {
-          node {
-            id
-            name
-            options
-            cron
-            filters
-            last_run
-            entities {
-              ... on BasicObject {
-                id
-                entity_type
-                parent_types
-              }
-              ... on StixCoreObject {
-                created_at
-                createdBy {
-                  ... on Identity {
-                    id
-                    name
-                    entity_type
-                  }
-                }
-                objectMarking {
-                  edges {
-                    node {
-                      id
-                      definition_type
-                      definition
-                      x_opencti_order
-                      x_opencti_color
-                    }
-                  }
-                }
-              }
-              ... on StixDomainObject {
-                created
-              }
-              ... on AttackPattern {
-                name
-                x_mitre_id
-              }
-              ... on Campaign {
-                name
-                first_seen
-              }
-              ... on CourseOfAction {
-                name
-              }
-              ... on Note {
-                attribute_abstract
-                content
-              }
-              ... on ObservedData {
-                first_observed
-                last_observed
-              }
-              ... on Opinion {
-                opinion
-              }
-              ... on Report {
-                name
-                published
-              }
-              ... on Grouping {
-                name
-                description
-              }
-              ... on Individual {
-                name
-              }
-              ... on Organization {
-                name
-              }
-              ... on Sector {
-                name
-              }
-              ... on System {
-                name
-              }
-              ... on Indicator {
-                name
-                valid_from
-              }
-              ... on Infrastructure {
-                name
-              }
-              ... on IntrusionSet {
-                name
-              }
-              ... on Position {
-                name
-              }
-              ... on City {
-                name
-              }
-              ... on Country {
-                name
-              }
-              ... on Region {
-                name
-              }
-              ... on Malware {
-                name
-                first_seen
-                last_seen
-              }
-              ... on ThreatActor {
-                name
-                first_seen
-                last_seen
-              }
-              ... on Tool {
-                name
-              }
-              ... on Vulnerability {
-                name
-              }
-              ... on Incident {
-                name
-                first_seen
-                last_seen
-              }
-            }
           }
         }
       }

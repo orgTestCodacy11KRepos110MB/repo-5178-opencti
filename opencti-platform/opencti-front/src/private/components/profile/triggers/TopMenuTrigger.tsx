@@ -5,8 +5,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import { ArrowForwardIosOutlined } from '@mui/icons-material';
 import { Fire } from 'mdi-material-ui';
-import { useFormatter } from '../../../components/i18n';
-import useGranted, { KNOWLEDGE_KNGETEXPORT, KNOWLEDGE_KNUPLOAD } from '../../../utils/hooks/useGranted';
+import { useFormatter } from '../../../../components/i18n';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   buttonHome: {
@@ -31,55 +30,39 @@ const useStyles = makeStyles<Theme>((theme) => ({
   },
 }));
 
-const TopMenuIncident = () => {
+const TopMenuTrigger = () => {
   const location = useLocation();
   const { t } = useFormatter();
-  const { incidentId } = useParams() as { incidentId: string };
+  const { triggerId } = useParams() as { triggerId: string };
   const classes = useStyles();
-  const isUploaderOrExporter = useGranted([KNOWLEDGE_KNUPLOAD, KNOWLEDGE_KNGETEXPORT]);
-  const computePath = (path?: string) => `/dashboard/events/incidents/${incidentId}${path ?? ''}`;
+  const computePath = (path?: string) => `/dashboard/profile/triggers/${triggerId}${path ?? ''}`;
   const isCompatiblePath = (path?: string) => (path ? location.pathname.includes(computePath(path)) : location.pathname === computePath(path));
   const computeVariant = (path?: string) => (isCompatiblePath(path) ? 'contained' : 'text');
   const computeColor = (path?: string) => (isCompatiblePath(path) ? 'secondary' : 'primary');
   const computeLocatedButton = (title: string, basePath?: string) => {
     return (
-      <Button
-        component={Link}
-        size="small"
+      <Button component={Link} size="small"
         to={computePath(basePath)}
         variant={computeVariant(basePath)}
         color={computeColor(basePath)}
-        classes={{ root: classes.button }}
-      >
+        classes={{ root: classes.button }}>
         {t(title)}
       </Button>
     );
   };
   return (
     <div>
-      <Button
-        component={Link}
-        to="/dashboard/events/incidents"
-        variant="contained"
-        size="small"
-        color="primary"
-        classes={{ root: classes.buttonHome }}
-      >
+      <Button component={Link}
+        to="/dashboard/profile/triggers" variant="contained"
+        size="small" color="primary"
+        classes={{ root: classes.buttonHome }}>
         <Fire className={classes.icon} fontSize="small" />
-        {t('Incidents')}
+        {t('Triggers')}
       </Button>
-      <ArrowForwardIosOutlined
-        color="primary"
-        classes={{ root: classes.arrow }}
-      />
+      <ArrowForwardIosOutlined color="primary" classes={{ root: classes.arrow }} />
       {computeLocatedButton('Overview')}
-      {computeLocatedButton('Knowledge', '/knowledge')}
-      {computeLocatedButton('Content', '/content')}
-      {computeLocatedButton('Analysis', '/analysis')}
-      {isUploaderOrExporter && computeLocatedButton('Data', '/files')}
-      {computeLocatedButton('History', '/history')}
     </div>
   );
 };
 
-export default TopMenuIncident;
+export default TopMenuTrigger;

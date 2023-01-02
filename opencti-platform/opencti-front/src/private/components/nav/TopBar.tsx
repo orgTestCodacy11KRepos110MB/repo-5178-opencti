@@ -60,7 +60,6 @@ import TopMenuCity from './TopMenuCity';
 import TopMenuPosition from './TopMenuPosition';
 import TopMenuData from './TopMenuData';
 import TopMenuSettings from './TopMenuSettings';
-import TopMenuProfile from './TopMenuProfile';
 import TopMenuTechniques from './TopMenuTechniques';
 import { commitMutation, MESSAGING$ } from '../../../relay/environment';
 import Security, {
@@ -90,6 +89,8 @@ import {
 } from './__generated__/TopBarNotificationSubscription.graphql';
 import { Theme } from '../../../components/Theme';
 import { EXPLORE, KNOWLEDGE, KNOWLEDGE_KNASKIMPORT } from '../../../utils/hooks/useGranted';
+import TopMenuProfile from '../profile/TopMenuProfile';
+import TopMenuTrigger from '../profile/triggers/TopMenuTrigger';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   appBar: {
@@ -269,6 +270,13 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
           {(location.pathname === '/dashboard/analysis'
             || location.pathname.match('/dashboard/analysis/[a-z_]+$')) && (
             <TopMenuAnalysis />
+          )}
+          {(location.pathname === '/dashboard/profile'
+            || location.pathname.match('/dashboard/profile/[a-z_]+$')) && (
+            <TopMenuProfile />
+          )}
+          {location.pathname.includes('/dashboard/profile/triggers/') && (
+            <TopMenuTrigger />
           )}
           {(location.pathname === '/dashboard/cases'
             || location.pathname.match('/dashboard/cases/[a-z_]+$')) && (
@@ -506,7 +514,7 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
               <MenuItem onClick={handleLogout}>{t('Logout')}</MenuItem>
             </Menu>
             <IconButton size="medium" classes={{ root: classes.button }} aria-haspopup="true"
-                        component={Link} to="/dashboard/notification">
+                        component={Link} to="/dashboard/profile/notifications">
               <Badge color="secondary" variant="dot" invisible={!isNewNotif}>
                 <NotificationsOutlined fontSize="medium"/>
               </Badge>

@@ -18,13 +18,19 @@ import type { BasicFilterValue } from '../utils/sseFiltering';
 import { isInstanceMatchFilters } from '../utils/sseFiltering';
 import type { AuthContext, AuthUser } from '../types/user';
 import type { BasicStoreRelation } from '../types/store';
-import { listAllRelations } from '../database/middleware-loader';
+import { listAllEntities, listAllRelations } from '../database/middleware-loader';
 import { RELATION_MEMBER_OF } from '../schema/internalRelationship';
 import { ES_MAX_CONCURRENCY } from '../database/engine';
 import { resolveUserById } from '../domain/user';
 import { utcDate } from '../utils/format';
-import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE } from '../database/utils';
+import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE, isNotEmptyField } from '../database/utils';
 import type { StixCoreObject } from '../types/stix-common';
+import {
+  BasicStoreEntityDigestTrigger,
+  BasicStoreEntityLiveTrigger,
+  BasicStoreEntityTrigger,
+  ENTITY_TYPE_TRIGGER
+} from '../modules/notification/notification-types';
 
 const EVENT_NOTIFICATION_VERSION = '1';
 const NOTIFICATION_ENGINE_KEY = conf.get('notification_manager:lock_key');
@@ -43,41 +49,19 @@ Subscribe to new malware used by a threat (uses)
 
 export type FrontendFilter = Record<string, Array<BasicFilterValue>>;
 
-interface Notification {
-  internal_id: string
-  name: string
-  user_ids?: Array<string>
-  group_ids?: Array<string>
-  notification_type: 'live' | 'digest'
-  outcomes: Array<string>
-}
-
-export interface LiveNotification extends Notification {
-  notification_type: 'live'
-  event_types: Array<string>
-  filters: FrontendFilter
-}
-
-export interface DigestNotification extends Notification {
-  notification_type: 'digest'
-  period: 'hour' | 'day' | 'week' | 'month'
-  trigger_time?: string
-  notifications: Array<string>
-}
-
-interface ResolvedNotification {
+interface ResolvedTrigger {
   users: Array<AuthUser>
-  notification: Notification
+  trigger: BasicStoreEntityTrigger
 }
 
 interface ResolvedLive {
   users: Array<AuthUser>
-  notification: LiveNotification
+  trigger: BasicStoreEntityLiveTrigger
 }
 
 export interface ResolvedDigest {
   users: Array<AuthUser>
-  notification: DigestNotification
+  trigger: BasicStoreEntityDigestTrigger
 }
 
 export interface NotificationUser {
@@ -99,55 +83,34 @@ export interface DigestEvent extends StreamNotifEvent {
 }
 
 interface NotificationOutcome {
-  internal_id: string;
-  outcome_type: 'UI' | 'WEBHOOK' | 'EMAIL' | 'CONNECTOR';
-  name: string;
-  description: string;
-  configuration: Record<string, any>;
+  built_in: boolean
+  internal_id: string
+  outcome_type: 'UI' | 'WEBHOOK' | 'EMAIL' | 'CONNECTOR'
+  name: string
+  description: string
+  schema: Record<string, 'string' | 'textarea' | 'number' | 'boolean'>
+  configuration: Record<string, string>
 }
 
 export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
   {
     internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288653d',
+    built_in: true,
     outcome_type: 'UI',
     name: 'UI',
     description: 'Publish notification to the user interface',
-    configuration: {}
-  },
-  {
-    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654f',
-    name: 'Teams webhook',
-    outcome_type: 'WEBHOOK',
-    description: 'Publish notification to Filigran teams',
-    configuration: {
-      uri: 'https://filigranio.webhook.office.com/xxxx',
-      template: `{
-        "@context": "https://schema.org/extensions",
-        "@type": "MessageCard",
-        "summary": "Summary",
-        "themeColor": "<%=background_color%>",
-        "title": "<%=title%>",
-        "sections": [
-          <% content.forEach((line)=> { %>
-              {"text": "<strong><%= line.title %></strong>"},
-              {"text": "<ul><% line.messages.forEach((message)=> { %><li><%= message %></li><% }) %></ul>"}
-          <% }) %>
-        ]
-      }`
-    }
-  },
-  {
-    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654g',
-    name: 'Twitter connector',
-    outcome_type: 'CONNECTOR',
-    description: 'Publish notification to Twitter',
+    schema: {},
     configuration: {}
   },
   {
     internal_id: '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822',
+    built_in: true,
     name: 'Email',
     outcome_type: 'EMAIL',
     description: 'Send notification to the user email',
+    schema: {
+      template: 'textarea'
+    },
     configuration: {
       template: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
         <html>
@@ -236,46 +199,87 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
      </html>
       `
     }
+  },
+  {
+    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654f',
+    built_in: false,
+    name: 'Teams webhook',
+    outcome_type: 'WEBHOOK',
+    description: 'Publish notification to Filigran teams',
+    schema: {
+      uri: 'string',
+      template: 'textarea'
+    },
+    configuration: {
+      uri: 'https://filigranio.webhook.office.com/xxxx',
+      template: `{
+        "@context": "https://schema.org/extensions",
+        "@type": "MessageCard",
+        "summary": "Summary",
+        "themeColor": "<%=background_color%>",
+        "title": "<%=title%>",
+        "sections": [
+          <% content.forEach((line)=> { %>
+              {"text": "<strong><%= line.title %></strong>"},
+              {"text": "<ul><% line.messages.forEach((message)=> { %><li><%= message %></li><% }) %></ul>"}
+          <% }) %>
+        ]
+      }`
+    }
+  },
+  {
+    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654g',
+    built_in: false,
+    name: 'Twitter connector',
+    outcome_type: 'CONNECTOR',
+    description: 'Publish notification to Twitter',
+    schema: {
+      connector_id: 'string',
+    },
+    configuration: {
+      connector_id: 'xxxxx'
+    }
   }
 ];
 
 // - When sending the daily ? Midnight doesn't seem interesting -> need to be choose by the user
 // - Do we talk about align on day start or sliding period? -> Sliding
 // - What about user timezone ? -> need to be taken into account
-const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
-  {
-    internal_id: '1c449a99-4a7e-4fc6-a091-8935a8bfe2f8',
-    name: 'Report <-> Energy',
-    user_ids: ['4c1b46af-51d4-44aa-94c2-52d20612f0b1'], // Julien
-    notification_type: 'live', // or digest
-    event_types: ['create', 'delete'],
-    filters: {
-      entity_type: [{ id: 'Report', value: 'Report' }],
-      objectContains: [{ id: '50767ae3-dbe6-4847-a3c1-4553ca157f97', value: 'Energy' }],
-    },
-    // outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
-    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288654f']
-  },
-  {
-    internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
-    name: 'Daily digest Report <-> Energy',
-    group_ids: ['1130302f-6aa1-4d8a-b6d7-78b8d816ba8a'], // GR group
-    notification_type: 'digest',
-    period: 'hour',
-    notifications: ['1c449a99-4a7e-4fc6-a091-8935a8bfe2f8'],
-    outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d']
-  }
-];
+// const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
+//   {
+//     internal_id: '1c449a99-4a7e-4fc6-a091-8935a8bfe2f8',
+//     name: 'Report <-> Energy',
+//     user_ids: ['4c1b46af-51d4-44aa-94c2-52d20612f0b1'], // Julien
+//     trigger_type: 'live', // or digest
+//     event_types: ['create', 'delete'],
+//     filters: {
+//       entity_type: [{ id: 'Report', value: 'Report' }],
+//       objectContains: [{ id: '50767ae3-dbe6-4847-a3c1-4553ca157f97', value: 'Energy' }],
+//     },
+//     // outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
+//     outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288654f']
+//   },
+//   {
+//     internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
+//     name: 'Daily digest Report <-> Energy',
+//     group_ids: ['1130302f-6aa1-4d8a-b6d7-78b8d816ba8a'], // GR group
+//     trigger_type: 'digest',
+//     period: 'hour',
+//     notifications: ['1c449a99-4a7e-4fc6-a091-8935a8bfe2f8'],
+//     outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d']
+//   }
+// ];
 
 export const isDefine = (elem: any): elem is any => {
   return elem !== undefined;
 };
-export const isLive = (n: ResolvedNotification): n is ResolvedLive => n.notification.notification_type === 'live';
-export const isDigest = (n: ResolvedNotification): n is ResolvedDigest => n.notification.notification_type === 'digest';
+export const isLive = (n: ResolvedTrigger): n is ResolvedLive => n.trigger.trigger_type === 'live';
+export const isDigest = (n: ResolvedTrigger): n is ResolvedDigest => n.trigger.trigger_type === 'digest';
 
-export const getNotifications = async (context: AuthContext): Promise<Array<ResolvedNotification>> => {
-  const notificationUserIds: Array<string> = STATIC_NOTIFICATIONS.map((l) => l.user_ids).flat().filter(isDefine);
-  const groupsIds = STATIC_NOTIFICATIONS.map((l) => (l.group_ids ?? [])).flat();
+export const getNotifications = async (context: AuthContext): Promise<Array<ResolvedTrigger>> => {
+  const triggers = await listAllEntities<BasicStoreEntityTrigger>(context, SYSTEM_USER, [ENTITY_TYPE_TRIGGER], { connectionFormat: false });
+  const notificationUserIds: Array<string> = triggers.map((l) => l.user_ids).flat().filter(isDefine);
+  const groupsIds = triggers.map((l) => (l.group_ids ?? [])).flat();
   const membersRel = await listAllRelations<BasicStoreRelation>(context, SYSTEM_USER, RELATION_MEMBER_OF, { toId: groupsIds });
   const userIdGroup: Array<{ group: string; user: string; }> = membersRel.map((rel) => ({
     group: rel.toId,
@@ -286,14 +290,16 @@ export const getNotifications = async (context: AuthContext): Promise<Array<Reso
   const userMaps = new Map();
   const userResolver = async (userId: string) => {
     const user = await resolveUserById(context, userId);
-    userMaps.set(user.internal_id, user);
+    if (user) {
+      userMaps.set(user.internal_id, user);
+    }
   };
   await Bluebird.map(allUserIds, userResolver, { concurrency: ES_MAX_CONCURRENCY });
-  return STATIC_NOTIFICATIONS.map((notification) => {
-    const userFromGroups = (notification.group_ids ?? []).map((id) => groupUserIds[id].map((g) => g.user)).flat();
-    const userIds = new Set([...(notification.user_ids ?? []), ...userFromGroups].filter(isDefine));
-    const users = Array.from(userIds).map((i) => userMaps.get(i));
-    return { users, notification };
+  return triggers.map((trigger) => {
+    const userFromGroups = (trigger.group_ids ?? []).map((id) => (groupUserIds[id] ?? []).map((g) => g.user)).flat();
+    const userIds = new Set([...(trigger.user_ids ?? []), ...userFromGroups].filter(isDefine));
+    const users = Array.from(userIds).map((i) => userMaps.get(i)).filter((u) => isNotEmptyField(u));
+    return { users, trigger };
   });
 };
 
@@ -304,9 +310,9 @@ export const getLiveNotifications = async (context: AuthContext): Promise<Array<
 
 export const isTimeTrigger = (digest: ResolvedDigest, baseDate: Moment): boolean => {
   const now = baseDate.clone().startOf('minutes'); // 2022-11-25T19:11:00.000Z
-  const { notification } = digest;
-  const triggerTime = notification.trigger_time;
-  switch (notification.period) {
+  const { trigger } = digest;
+  const triggerTime = trigger.trigger_time;
+  switch (trigger.period) {
     case 'hour': {
       // Need to check if time is aligned on the perfect hour
       const nowHourAlign = now.clone().startOf('hours');
@@ -355,18 +361,19 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
       const { data: { data }, event: eventType } = streamEvents[index];
       // For each event we need to check if
       for (let notifIndex = 0; notifIndex < liveNotifications.length; notifIndex += 1) {
-        const { users, notification }: ResolvedLive = liveNotifications[notifIndex];
-        const { internal_id: notification_id, filters, event_types, outcomes } = notification;
-        const { notification_type: type } = notification;
+        const { users, trigger }: ResolvedLive = liveNotifications[notifIndex];
+        const { internal_id: notification_id, filters, event_types, outcomes } = trigger;
+        const { trigger_type: type } = trigger;
         const targets: Array<{ user: NotificationUser, type: string }> = [];
+        const frontendFilters = JSON.parse(filters);
         if (eventType === EVENT_TYPE_UPDATE) {
           const { context: dataContext } = streamEvents[index].data as UpdateEvent;
           const { newDocument: previous } = jsonpatch.applyPatch(R.clone(data), dataContext.reverse_patch);
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
-            const isPreviousMatch = await isInstanceMatchFilters(context, user, previous, filters);
-            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, filters);
+            const isPreviousMatch = await isInstanceMatchFilters(context, user, previous, frontendFilters);
+            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, frontendFilters);
             if (isPreviousMatch && !isCurrentlyMatch && event_types.includes(EVENT_TYPE_DELETE)) { // No longer visible
               targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_DELETE });
             } else if (!isPreviousMatch && isCurrentlyMatch && event_types.includes(EVENT_TYPE_CREATE)) { // Newly visible
@@ -379,7 +386,7 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
-            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, filters);
+            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, frontendFilters);
             if (isCurrentlyMatch) {
               targets.push({ user: convertToNotificationUser(user, outcomes), type: eventType });
             }
@@ -405,11 +412,11 @@ const notificationDigestHandler = async () => {
     const digestNotifications = await getDigestNotifications(context, baseDate);
     // Iter on each digest an generate the output
     for (let index = 0; index < digestNotifications.length; index += 1) {
-      const { notification, users } = digestNotifications[index];
-      const { period, notifications, outcomes, internal_id: notification_id, notification_type: type } = notification;
+      const { trigger, users } = digestNotifications[index];
+      const { period, triggers, outcomes, internal_id: notification_id, trigger_type: type } = trigger;
       const fromDate = baseDate.clone().subtract(1, period).toDate();
       const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(fromDate, baseDate.toDate());
-      const digestContent = rangeNotifications.filter((n) => notifications.includes(n.notification_id));
+      const digestContent = rangeNotifications.filter((n) => triggers.includes(n.notification_id));
       if (digestContent.length > 0) {
         // Range of results must filtered to keep only data related to the digest
         // And related to the users participating to the digest

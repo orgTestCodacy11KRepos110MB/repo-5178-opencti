@@ -1,12 +1,49 @@
 import { v4 as uuidv4 } from 'uuid';
 import notificationTypeDefs from './notification.graphql';
-import convertNotificationToStix from './notification-converter';
+import { convertNotificationToStix, convertTriggerToStix } from './notification-converter';
 import notificationResolvers from './notification-resolver';
-import { ENTITY_TYPE_NOTIFICATION, StoreEntityNotification } from './notification-types';
+import {
+  ENTITY_TYPE_NOTIFICATION,
+  ENTITY_TYPE_TRIGGER,
+  StoreEntityNotification,
+  StoreEntityTrigger
+} from './notification-types';
 import type { ModuleDefinition } from '../../types/module';
 import { registerDefinition } from '../../types/module';
 import { ABSTRACT_INTERNAL_OBJECT } from '../../schema/general';
 
+// Outcomes
+// TODO
+
+// Triggers
+const TRIGGER_DEFINITION: ModuleDefinition<StoreEntityTrigger> = {
+  type: {
+    id: 'triggers',
+    name: ENTITY_TYPE_TRIGGER,
+    category: ABSTRACT_INTERNAL_OBJECT
+  },
+  graphql: {
+    schema: notificationTypeDefs,
+    resolver: notificationResolvers,
+  },
+  identifier: {
+    definition: {
+      [ENTITY_TYPE_TRIGGER]: () => uuidv4(),
+    },
+  },
+  attributes: [
+    { name: 'name', type: 'string', multiple: false, upsert: false },
+    { name: 'description', type: 'string', multiple: false, upsert: false },
+    { name: 'event_types', type: 'string', multiple: true, upsert: false },
+    { name: 'outcomes', type: 'string', multiple: true, upsert: false },
+    { name: 'filters', type: 'string', multiple: false, upsert: false },
+  ],
+  relations: [],
+  converter: convertTriggerToStix
+};
+registerDefinition(TRIGGER_DEFINITION);
+
+// Notifications
 const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification> = {
   type: {
     id: 'notifications',
@@ -29,5 +66,4 @@ const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification> = {
   relations: [],
   converter: convertNotificationToStix
 };
-
 registerDefinition(NOTIFICATION_DEFINITION);
