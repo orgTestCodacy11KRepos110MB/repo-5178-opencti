@@ -4,13 +4,16 @@ import { utcDate } from '../../../src/utils/format';
 
 const digest = (period: 'hour' | 'day' | 'week' | 'month', triggerTime = ''): ResolvedDigest => {
   return {
-    notification: {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    trigger: {
       internal_id: '',
       name: 'test notification',
+      description: 'test notification',
       period,
-      notification_type: 'digest',
+      trigger_type: 'digest',
       trigger_time: triggerTime,
-      notifications: [],
+      triggers: [],
       outcomes: []
     },
     users: []
@@ -23,6 +26,7 @@ describe.concurrent('notification manager utils', () => {
     expect(isTimeTrigger(digest('hour'), utcDate('2022-11-25T19:00:00.000Z'))).toEqual(true);
     expect(isTimeTrigger(digest('hour'), utcDate('2022-11-25T19:00:05.000Z'))).toEqual(true);
   });
+
   it('should notification day trigger computed', async () => {
     expect(isTimeTrigger(digest('day', '15:00:00.000Z'), utcDate('2022-11-25T15:00:00.000Z'))).toEqual(true);
     expect(isTimeTrigger(digest('day', '15:00:00.000Z'), utcDate('2022-10-10T15:00:00.000Z'))).toEqual(true);
@@ -31,6 +35,7 @@ describe.concurrent('notification manager utils', () => {
     expect(isTimeTrigger(digest('day', '15:00:00.000Z'), utcDate('2024-01-01T14:00:00.000Z'))).toEqual(false);
     expect(isTimeTrigger(digest('day', '15:00:00.000Z'), utcDate('2024-01-01T15:01:00.000Z'))).toEqual(false);
   });
+
   it('should notification day week computed', async () => { // 1 being Monday and 7 being Sunday.
     expect(isTimeTrigger(digest('week', '1-16:00:00.000Z'), utcDate('2022-11-28T16:00:00.000Z'))).toEqual(true);
     expect(isTimeTrigger(digest('week', '1-16:00:00.000Z'), utcDate('2022-11-21T16:00:00.000Z'))).toEqual(true);
