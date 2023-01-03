@@ -3,7 +3,6 @@ import {
   createEntity,
   deleteElementById,
   patchAttribute,
-  storeLoadById,
   updateAttribute
 } from '../../database/middleware';
 import { notify } from '../../database/redis';
@@ -14,7 +13,7 @@ import type {
   QueryTriggersArgs,
   TriggerLiveAddInput
 } from '../../generated/graphql';
-import { listEntitiesPaginated } from '../../database/middleware-loader';
+import { listEntitiesPaginated, storeLoadById } from '../../database/middleware-loader';
 import {
   BasicStoreEntityNotification,
   BasicStoreEntityTrigger,

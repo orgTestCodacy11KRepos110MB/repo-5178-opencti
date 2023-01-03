@@ -6,7 +6,7 @@ import {
   RELATION_OBJECT_MARKING,
 } from '../schema/stixMetaRelationship';
 import { RELATION_INDICATES } from '../schema/stixCoreRelationship';
-import { internalFindByIds } from '../database/middleware';
+import { internalFindByIds } from '../database/middleware-loader';
 import { SYSTEM_USER } from './access';
 
 // Resolutions
