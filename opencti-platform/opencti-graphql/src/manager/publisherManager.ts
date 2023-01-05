@@ -68,7 +68,7 @@ const processNotificationEvent = async (
     // endregion
     if (outcome_type === 'UI') {
       const createNotification = {
-        notification_name,
+        name: notification_name,
         notification_type: trigger_type,
         user_id: user.user_id,
         content,

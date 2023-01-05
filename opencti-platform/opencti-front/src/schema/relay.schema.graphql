@@ -8990,7 +8990,8 @@ type Notification implements BasicObject {
   id: ID!
   standard_id: String!
   entity_type: String!
-  notification_name: String!
+  created: DateTime
+  name: String!
   notification_type: String!
   parent_types: [String]!
   content: [NotificationContent!]!
@@ -8998,6 +8999,7 @@ type Notification implements BasicObject {
 }
 
 enum NotificationsOrdering {
+  name
   created
 }
 

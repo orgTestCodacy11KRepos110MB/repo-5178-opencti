@@ -9,7 +9,7 @@ import {
 } from './notifications/__generated__/NotificationsLinesPaginationQuery.graphql';
 import { NotificationLineDummy } from './notifications/NotificationLine';
 
-export const LOCAL_STORAGE_KEY_DATA_SOURCES = 'view-alerts';
+export const LOCAL_STORAGE_KEY_DATA_SOURCES = 'view-notifications';
 
 const Notifications: FunctionComponent = () => {
   const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<NotificationsLinesPaginationQuery$variables>(
@@ -17,7 +17,7 @@ const Notifications: FunctionComponent = () => {
     {
       searchTerm: '',
       sortBy: 'created',
-      orderAsc: true,
+      orderAsc: false,
       openExports: false,
       filters: {} as Filters,
       numberOfElements: {
@@ -36,10 +36,20 @@ const Notifications: FunctionComponent = () => {
       numberOfElements,
     } = viewStorage;
     const dataColumns = {
-      name: {
-        label: 'Name',
-        width: '35%',
+      created: {
+        label: 'Creation date',
+        width: '20%',
         isSortable: true,
+      },
+      name: {
+        label: 'Trigger',
+        width: '15%',
+        isSortable: true,
+      },
+      message: {
+        label: 'Message',
+        width: '55%',
+        isSortable: false,
       },
     };
     const queryRef = useQueryLoading<NotificationsLinesPaginationQuery>(notificationsLinesQuery, paginationOptions);
@@ -65,11 +75,9 @@ const Notifications: FunctionComponent = () => {
           <React.Suspense
             fallback={
               <>
-                {Array(20)
-                  .fill(0)
-                  .map((idx) => (
-                    <NotificationLineDummy key={idx} dataColumns={dataColumns} />
-                  ))}
+                {Array.from(Array(20).keys()).map((idx) => (
+                    <NotificationLineDummy key={`NotificationLineDummy-${idx}`} dataColumns={dataColumns} />
+                ))}
               </>
             }
           >

@@ -58,7 +58,8 @@ type Notification implements InternalObject & BasicObject {
     id: ID! # internal_id
     standard_id: String!
     entity_type: String!
-    notification_name: String!
+    created: DateTime
+    name: String!
     notification_type: String!
     parent_types: [String]!
     content: [NotificationContent!]!
@@ -67,6 +68,7 @@ type Notification implements InternalObject & BasicObject {
 
 # Ordering
 enum NotificationsOrdering {
+    name
     created
 }
 

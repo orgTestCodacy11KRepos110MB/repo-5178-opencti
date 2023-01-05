@@ -58,6 +58,7 @@ const triggerLineFragment = graphql`
   fragment TriggerLine_node on Trigger {
     id
     name
+    trigger_type
     description
     created
     modified
@@ -77,7 +78,7 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({ data
       to={`/dashboard/profile/triggers/${data.id}`}
     >
       <ListItemIcon classes={{ root: classes.itemIcon }}>
-        <ItemIcon type="Trigger" />
+        <ItemIcon type={data.trigger_type === 'live' ? 'LiveNotification' : 'DigestNotification'} />
       </ListItemIcon>
       <ListItemText
         primary={

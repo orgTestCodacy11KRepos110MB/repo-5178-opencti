@@ -67,11 +67,9 @@ const Triggers: FunctionComponent = () => {
           <React.Suspense
             fallback={
               <>
-                {Array(20)
-                  .fill(0)
-                  .map((idx) => (
-                    <TriggerLineDummy key={idx} dataColumns={dataColumns} />
-                  ))}
+                {Array.from(Array(20).keys()).map((idx) => (
+                    <TriggerLineDummy key={`TriggerLineDummy-${idx}`} dataColumns={dataColumns} />
+                ))}
               </>
             }
           >

@@ -149,21 +149,19 @@ class ListLinesContent extends Component {
     const edge = dataList[index];
     if (!edge) {
       return (
-        <div key={key} style={style}>
+        <div key={`${index}-${key}`} style={style}>
           {/* TODO remove this when all components are pure function without compose() */}
           {!React.isValidElement(DummyLineComponent) ? (
             <DummyLineComponent dataColumns={dataColumns} />
           ) : (
-            React.cloneElement(DummyLineComponent, {
-              dataColumns,
-            })
+            React.cloneElement(DummyLineComponent, { dataColumns })
           )}
         </div>
       );
     }
     const { node, types } = edge;
     return (
-      <div key={key} style={style}>
+      <div key={`${index}-${key}`} style={style}>
         {/* TODO remove this when all components are pure function without compose() */}
         {!React.isValidElement(LineComponent) ? (
           <LineComponent
@@ -232,8 +230,7 @@ class ListLinesContent extends Component {
             <InfiniteLoader
               isRowLoaded={this._isRowLoaded}
               loadMoreRows={this._loadMoreRows}
-              rowCount={globalCount}
-            >
+              rowCount={globalCount}>
               {({ onRowsRendered, registerChild }) => (
                 <AutoSizer disableHeight>
                   {({ width }) => (
@@ -277,8 +274,8 @@ ListLinesContent.propTypes = {
   dataList: PropTypes.array,
   me: PropTypes.object,
   globalCount: PropTypes.number,
-  LineComponent: PropTypes.object,
-  DummyLineComponent: PropTypes.object,
+  LineComponent: PropTypes.oneOfType([PropTypes.object, PropTypes.func]),
+  DummyLineComponent: PropTypes.oneOfType([PropTypes.object, PropTypes.func]),
   nbOfRowsToLoad: PropTypes.number,
   dataColumns: PropTypes.object.isRequired,
   paginationOptions: PropTypes.object,

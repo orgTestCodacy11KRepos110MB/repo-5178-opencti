@@ -53,7 +53,7 @@ export const ENTITY_TYPE_NOTIFICATION = 'Notification';
 export interface NotificationAddInput {
   user_id: string
   is_read: boolean
-  notification_name: string
+  name: string
   notification_type: string
   content: Array<{
     title: string,

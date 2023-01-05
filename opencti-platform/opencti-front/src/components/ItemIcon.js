@@ -11,6 +11,8 @@ import {
   DescriptionOutlined,
   CenterFocusStrongOutlined,
   ShortTextOutlined,
+  RocketLaunchOutlined,
+  DepartureBoardOutlined,
   WorkOutline,
   ReviewsOutlined,
   LocalOfferOutlined,
@@ -75,14 +77,12 @@ const iconSelector = (type, variant, fontSize, color, isReversed) => {
   switch (type) {
     case 'Vocabulary':
       return <ShortTextOutlined style={style} fontSize={fontSize} role="img" />;
+    case 'LiveNotification':
+      return <RocketLaunchOutlined style={style} fontSize={fontSize} role="img" />;
+    case 'DigestNotification':
+      return <DepartureBoardOutlined style={style} fontSize={fontSize} role="img" />;
     case 'Marking-Definition':
-      return (
-        <CenterFocusStrongOutlined
-          style={style}
-          fontSize={fontSize}
-          role="img"
-        />
-      );
+      return <CenterFocusStrongOutlined style={style} fontSize={fontSize} role="img" />;
     case 'External-Reference':
       return (
         <LocalOfferOutlined style={style} fontSize={fontSize} role="img" />

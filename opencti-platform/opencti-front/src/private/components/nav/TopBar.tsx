@@ -147,7 +147,7 @@ const logoutMutation = graphql`
 const notificationSubscription = graphql`
   subscription TopBarNotificationSubscription {
     notification {
-      notification_name
+      name
       notification_type
       content {
         title
@@ -510,7 +510,9 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
               <MenuItem component={Link} to="/dashboard/profile" onClick={handleCloseMenu}>
                 {t('Profile')}
               </MenuItem>
-              <MenuItem onClick={handleOpenDrawer}>{t('Feedback')}</MenuItem>
+              <MenuItem onClick={handleOpenDrawer}>
+                {t('Feedback')}
+              </MenuItem>
               <MenuItem onClick={handleLogout}>{t('Logout')}</MenuItem>
             </Menu>
             <IconButton size="medium" classes={{ root: classes.button }} aria-haspopup="true"

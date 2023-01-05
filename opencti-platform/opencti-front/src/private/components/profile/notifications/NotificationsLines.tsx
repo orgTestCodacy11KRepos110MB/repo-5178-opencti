@@ -62,7 +62,6 @@ const notificationsLinesFragment = graphql`
       edges {
         node {
           id
-          notification_name
           ...NotificationLine_node
         }
       }

@@ -11,6 +11,7 @@ import { Theme } from '@mui/material/styles/createTheme';
 import { DataColumns } from '../../../../components/list_lines';
 import ItemIcon from '../../../../components/ItemIcon';
 import { NotificationLine_node$key } from './__generated__/NotificationLine_node.graphql';
+import { useFormatter } from '../../../../components/i18n';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   item: {
@@ -57,7 +58,8 @@ interface NotificationLineProps {
 const notificationLineFragment = graphql`
   fragment NotificationLine_node on Notification {
     id
-    notification_name
+    name
+    created
     notification_type
     content {
       title
@@ -68,23 +70,29 @@ const notificationLineFragment = graphql`
 
 export const NotificationLineComponent: FunctionComponent<NotificationLineProps> = ({ dataColumns, node }) => {
   const classes = useStyles();
+  const { fldt } = useFormatter();
   const data = useFragment(notificationLineFragment, node);
+  const messageText = data.content.map((c) => c.messages).flat().join(', ');
+  const shortMessage = messageText.substring(0, Math.max(200, messageText.length));
+  const message = `${shortMessage}${messageText.length > shortMessage.length ? '...' : ''}`;
   return (
-    <ListItem
-      classes={{ root: classes.item }}
-      divider={true}
-      button={true}
-      component={Link}
-      to={`/dashboard/profile/notifications/${data.id}`}
-    >
+    <ListItem classes={{ root: classes.item }}
+      divider={true} button={true} component={Link}
+      to={`/dashboard/profile/notifications/${data.id}`}>
       <ListItemIcon classes={{ root: classes.itemIcon }}>
-        <ItemIcon type="Alert" />
+        <ItemIcon type={data.notification_type === 'live' ? 'LiveNotification' : 'DigestNotification'} />
       </ListItemIcon>
       <ListItemText
         primary={
           <div>
+            <div className={classes.bodyItem} style={{ width: dataColumns.created.width }}>
+              {fldt(data.created)}
+            </div>
             <div className={classes.bodyItem} style={{ width: dataColumns.name.width }}>
-              {data.notification_name}
+              {data.name}
+            </div>
+            <div className={classes.bodyItem} style={{ width: dataColumns.message.width }}>
+              {message}
             </div>
           </div>
         }
@@ -106,13 +114,14 @@ export const NotificationLineDummy = ({ dataColumns }: { dataColumns: DataColumn
       <ListItemText
         primary={
           <div>
+            <div className={classes.bodyItem} style={{ width: dataColumns.created.width }}>
+              <Skeleton animation="wave" variant="rectangular" width="90%" height="100%" />
+            </div>
             <div className={classes.bodyItem} style={{ width: dataColumns.name.width }}>
-              <Skeleton
-                animation="wave"
-                variant="rectangular"
-                width="90%"
-                height="100%"
-              />
+              <Skeleton animation="wave" variant="rectangular" width="90%" height="100%" />
+            </div>
+            <div className={classes.bodyItem} style={{ width: dataColumns.message.width }}>
+              <Skeleton animation="wave" variant="rectangular" width="90%" height="100%" />
             </div>
           </div>
         }
