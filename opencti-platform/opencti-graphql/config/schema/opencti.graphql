@@ -534,10 +534,12 @@ type StreamCollection {
   description: String
   filters: String
   groups: [Group]
+  live: Boolean
+  public: Boolean
 }
 type StreamCollectionConnection {
   pageInfo: PageInfo!
-  edges: [StreamCollectionEdge]
+  edges: [StreamCollectionEdge]!
 }
 type StreamCollectionEdge {
   cursor: String!
@@ -548,10 +550,13 @@ input StreamCollectionAddInput {
   description: String
   groups: [String]
   filters: String
+  live: Boolean
+  public: Boolean
 }
 enum StreamCollectionOrdering {
   name
   description
+  public
 }
 
 ############## Subscription
@@ -677,7 +682,7 @@ type Synchronizer {
   id: ID!
   name: String!
   uri: String!
-  token: String!
+  token: String
   stream_id: String!
   user: User
   running: Boolean!
@@ -700,7 +705,7 @@ type SynchronizerConnection {
 input SynchronizerAddInput {
   name: String! @constraint(minLength: 2)
   uri: String! @constraint(minLength: 2)
-  token: String! @constraint(minLength: 2)
+  token: String
   stream_id: String! @constraint(minLength: 2)
   user_id: String
   recover: DateTime
@@ -12029,7 +12034,7 @@ type Query {
     orderBy: StreamCollectionOrdering
     orderMode: OrderingMode
     search: String
-  ): StreamCollectionConnection @auth(for: [TAXIIAPI_SETCOLLECTIONS])
+  ): StreamCollectionConnection!
   userSubscription(id: String!): UserSubscription @auth(for: [KNOWLEDGE])
   userSubscriptions(
     first: Int

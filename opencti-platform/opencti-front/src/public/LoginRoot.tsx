@@ -9,7 +9,7 @@ import { RootPublicQuery } from './__generated__/RootPublicQuery.graphql';
 import { environment } from '../relay/environment';
 
 export const rootPublicQuery = graphql`
-  query RootPublicQuery {
+  query LoginRootPublicQuery {
     settings {
       platform_theme
       platform_login_message
@@ -28,7 +28,7 @@ export const rootPublicQuery = graphql`
 
 const queryRef = loadQuery<RootPublicQuery>(environment, rootPublicQuery, {});
 
-const Root = ({ type }: { type : string }) => {
+const LoginRoot = ({ type }: { type: string }) => {
   const data = usePreloadedQuery<RootPublicQuery>(rootPublicQuery, queryRef);
   const { settings } = data;
   return (
@@ -43,4 +43,4 @@ const Root = ({ type }: { type : string }) => {
   );
 };
 
-export default Root;
+export default LoginRoot;

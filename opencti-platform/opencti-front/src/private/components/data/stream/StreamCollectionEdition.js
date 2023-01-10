@@ -9,6 +9,8 @@ import { Close } from '@mui/icons-material';
 import * as Yup from 'yup';
 import * as R from 'ramda';
 import { difference, head, map, pathOr, pipe } from 'ramda';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import inject18n from '../../../../components/i18n';
 import { commitMutation } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
@@ -46,7 +48,7 @@ const styles = (theme) => ({
   },
 });
 
-const streamCollectionMutationFieldPatch = graphql`
+export const streamCollectionMutationFieldPatch = graphql`
   mutation StreamCollectionEditionFieldPatchMutation(
     $id: ID!
     $input: [EditInput]!
@@ -62,6 +64,7 @@ const streamCollectionMutationFieldPatch = graphql`
 const streamCollectionValidation = (t) => Yup.object().shape({
   name: Yup.string().required(t('This field is required')),
   description: Yup.string().nullable(),
+  public: Yup.bool().nullable(),
 });
 
 const groupMutationRelationAdd = graphql`
@@ -93,7 +96,7 @@ const StreamCollectionEditionContainer = (props) => {
       value: n.id,
     })),
   )(streamCollection);
-  const initialValues = R.pickAll(['name', 'description'], streamCollection);
+  const initialValues = { ...streamCollection };
   initialValues.groups = groups;
   const [filters, setFilters] = useState(
     JSON.parse(props.streamCollection.filters),
@@ -222,12 +225,23 @@ const StreamCollectionEditionContainer = (props) => {
                 style={{ marginTop: 20 }}
                 onSubmit={handleSubmitField}
               />
-              <GroupField
-                name="groups"
-                helpertext={t('Let the field empty to grant all users')}
-                style={{ marginTop: 20, width: '100%' }}
-                onChange={handleChangeGroups}
+              <FormControlLabel
+                control={
+                  <Switch
+                    defaultChecked={initialValues.public}
+                  />
+                }
+                onChange={(_, checked) => handleSubmitField('public', checked.toString())}
+                label={t('Public')}
               />
+              {!initialValues.public && (
+                <GroupField
+                  name="groups"
+                  helpertext={t('Let the field empty to grant all users')}
+                  style={{ marginTop: 20, width: '100%' }}
+                  onChange={handleChangeGroups}
+                />
+              )}
               <div style={{ marginTop: 35 }}>
                 <Filters
                   variant="text"
@@ -280,6 +294,8 @@ const StreamCollectionEditionFragment = createFragmentContainer(
         name
         description
         filters
+        live
+        public
         groups {
           id
           name

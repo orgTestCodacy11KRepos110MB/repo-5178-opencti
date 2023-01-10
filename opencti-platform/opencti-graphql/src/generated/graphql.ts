@@ -14758,7 +14758,7 @@ export type Query = {
   stixSightingRelationshipsNumber?: Maybe<Number>;
   stixSightingRelationshipsTimeSeries?: Maybe<Array<Maybe<TimeSeries>>>;
   streamCollection?: Maybe<StreamCollection>;
-  streamCollections?: Maybe<StreamCollectionConnection>;
+  streamCollections: StreamCollectionConnection;
   subType?: Maybe<SubType>;
   subTypes: SubTypeConnection;
   synchronizer?: Maybe<Synchronizer>;
@@ -20123,19 +20123,23 @@ export type StreamCollection = {
   filters?: Maybe<Scalars['String']>;
   groups?: Maybe<Array<Maybe<Group>>>;
   id: Scalars['ID'];
+  live?: Maybe<Scalars['Boolean']>;
   name?: Maybe<Scalars['String']>;
+  public?: Maybe<Scalars['Boolean']>;
 };
 
 export type StreamCollectionAddInput = {
   description?: InputMaybe<Scalars['String']>;
   filters?: InputMaybe<Scalars['String']>;
   groups?: InputMaybe<Array<InputMaybe<Scalars['String']>>>;
+  live?: InputMaybe<Scalars['Boolean']>;
   name: Scalars['String'];
+  public?: InputMaybe<Scalars['Boolean']>;
 };
 
 export type StreamCollectionConnection = {
   __typename?: 'StreamCollectionConnection';
-  edges?: Maybe<Array<Maybe<StreamCollectionEdge>>>;
+  edges: Array<Maybe<StreamCollectionEdge>>;
   pageInfo: PageInfo;
 };
 
@@ -20170,7 +20174,8 @@ export type StreamCollectionEditMutationsFieldPatchArgs = {
 
 export enum StreamCollectionOrdering {
   Description = 'description',
-  Name = 'name'
+  Name = 'name',
+  Public = 'public'
 }
 
 export type SubType = {
@@ -20325,7 +20330,7 @@ export type Synchronizer = {
   running: Scalars['Boolean'];
   ssl_verify?: Maybe<Scalars['Boolean']>;
   stream_id: Scalars['String'];
-  token: Scalars['String'];
+  token?: Maybe<Scalars['String']>;
   uri: Scalars['String'];
   user?: Maybe<User>;
 };
@@ -20338,7 +20343,7 @@ export type SynchronizerAddInput = {
   recover?: InputMaybe<Scalars['DateTime']>;
   ssl_verify?: InputMaybe<Scalars['Boolean']>;
   stream_id: Scalars['String'];
-  token: Scalars['String'];
+  token?: InputMaybe<Scalars['String']>;
   uri: Scalars['String'];
   user_id?: InputMaybe<Scalars['String']>;
 };
@@ -24315,7 +24320,7 @@ export type ResolversTypes = ResolversObject<{
   StixSightingRelationshipsOrdering: StixSightingRelationshipsOrdering;
   StreamCollection: ResolverTypeWrapper<Omit<StreamCollection, 'groups'> & { groups?: Maybe<Array<Maybe<ResolversTypes['Group']>>> }>;
   StreamCollectionAddInput: StreamCollectionAddInput;
-  StreamCollectionConnection: ResolverTypeWrapper<Omit<StreamCollectionConnection, 'edges'> & { edges?: Maybe<Array<Maybe<ResolversTypes['StreamCollectionEdge']>>> }>;
+  StreamCollectionConnection: ResolverTypeWrapper<Omit<StreamCollectionConnection, 'edges'> & { edges: Array<Maybe<ResolversTypes['StreamCollectionEdge']>> }>;
   StreamCollectionEdge: ResolverTypeWrapper<Omit<StreamCollectionEdge, 'node'> & { node: ResolversTypes['StreamCollection'] }>;
   StreamCollectionEditMutations: ResolverTypeWrapper<Omit<StreamCollectionEditMutations, 'addGroup' | 'deleteGroup' | 'fieldPatch'> & { addGroup?: Maybe<ResolversTypes['StreamCollection']>, deleteGroup?: Maybe<ResolversTypes['StreamCollection']>, fieldPatch?: Maybe<ResolversTypes['StreamCollection']> }>;
   StreamCollectionOrdering: StreamCollectionOrdering;
@@ -24888,7 +24893,7 @@ export type ResolversParentTypes = ResolversObject<{
   StixSightingRelationshipsFiltering: StixSightingRelationshipsFiltering;
   StreamCollection: Omit<StreamCollection, 'groups'> & { groups?: Maybe<Array<Maybe<ResolversParentTypes['Group']>>> };
   StreamCollectionAddInput: StreamCollectionAddInput;
-  StreamCollectionConnection: Omit<StreamCollectionConnection, 'edges'> & { edges?: Maybe<Array<Maybe<ResolversParentTypes['StreamCollectionEdge']>>> };
+  StreamCollectionConnection: Omit<StreamCollectionConnection, 'edges'> & { edges: Array<Maybe<ResolversParentTypes['StreamCollectionEdge']>> };
   StreamCollectionEdge: Omit<StreamCollectionEdge, 'node'> & { node: ResolversParentTypes['StreamCollection'] };
   StreamCollectionEditMutations: Omit<StreamCollectionEditMutations, 'addGroup' | 'deleteGroup' | 'fieldPatch'> & { addGroup?: Maybe<ResolversParentTypes['StreamCollection']>, deleteGroup?: Maybe<ResolversParentTypes['StreamCollection']>, fieldPatch?: Maybe<ResolversParentTypes['StreamCollection']> };
   String: Scalars['String'];
@@ -29079,7 +29084,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   stixSightingRelationshipsNumber?: Resolver<Maybe<ResolversTypes['Number']>, ParentType, ContextType, Partial<QueryStixSightingRelationshipsNumberArgs>>;
   stixSightingRelationshipsTimeSeries?: Resolver<Maybe<Array<Maybe<ResolversTypes['TimeSeries']>>>, ParentType, ContextType, RequireFields<QueryStixSightingRelationshipsTimeSeriesArgs, 'endDate' | 'field' | 'interval' | 'operation' | 'startDate'>>;
   streamCollection?: Resolver<Maybe<ResolversTypes['StreamCollection']>, ParentType, ContextType, RequireFields<QueryStreamCollectionArgs, 'id'>>;
-  streamCollections?: Resolver<Maybe<ResolversTypes['StreamCollectionConnection']>, ParentType, ContextType, Partial<QueryStreamCollectionsArgs>>;
+  streamCollections?: Resolver<ResolversTypes['StreamCollectionConnection'], ParentType, ContextType, Partial<QueryStreamCollectionsArgs>>;
   subType?: Resolver<Maybe<ResolversTypes['SubType']>, ParentType, ContextType, RequireFields<QuerySubTypeArgs, 'id'>>;
   subTypes?: Resolver<ResolversTypes['SubTypeConnection'], ParentType, ContextType, Partial<QuerySubTypesArgs>>;
   synchronizer?: Resolver<Maybe<ResolversTypes['Synchronizer']>, ParentType, ContextType, RequireFields<QuerySynchronizerArgs, 'id'>>;
@@ -30253,12 +30258,14 @@ export type StreamCollectionResolvers<ContextType = any, ParentType extends Reso
   filters?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   groups?: Resolver<Maybe<Array<Maybe<ResolversTypes['Group']>>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  live?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  public?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type StreamCollectionConnectionResolvers<ContextType = any, ParentType extends ResolversParentTypes['StreamCollectionConnection'] = ResolversParentTypes['StreamCollectionConnection']> = ResolversObject<{
-  edges?: Resolver<Maybe<Array<Maybe<ResolversTypes['StreamCollectionEdge']>>>, ParentType, ContextType>;
+  edges?: Resolver<Array<Maybe<ResolversTypes['StreamCollectionEdge']>>, ParentType, ContextType>;
   pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -30332,7 +30339,7 @@ export type SynchronizerResolvers<ContextType = any, ParentType extends Resolver
   running?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   ssl_verify?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   stream_id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  token?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  token?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   uri?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

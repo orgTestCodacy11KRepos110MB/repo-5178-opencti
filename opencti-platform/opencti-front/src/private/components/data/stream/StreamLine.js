@@ -6,7 +6,13 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
-import { CastConnectedOutlined, MoreVert } from '@mui/icons-material';
+import {
+  CastConnectedOutlined,
+  MoreVert,
+  StopCircleOutlined,
+  Visibility,
+  VisibilityOffOutlined,
+} from '@mui/icons-material';
 import { compose } from 'ramda';
 import Slide from '@mui/material/Slide';
 import Skeleton from '@mui/material/Skeleton';
@@ -57,7 +63,10 @@ class StreamLineLineComponent extends Component {
     return (
       <ListItem classes={{ root: classes.item }} divider={true}>
         <ListItemIcon classes={{ root: classes.itemIcon }}>
-          <CastConnectedOutlined />
+          {node.live ? <CastConnectedOutlined color='success' /> : <StopCircleOutlined color='error' />}
+        </ListItemIcon>
+        <ListItemIcon classes={{ root: classes.itemIcon }}>
+          {node.public ? <Visibility /> : <VisibilityOffOutlined />}
         </ListItemIcon>
         <ListItemText
           primary={
@@ -91,7 +100,7 @@ class StreamLineLineComponent extends Component {
         />
         <ListItemSecondaryAction>
           <StreamPopover
-            streamCollectionId={node.id}
+            streamCollection={node}
             paginationOptions={paginationOptions}
           />
         </ListItemSecondaryAction>
@@ -116,6 +125,12 @@ const StreamLineFragment = createFragmentContainer(StreamLineLineComponent, {
       name
       description
       filters
+      public
+      live
+      groups {
+        id
+        name
+      }
     }
   `,
 });
@@ -130,6 +145,14 @@ class StreamDummyComponent extends Component {
     const { classes, dataColumns } = this.props;
     return (
       <ListItem classes={{ root: classes.item }} divider={true}>
+        <ListItemIcon classes={{ root: classes.itemIcon }}>
+          <Skeleton
+            animation="wave"
+            variant="circular"
+            width={30}
+            height={30}
+          />
+        </ListItemIcon>
         <ListItemIcon classes={{ root: classes.itemIcon }}>
           <Skeleton
             animation="wave"

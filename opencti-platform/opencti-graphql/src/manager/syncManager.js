@@ -14,7 +14,7 @@ import { EVENT_CURRENT_VERSION, lockResource } from '../database/redis';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 import { utcDate } from '../utils/format';
 import { listEntities, storeLoadById } from '../database/middleware-loader';
-import { wait } from '../database/utils';
+import { isEmptyField, wait } from '../database/utils';
 import { pushToSync } from '../database/rabbitmq';
 import { OPENCTI_SYSTEM_UUID } from '../schema/general';
 
@@ -45,7 +45,7 @@ const syncManagerInstance = (syncId) => {
     eventsQueue = new Queue();
     eventSource = new EventSource(sseUri, {
       rejectUnauthorized: ssl,
-      headers: { authorization: `Bearer ${token}` },
+      headers: !isEmptyField(token) ? { authorization: `Bearer ${token}` } : undefined,
     });
     eventSource.on('heartbeat', ({ lastEventId, type }) => {
       eventsQueue.enqueue({ id: lastEventId, type });
@@ -125,7 +125,7 @@ const syncManagerInstance = (syncId) => {
       const { token, ssl_verify: ssl = false } = sync;
       const httpClient = axios.create({
         responseType: 'arraybuffer',
-        headers: { authorization: `Bearer ${token}` },
+        headers: !isEmptyField(token) ? { authorization: `Bearer ${token}` } : undefined,
         httpsAgent: new https.Agent({ rejectUnauthorized: ssl })
       });
       lastState = sync.current_state;

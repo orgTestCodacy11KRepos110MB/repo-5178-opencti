@@ -9,6 +9,7 @@ import React from 'react';
 import { APP_BASE_PATH } from './relay/environment';
 import RedirectManager from './components/RedirectManager';
 import RootPrivate from './private/Root';
+import PublicRoot from './public/PublicRoot';
 import AuthBoundaryComponent from './private/components/AuthBoundary';
 
 const App = () => (
@@ -22,6 +23,7 @@ const App = () => (
               element={<Navigate to="/dashboard" replace={true} />}
             />
             <Route path="/dashboard/*" element={<RootPrivate />} />
+            <Route path="/public/*" element={<PublicRoot />} />
           </Routes>
         </RedirectManager>
       </AuthBoundaryComponent>

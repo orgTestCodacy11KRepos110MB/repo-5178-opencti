@@ -58,9 +58,14 @@ class Stream extends Component {
     const { t, theme } = this.props;
     const { sortBy, orderAsc, searchTerm } = this.state;
     const dataColumns = {
+      public: {
+        label: 'Public',
+        width: '5%',
+        isSortable: true,
+      },
       name: {
         label: 'Name',
-        width: '15%',
+        width: '10%',
         isSortable: true,
       },
       description: {

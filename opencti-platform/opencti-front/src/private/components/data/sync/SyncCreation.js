@@ -82,7 +82,7 @@ export const syncCheckMutation = graphql`
 const syncCreationValidation = (t) => Yup.object().shape({
   name: Yup.string().required(t('This field is required')),
   uri: Yup.string().required(t('This field is required')),
-  token: Yup.string().required(t('This field is required')),
+  token: Yup.string(),
   stream_id: Yup.string().required(t('This field is required')),
   current_state: Yup.date()
     .nullable()

@@ -13,6 +13,8 @@ import { graphql } from 'react-relay';
 import { ConnectionHandler } from 'relay-runtime';
 import * as R from 'ramda';
 import { evolve, pluck } from 'ramda';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import inject18n from '../../../../components/i18n';
 import { commitMutation } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
@@ -78,6 +80,7 @@ const StreamCollectionCreationMutation = graphql`
 const streamCollectionCreationValidation = (t) => Yup.object().shape({
   name: Yup.string().required(t('This field is required')),
   description: Yup.string().nullable(),
+  public: Yup.bool().nullable(),
 });
 
 const sharedUpdater = (store, userId, paginationOptions, newEdge) => {
@@ -190,12 +193,13 @@ const StreamCollectionCreation = (props) => {
               name: '',
               description: '',
               groups: [],
+              public: false,
             }}
             validationSchema={streamCollectionCreationValidation(t)}
             onSubmit={onSubmit}
             onReset={onReset}
           >
-            {({ submitForm, handleReset, isSubmitting }) => (
+            {({ submitForm, handleReset, isSubmitting, setFieldValue, values }) => (
               <Form style={{ margin: '20px 0 20px 0' }}>
                 <Field
                   component={TextField}
@@ -212,11 +216,19 @@ const StreamCollectionCreation = (props) => {
                   fullWidth={true}
                   style={{ marginTop: 20 }}
                 />
-                <GroupField
+                <FormControlLabel
+                  control={
+                    <Switch />
+                  }
+                  name='public'
+                  onChange={(_, checked) => setFieldValue('public', checked)}
+                  label={t('Public')}
+                />
+                {!values.public && (<GroupField
                   name="groups"
                   helpertext={t('Let the field empty to grant all users')}
                   style={{ marginTop: 20, width: '100%' }}
-                />
+                />)}
                 <div style={{ marginTop: 35 }}>
                   <Filters
                     variant="text"
