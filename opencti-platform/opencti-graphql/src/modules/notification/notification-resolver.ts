@@ -1,6 +1,7 @@
 import { withFilter } from 'graphql-subscriptions';
 import type { Notification, Resolvers } from '../../generated/graphql';
 import {
+  addDigestTrigger,
   addLiveTrigger,
   notificationDelete,
   notificationEditRead,
@@ -28,6 +29,7 @@ const notificationResolvers: Resolvers = {
     triggerFieldPatch: (_, { id, input }, context) => triggerEdit(context, context.user, id, input),
     triggerDelete: (_, { id }, context) => triggerDelete(context, context.user, id),
     triggerLiveAdd: (_, { input }, context) => addLiveTrigger(context, context.user, input),
+    triggerDigestAdd: (_, { input }, context) => addDigestTrigger(context, context.user, input),
     notificationDelete: (_, { id }, context) => notificationDelete(context, context.user, id),
     notificationMarkRead: (_, { id, read }, context) => notificationEditRead(context, context.user, id, read),
   },

@@ -11,10 +11,13 @@ import type {
   EditInput,
   QueryNotificationsArgs,
   QueryTriggersArgs,
+  TriggerDigestAddInput,
   TriggerLiveAddInput
 } from '../../generated/graphql';
 import { listEntitiesPaginated, storeLoadById } from '../../database/middleware-loader';
 import {
+  BasicStoreEntityDigestTrigger,
+  BasicStoreEntityLiveTrigger,
   BasicStoreEntityNotification,
   BasicStoreEntityTrigger,
   ENTITY_TYPE_NOTIFICATION,
@@ -27,16 +30,16 @@ import { now } from '../../utils/format';
 
 // Triggers
 export const addLiveTrigger = async (context: AuthContext, user: AuthUser, trigger: TriggerLiveAddInput) => {
-  const liveTrigger = {
-    ...trigger,
-    trigger_type: 'live',
-    user_ids: [user.id],
-    group_ids: [],
-    created: now(),
-    updated: now()
-  };
+  const defaultOpts = { trigger_type: 'live', user_ids: [user.id], group_ids: [], created: now(), updated: now() };
+  const liveTrigger = { ...trigger, ...defaultOpts };
   const created = await createEntity(context, user, liveTrigger, ENTITY_TYPE_TRIGGER);
-  return notify(BUS_TOPICS[ENTITY_TYPE_TRIGGER].ADDED_TOPIC, created, user) as BasicStoreEntityTrigger;
+  return notify(BUS_TOPICS[ENTITY_TYPE_TRIGGER].ADDED_TOPIC, created, user) as BasicStoreEntityLiveTrigger;
+};
+export const addDigestTrigger = async (context: AuthContext, user: AuthUser, trigger: TriggerDigestAddInput) => {
+  const defaultOpts = { trigger_type: 'digest', user_ids: [user.id], group_ids: [], created: now(), updated: now() };
+  const digestTrigger = { ...trigger, ...defaultOpts };
+  const created = await createEntity(context, user, digestTrigger, ENTITY_TYPE_TRIGGER);
+  return notify(BUS_TOPICS[ENTITY_TYPE_TRIGGER].ADDED_TOPIC, created, user) as BasicStoreEntityDigestTrigger;
 };
 export const triggerGet = (context: AuthContext, user: AuthUser, narrativeId: string): BasicStoreEntityTrigger => {
   return storeLoadById(context, user, narrativeId, ENTITY_TYPE_TRIGGER) as unknown as BasicStoreEntityTrigger;

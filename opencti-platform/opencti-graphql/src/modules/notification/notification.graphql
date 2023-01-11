@@ -122,6 +122,13 @@ type Query {
 
 # Mutations
 
+enum DigestPeriod {
+    hour
+    day
+    week
+    month
+}
+
 input TriggerLiveAddInput {
     name: String! @constraint(minLength: 1)
     description: String
@@ -130,12 +137,22 @@ input TriggerLiveAddInput {
     filters: String
 }
 
+input TriggerDigestAddInput {
+    name: String! @constraint(minLength: 1)
+    description: String
+    triggers: [String!]! # Triggers that composed the digest
+    period: DigestPeriod!
+    trigger_time: String
+    outcomes: [StixRef!]!
+}
+
 type Mutation {
     # Outcomes
     # Triggers
     triggerDelete(id: ID!): ID @auth
     triggerFieldPatch(id: ID!, input: [EditInput!]!): Trigger @auth
     triggerLiveAdd(input: TriggerLiveAddInput!): Trigger @auth
+    triggerDigestAdd(input: TriggerDigestAddInput!): Trigger @auth
     # Notifications
     notificationDelete(id: ID!): ID @auth
     notificationMarkRead(id: ID!, read: Boolean!): Notification @auth

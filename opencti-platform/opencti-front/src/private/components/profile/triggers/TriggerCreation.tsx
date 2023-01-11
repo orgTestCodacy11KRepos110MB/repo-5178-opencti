@@ -105,7 +105,7 @@ interface TriggerCreationProps {
 
 // region live
 const triggerLiveAddMutation = graphql`
-  mutation TriggerCreationMutation($input: TriggerLiveAddInput!) {
+  mutation TriggerCreationLiveMutation($input: TriggerLiveAddInput!) {
     triggerLiveAdd(input: $input) {
       ...TriggerLine_node
     }
@@ -119,7 +119,7 @@ const triggerValidation = (t: (message: string) => string) => Yup.object().shape
   outcomes: Yup.array().required(t('This field is required')),
 });
 
-interface TriggerAddInput {
+interface TriggerLiveAddInput {
   name: string
   description: string
   event_types: string[]
@@ -157,15 +157,15 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
     setFilters(R.dissoc(key, filters));
   };
   const [commitLive] = useMutation(triggerLiveAddMutation);
-  const liveInitialValues: TriggerAddInput = {
+  const liveInitialValues: TriggerLiveAddInput = {
     name: inputValue || '',
     description: '',
     event_types: ['create'],
     outcomes: [],
   };
-  const onLiveSubmit: FormikConfig<TriggerAddInput>['onSubmit'] = (
-    values: TriggerAddInput,
-    { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerAddInput>,
+  const onLiveSubmit: FormikConfig<TriggerLiveAddInput>['onSubmit'] = (
+    values: TriggerLiveAddInput,
+    { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerLiveAddInput>,
   ) => {
     const jsonFilters = JSON.stringify(filters);
     const finalValues = {
@@ -244,28 +244,30 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
       </Field>
       <div style={{ marginTop: 35 }}>
         <Filters
-          variant="text"
-          availableFilterKeys={[
-            'entity_type',
-            'markedBy',
-            'labelledBy',
-            'createdBy',
-            'x_opencti_score',
-            'x_opencti_detection',
-            'revoked',
-            'confidence',
-            'indicator_types',
-            'pattern_type',
-          ]}
-          handleAddFilter={handleAddFilter}
-          noDirectFilters={true}
-          disabled={undefined}
-          size={undefined}
-          fontSize={undefined}
-          availableEntityTypes={undefined}
-          availableRelationshipTypes={undefined}
-          allEntityTypes={undefined}
-          type={undefined} />
+            variant="text"
+            availableFilterKeys={[
+              'entity_type',
+              'markedBy',
+              'labelledBy',
+              'createdBy',
+              'x_opencti_score',
+              'x_opencti_detection',
+              'revoked',
+              'confidence',
+              'indicator_types',
+              'pattern_type',
+            ]}
+            handleAddFilter={handleAddFilter}
+            noDirectFilters={true}
+            disabled={undefined}
+            size={undefined}
+            fontSize={undefined}
+            availableEntityTypes={undefined}
+            availableRelationshipTypes={undefined}
+            allEntityTypes={undefined}
+            type={undefined}
+            availableRelationFilterTypes={undefined}
+        />
       </div>
       <FilterCard filters={filters} handleRemoveFilter={handleRemoveFilter}/>
     </React.Fragment>
@@ -288,7 +290,7 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
           <Typography variant="h6">{t('Create a live trigger')}</Typography>
         </div>
         <div className={classes.container}>
-          <Formik<TriggerAddInput> initialValues={liveInitialValues}
+          <Formik<TriggerLiveAddInput> initialValues={liveInitialValues}
             validationSchema={triggerValidation(t)}
             onSubmit={onLiveSubmit} onReset={onReset}>
             {({
@@ -355,6 +357,20 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
 // endregion
 
 // region digest
+const triggerDigestAddMutation = graphql`
+  mutation TriggerCreationDigestMutation($input: TriggerDigestAddInput!) {
+    triggerDigestAdd(input: $input) {
+      ...TriggerLine_node
+    }
+  }
+`;
+
+interface TriggerDigestAddInput {
+  name: string
+  description: string
+  outcomes: string[]
+}
+
 const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
   contextual,
   display,
@@ -365,51 +381,28 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
 }) => {
   const { t } = useFormatter();
   const classes = useStyles();
-  const [filters, setFilters] = useState<Record<string, object[]>>({});
   const onReset = () => handleClose();
-  const handleAddFilter = (key: string, id: string, value: unknown) => {
-    if (filters[key] && filters[key].length > 0) {
-      setFilters(
-        R.assoc(
-          key,
-          isUniqFilter(key)
-            ? [{ id, value }]
-            : R.uniqBy(R.prop('id'), [{ id, value }, ...filters[key]]),
-          filters,
-        ),
-      );
-    } else {
-      setFilters(R.assoc(key, [{ id, value }], filters));
-    }
-  };
-  const handleRemoveFilter = (key: string) => {
-    setFilters(R.dissoc(key, filters));
-  };
-  const [commitDigest] = useMutation(triggerLiveAddMutation);
-  const liveInitialValues: TriggerAddInput = {
+  const [commitDigest] = useMutation(triggerDigestAddMutation);
+  const digestInitialValues: TriggerDigestAddInput = {
     name: inputValue || '',
     description: '',
-    event_types: ['create'],
     outcomes: [],
   };
-  const onLiveSubmit: FormikConfig<TriggerAddInput>['onSubmit'] = (
-    values: TriggerAddInput,
-    { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerAddInput>,
+  const onDigestSubmit: FormikConfig<TriggerDigestAddInput>['onSubmit'] = (
+    values: TriggerDigestAddInput,
+    { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerDigestAddInput>,
   ) => {
-    const jsonFilters = JSON.stringify(filters);
     const finalValues = {
       name: values.name,
-      event_types: values.event_types,
       outcomes: values.outcomes,
       description: values.description,
-      filters: jsonFilters,
     };
     commitDigest({
       variables: {
         input: finalValues,
       },
       updater: (store) => {
-        insertNode(store, 'Pagination_triggers', paginationOptions, 'triggerLiveAdd');
+        insertNode(store, 'Pagination_triggers', paginationOptions, 'triggerDigestAdd');
       },
       onError: (error: Error) => {
         handleErrorInForm(error, setErrors);
@@ -422,7 +415,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       },
     });
   };
-  const liveFields = (
+  const digestFields = (
     setFieldValue: (
       field: string,
       value: unknown,
@@ -448,19 +441,6 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       />
       <Field component={SelectField}
              variant="standard"
-             name="event_types"
-             label={t('Triggering on')}
-             fullWidth={true}
-             multiple={true}
-             onChange={(name: string, value: string[]) => setFieldValue('event_types', value)}
-             inputProps={{ name: 'type', id: 'type' }}
-             containerstyle={{ marginTop: 20, width: '100%' }}>
-        <MenuItem value="create">{t('Creation')}</MenuItem>
-        <MenuItem value="update">{t('Update')}</MenuItem>
-        <MenuItem value="delete">{t('Deletion')}</MenuItem>
-      </Field>
-      <Field component={SelectField}
-             variant="standard"
              name="outcomes"
              label={t('Targeting')}
              fullWidth={true}
@@ -471,32 +451,6 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
         <MenuItem value='f4ee7b33-006a-4b0d-b57d-411ad288653d'>{t('User interface')}</MenuItem>
         <MenuItem value='44fcf1f4-8e31-4b31-8dbc-cd6993e1b822'>{t('Email')}</MenuItem>
       </Field>
-      <div style={{ marginTop: 35 }}>
-        <Filters
-          variant="text"
-          availableFilterKeys={[
-            'entity_type',
-            'markedBy',
-            'labelledBy',
-            'createdBy',
-            'x_opencti_score',
-            'x_opencti_detection',
-            'revoked',
-            'confidence',
-            'indicator_types',
-            'pattern_type',
-          ]}
-          handleAddFilter={handleAddFilter}
-          noDirectFilters={true}
-          disabled={undefined}
-          size={undefined}
-          fontSize={undefined}
-          availableEntityTypes={undefined}
-          availableRelationshipTypes={undefined}
-          allEntityTypes={undefined}
-          type={undefined} />
-      </div>
-      <FilterCard filters={filters} handleRemoveFilter={handleRemoveFilter}/>
     </React.Fragment>
   );
   const renderClassic = () => (
@@ -517,9 +471,9 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
           <Typography variant="h6">{t('Create a digest')}</Typography>
         </div>
         <div className={classes.container}>
-          <Formik<TriggerAddInput> initialValues={liveInitialValues}
+          <Formik<TriggerDigestAddInput> initialValues={digestInitialValues}
                                    validationSchema={triggerValidation(t)}
-                                   onSubmit={onLiveSubmit} onReset={onReset}>
+                                   onSubmit={onDigestSubmit} onReset={onReset}>
             {({
               submitForm,
               handleReset,
@@ -527,7 +481,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
               setFieldValue,
             }) => (
               <Form style={{ margin: '20px 0 20px 0' }}>
-                {liveFields(setFieldValue)}
+                {digestFields(setFieldValue)}
                 <div className={classes.buttons}>
                   <Button variant="contained"
                           onClick={handleReset}
@@ -553,9 +507,9 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
   const renderContextual = () => (
     <div style={{ display: display ? 'block' : 'none' }}>
       <Dialog disableRestoreFocus={true} open={open} onClose={handleClose} PaperProps={{ elevation: 1 }}>
-        <Formik initialValues={liveInitialValues}
+        <Formik initialValues={digestInitialValues}
                 validationSchema={triggerValidation(t)}
-                onSubmit={onLiveSubmit} onReset={onReset}>
+                onSubmit={onDigestSubmit} onReset={onReset}>
           {({
             submitForm,
             handleReset,
@@ -564,7 +518,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
           }) => (
             <div>
               <DialogTitle>{t('Create a digest')}</DialogTitle>
-              <DialogContent>{liveFields(setFieldValue)}</DialogContent>
+              <DialogContent>{digestFields(setFieldValue)}</DialogContent>
               <DialogActions classes={{ root: classes.dialogActions }}>
                 <Button onClick={handleReset} disabled={isSubmitting}>
                   {t('Cancel')}
