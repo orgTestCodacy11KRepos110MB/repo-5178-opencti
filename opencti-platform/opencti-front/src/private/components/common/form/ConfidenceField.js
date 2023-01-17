@@ -1,14 +1,12 @@
 import React, { Component } from 'react';
 import { Field } from 'formik';
-import MenuItem from '@mui/material/MenuItem';
 import inject18n from '../../../../components/i18n';
-import SelectField from '../../../../components/SelectField';
 import { SubscriptionFocus } from '../../../../components/Subscription';
+import SliderField from '../../../../components/SliderField';
 
 class ConfidenceField extends Component {
   render() {
     const {
-      t,
       name,
       label,
       variant,
@@ -22,41 +20,36 @@ class ConfidenceField extends Component {
       /* TODO Migrate to vocab with range 2555 */
       return (
         <Field
-          component={SelectField}
+          component={SliderField}
           variant="standard"
           name={name}
+          type="number"
           onFocus={onFocus}
-          onChange={onChange}
+          onSubmit={onChange}
           label={label}
           fullWidth={true}
+          style={{ marginTop: 20 }}
           disabled={disabled}
-          containerstyle={containerStyle}
           helpertext={
             <SubscriptionFocus context={editContext} fieldName={name} />
           }>
-          <MenuItem value="0">{t('None')}</MenuItem>
-          <MenuItem value="15">{t('Low')}</MenuItem>
-          <MenuItem value="50">{t('Moderate')}</MenuItem>
-          <MenuItem value="75">{t('Good')}</MenuItem>
-          <MenuItem value="85">{t('Strong')}</MenuItem>
         </Field>
       );
     }
     return (
       <Field
-        component={SelectField}
-        type="number"
+        component={SliderField}
         variant="standard"
         name={name}
+        type="number"
         label={label}
         fullWidth={true}
-        containerstyle={containerStyle}>
-        <MenuItem value="0">{t('None')}</MenuItem>
-        <MenuItem value="15">{t('Low')}</MenuItem>
-        <MenuItem value="50">{t('Moderate')}</MenuItem>
-        <MenuItem value="75">{t('Good')}</MenuItem>
-        <MenuItem value="85">{t('Strong')}</MenuItem>
-      </Field>
+        style={{ marginTop: 20 }}
+        onFocus={onFocus}
+        onSubmit={onChange}
+        disabled={disabled}
+        containerStyle={containerStyle}
+      />
     );
   }
 }

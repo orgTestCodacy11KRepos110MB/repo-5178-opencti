@@ -12,6 +12,7 @@ import { SubType_subType$key } from './__generated__/SubType_subType.graphql';
 import Loader, { LoaderVariant } from '../../../../components/Loader';
 import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 import { EntitySettingQuery } from './__generated__/EntitySettingQuery.graphql';
+import ConfidenceScaleField from '../../common/form/ConfidenceScaleField';
 import EntitySettingAttributesConfiguration from './EntitySettingAttributesConfiguration';
 
 const useStyles = makeStyles(() => ({
@@ -37,6 +38,7 @@ export const subTypeFragment = graphql`
       platform_entity_files_ref
       platform_hidden_type
       target_type
+      confidence_scale
     }
     statuses {
       edges {
@@ -87,16 +89,26 @@ const SubType = ({ data }: { data: SubType_subType$key }) => {
                 <Paper classes={{ root: classes.paper }} variant="outlined">
                   <EntitySetting queryRef={queryRef} />
                   <div style={{ marginTop: 10 }}>
-                    <Typography variant="h3" gutterBottom={true}>
-                      {`${t('Workflow of')} ${t(`entity_${subType.label}`)}`}
-                      <SubTypeStatusPopover subTypeId={subType.id} />
-                    </Typography>
-                  </div>
-                  <ItemStatusTemplate
-                    statuses={statuses}
-                    disabled={!subType.workflowEnabled}
-                  />
-                </Paper>
+                <Typography variant="h3" gutterBottom={true}>
+                  {`${t('Workflow of')} ${t(`entity_${subType.label}`)}`}
+                  <SubTypeStatusPopover subTypeId={subType.id} />
+                </Typography>
+              </div>
+              <ItemStatusTemplate
+                statuses={statuses}
+                disabled={!subType.workflowEnabled}
+              />
+              <div style={{ marginTop: 10 }}>
+                <Typography
+                  variant="h3"
+                  gutterBottom={true}
+                  style={{ marginTop: 20 }}
+                >
+                  {t('Confidence scale configuration')}
+                </Typography>
+              </div>
+              <ConfidenceScaleField />
+            </Paper>
               </div>
             </Grid>
             <EntitySettingAttributesConfiguration queryRef={queryRef} subType={subType}/>
@@ -106,5 +118,4 @@ const SubType = ({ data }: { data: SubType_subType$key }) => {
     </>
   );
 };
-
 export default SubType;

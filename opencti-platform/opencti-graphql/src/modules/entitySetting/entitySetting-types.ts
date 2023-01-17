@@ -10,6 +10,7 @@ export interface AttributeConfiguration {
 }
 
 export interface BasicStoreEntityEntitySetting extends BasicStoreEntity {
+  confidence_scale: string;
   target_type: string;
   platform_entity_files_ref: boolean;
   platform_hidden_type: boolean;
@@ -18,6 +19,7 @@ export interface BasicStoreEntityEntitySetting extends BasicStoreEntity {
 }
 
 export interface StoreEntityEntitySetting extends StoreEntity {
+  confidence_scale: string;
   target_type: string;
   platform_entity_files_ref: boolean;
   platform_hidden_type: boolean;
@@ -26,6 +28,7 @@ export interface StoreEntityEntitySetting extends StoreEntity {
 }
 
 export interface StixEntitySetting extends StixObject {
+  confidence_scale: string;
   target_type: string;
   platform_entity_files_ref: boolean;
   platform_hidden_type: boolean;

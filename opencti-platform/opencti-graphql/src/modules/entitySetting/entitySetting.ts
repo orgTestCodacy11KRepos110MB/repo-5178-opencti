@@ -40,6 +40,7 @@ const ENTITY_SETTING_DEFINITION: ModuleRegisterDefinition<StoreEntityEntitySetti
     { name: 'platform_hidden_type', type: 'boolean', mandatoryType: 'external', multiple: false, upsert: false },
     { name: 'enforce_reference', type: 'boolean', mandatoryType: 'external', multiple: false, upsert: false },
     { name: 'attributes_configuration', type: 'json', mandatoryType: 'no', multiple: false, upsert: false, schemaDef: attributeConfiguration },
+    { name: 'confidence_scale', type: 'json', mandatoryType: 'no', multiple: false, upsert: true },
   ],
   relations: [],
   converter: convertEntitySettingToStix,

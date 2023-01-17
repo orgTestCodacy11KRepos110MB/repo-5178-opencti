@@ -29,6 +29,7 @@ import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import { vocabulariesQuery } from '../../settings/attributes/VocabulariesLines';
 import OpenVocabField from '../../common/form/OpenVocabField';
 import ObjectAssigneeField from '../../common/form/ObjectAssigneeField';
+import SliderField from "../../../../components/SliderField";
 
 const styles = (theme) => ({
   createButton: {
@@ -365,7 +366,6 @@ class ReportEditionOverviewComponent extends Component {
                         label={t('Confidence')}
                         fullWidth={true}
                         containerStyle={fieldSpacingContainerStyle}
-                        editContext={context}
                         variant="edit"
                       />
                       <Field
