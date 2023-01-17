@@ -32,6 +32,7 @@ import { isStixCyberObservableRelationship } from './stixCyberObservableRelation
 import { isEmptyField, isNotEmptyField, UPDATE_OPERATION_ADD, UPDATE_OPERATION_REMOVE } from '../database/utils';
 import { now } from '../utils/format';
 import { ENTITY_TYPE_VOCABULARY } from '../modules/vocabulary/vocabulary-types';
+import { isBasicRelationship } from './stixRelationship';
 import { convertTypeToStixType } from '../database/stix-converter';
 
 // region hashes
@@ -500,7 +501,7 @@ export const getInstanceIds = (instance, withoutInternal = false) => {
   ids.push(...getHashIds(instance.entity_type, instance.hashes));
   return R.uniq(ids);
 };
-export const getInputIds = (type, input) => {
+export const getInputIds = (type, input, fromRule) => {
   const ids = [input.standard_id || generateStandardId(type, input)];
   if (isNotEmptyField(input.internal_id)) {
     ids.push(input.internal_id);
@@ -513,5 +514,11 @@ export const getInputIds = (type, input) => {
   }
   ids.push(...generateAliasesIdsForInstance(input));
   ids.push(...getHashIds(type, input.hashes));
+  // Inference can only be created once, locking the combination
+  if (fromRule && isBasicRelationship(type)) {
+    ids.push(`${input.from.internal_id}-${type}-${input.to.internal_id}`);
+    ids.push(`${input.to.internal_id}-${type}-${input.from.internal_id}`);
+  }
+  // Return list of unique ids to lock
   return R.uniq(ids);
 };

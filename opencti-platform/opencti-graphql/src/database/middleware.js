@@ -202,12 +202,12 @@ import {
   BYPASS,
   BYPASS_REFERENCE,
   executionContext,
-  userFilterStoreElements,
   isBypassUser,
   isUserCanAccessStoreElement,
   KNOWLEDGE_ORGANIZATION_RESTRICT,
   RULE_MANAGER_USER,
-  SYSTEM_USER
+  SYSTEM_USER,
+  userFilterStoreElements
 } from '../utils/access';
 import { isRuleUser, RULES_ATTRIBUTES_BEHAVIOR } from '../rules/rules';
 import {
@@ -1299,7 +1299,7 @@ export const mergeEntities = async (context, user, targetEntityId, sourceEntityI
     // Temporary stored the deleted elements to prevent concurrent problem at creation
     await redisAddDeletions(sources.map((s) => s.internal_id));
     // - END TRANSACTION
-    return storeLoadById(context, user, target.id, ABSTRACT_STIX_OBJECT).then((finalStixCoreObject) => {
+    return await storeLoadById(context, user, target.id, ABSTRACT_STIX_OBJECT).then((finalStixCoreObject) => {
       return notify(BUS_TOPICS[ABSTRACT_STIX_CORE_OBJECT].EDIT_TOPIC, finalStixCoreObject, user);
     });
   } catch (err) {
@@ -2045,7 +2045,7 @@ const upsertRelationRule = async (context, instance, input, opts = {}) => {
   const innerPatch = createRuleDataPatch(ruleInstance);
   const patch = { ...rulePatch, ...innerPatch };
   logApp.info('Upsert inferred relation', { relation: patch });
-  return patchAttribute(context, RULE_MANAGER_USER, instance.id, instance.entity_type, patch, opts);
+  return await patchAttribute(context, RULE_MANAGER_USER, instance.id, instance.entity_type, patch, opts);
 };
 // endregion
 
@@ -2701,7 +2701,7 @@ export const createRelationRaw = async (context, user, input, opts = {}) => {
     }
   }
   // Build lock ids
-  const inputIds = getInputIds(relationshipType, resolvedInput);
+  const inputIds = getInputIds(relationshipType, resolvedInput, fromRule);
   if (isImpactedTypeAndSide(relationshipType, ROLE_FROM)) inputIds.push(from.internal_id);
   if (isImpactedTypeAndSide(relationshipType, ROLE_TO)) inputIds.push(to.internal_id);
   const participantIds = inputIds.filter((e) => !locks.includes(e));
@@ -2749,7 +2749,7 @@ export const createRelationRaw = async (context, user, input, opts = {}) => {
     if (existingRelationship) {
       // If upsert come from a rule, do a specific upsert.
       if (fromRule) {
-        return upsertRelationRule(context, existingRelationship, input, { ...opts, locks: participantIds });
+        return await upsertRelationRule(context, existingRelationship, input, { ...opts, locks: participantIds });
       }
       // If not upsert the element
       dataRel = await upsertElementRaw(context, user, existingRelationship, relationshipType, resolvedInput);
@@ -2831,7 +2831,7 @@ export const createInferredRelation = async (context, input, ruleContent, opts =
   };
   const patch = createRuleDataPatch(instance);
   const inputRelation = { ...instance, ...patch };
-  logApp.info('Create inferred relation', { relation: inputRelation });
+  logApp.info('Create inferred relation', inputRelation);
   return createRelationRaw(context, RULE_MANAGER_USER, inputRelation, args);
 };
 /* istanbul ignore next */
@@ -3021,7 +3021,7 @@ const createEntityRaw = async (context, user, input, type, opts = {}) => {
   const resolvedInput = await inputResolveRefs(context, user, input, type);
   // Generate all the possibles ids
   // For marking def, we need to force the standard_id
-  const participantIds = getInputIds(type, resolvedInput);
+  const participantIds = getInputIds(type, resolvedInput, fromRule);
   // Create the element
   let lock;
   try {
@@ -3061,7 +3061,7 @@ const createEntityRaw = async (context, user, input, type, opts = {}) => {
           throw UnsupportedError('Cant upsert inferred entity. Too many entities resolved', { input, entityIds });
         }
         // If upsert come from a rule, do a specific upsert.
-        return upsertEntityRule(context, R.head(filteredEntities), input, { ...opts, locks: participantIds });
+        return await upsertEntityRule(context, R.head(filteredEntities), input, { ...opts, locks: participantIds });
       }
       if (filteredEntities.length === 1) {
         dataEntity = await upsertElementRaw(context, user, R.head(filteredEntities), type, resolvedInput);
@@ -3171,7 +3171,7 @@ export const createInferredEntity = async (context, input, ruleContent, type) =>
   const patch = createRuleDataPatch(instance);
   const inputEntity = { ...instance, ...patch };
   logApp.info('Create inferred entity', { entity: inputEntity });
-  return createEntityRaw(context, RULE_MANAGER_USER, inputEntity, type, opts);
+  return await createEntityRaw(context, RULE_MANAGER_USER, inputEntity, type, opts);
 };
 // endregion
 
@@ -3264,7 +3264,7 @@ export const deleteInferredRuleElement = async (rule, instance, deletedDependenc
   // Check if deletion is really targeting an inference
   const isInferred = isInferredIndex(instance._index);
   if (!isInferred) {
-    throw UnsupportedError('Instance is not inferred, cant be deleted');
+    throw UnsupportedError(`Instance ${instance.id} is not inferred, cant be deleted`);
   }
   // Delete inference
   const fromRule = RULE_PREFIX + rule;

@@ -87,7 +87,7 @@ export const isInstanceMatchFilters = async (context: AuthContext, user:AuthUser
       if (values.length > 0 && instance.created_by_ref === undefined) {
         return false;
       }
-      const ids = (values ?? []).map((v: BasicFilterValue) => v.id);
+      const ids = values.map((v: BasicFilterValue) => v.id);
       const found = ids.includes(instance.created_by_ref);
       if (!found) {
         return false;

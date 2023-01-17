@@ -24,6 +24,7 @@ const CBRICKSDOC = 'indicator--c5c0c0f9-dfa1-5b7d-a12a-ea95072d3e45'; // indicat
 
 describe('Observed sighting rule', () => {
   const fetchInferences = async () => {
+    console.log(`${new Date().toISOString()} >> Waiting 10 sec`);
     await wait(TEN_SECONDS); // let some time to rule manager to create the elements
     return getInferences(STIX_SIGHTING_RELATIONSHIP);
   };
@@ -33,6 +34,7 @@ describe('Observed sighting rule', () => {
     async () => {
       // ---- 01. Test live behaviors
       await startModules();
+      await wait(2 * TEN_SECONDS); // Wait for all managers to be started
       await activateRule(RuleObserveSighting.id);
       // Check default state
       let inferences = await fetchInferences();

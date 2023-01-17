@@ -803,7 +803,7 @@ export const authenticateUserFromRequest = async (context, req, res) => {
     try {
       const user = await resolveUserByToken(context, tokenUUID);
       if (user) {
-        return authenticateUser(context, req, user, loginProvider, tokenUUID);
+        return await authenticateUser(context, req, user, loginProvider, tokenUUID);
       }
       return user;
     } catch (err) {

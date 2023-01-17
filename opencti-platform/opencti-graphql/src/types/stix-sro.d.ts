@@ -20,8 +20,8 @@ export interface RelationExtension extends StixOpenctiExtension {
 export interface StixRelation extends StixRelationshipObject {
   relationship_type: string;
   description: string;
-  source_ref: string;
-  target_ref: string;
+  source_ref: StixId;
+  target_ref: StixId;
   start_time: string | undefined;
   stop_time: string | undefined;
   extensions: {

@@ -6,6 +6,7 @@ import { ENTITY_TYPE_TASK } from '../../src/schema/internalObject';
 import { setRuleActivation } from '../../src/domain/rules';
 import { internalLoadById, listEntities } from '../../src/database/middleware-loader';
 import { testContext } from './testQuery';
+import { fetchStreamInfo } from '../../src/database/redis';
 
 export const inferenceLookup = async (inferences, fromStandardId, toStandardId, type) => {
   for (let index = 0; index < inferences.length; index += 1) {
@@ -39,8 +40,19 @@ export const changeRule = async (ruleId, active) => {
       expect(t.errors.length).toBe(0);
     });
     ruleActivated = allDone;
-    // Wait for eventual inferences of inferences to be created
-    await wait(5000);
+    await wait(1000);
+  }
+  // Wait all events to be consumed
+  let stableCount = 1;
+  while (stableCount < 4) {
+    const innerInfo = await fetchStreamInfo();
+    const ruleManager = await internalLoadById(testContext, SYSTEM_USER, 'rule_engine_settings');
+    await wait(2000);
+    const lastEventDate = new Date(parseInt(innerInfo.lastEventId.split('-').at(0), 10));
+    const managerEventDate = new Date(parseInt(ruleManager.lastEventId.split('-').at(0), 10));
+    if (managerEventDate >= lastEventDate) {
+      stableCount += 1;
+    }
   }
 };
 

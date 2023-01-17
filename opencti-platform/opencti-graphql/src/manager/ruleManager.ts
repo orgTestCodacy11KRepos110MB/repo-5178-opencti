@@ -11,12 +11,7 @@ import {
   StreamProcessor
 } from '../database/redis';
 import conf, { booleanConf, ENABLED_RULE_ENGINE, logApp } from '../config/conf';
-import {
-  createEntity,
-  patchAttribute,
-  stixLoadById,
-  storeLoadByIdWithRefs
-} from '../database/middleware';
+import { createEntity, patchAttribute, stixLoadById, storeLoadByIdWithRefs } from '../database/middleware';
 import {
   EVENT_TYPE_CREATE,
   EVENT_TYPE_DELETE,
@@ -215,9 +210,9 @@ export const rulesApplyHandler = async (context: AuthContext, user: AuthUser, ev
       // In case of merge convert the events to basic events and restart the process
       if (type === EVENT_TYPE_MERGE) {
         const mergeEvent = event as MergeEvent;
-        const derivedEvents = await ruleMergeHandler(context, mergeEvent);
+        const mergeEvents = await ruleMergeHandler(context, mergeEvent);
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        await rulesApplyHandler(context, user, derivedEvents);
+        await rulesApplyHandler(context, user, mergeEvents);
       }
       // In case of deletion, call clean on every impacted elements
       if (type === EVENT_TYPE_DELETE) {
@@ -281,8 +276,7 @@ export const rulesCleanHandler = async (
         const processingElement: StoreObject = await storeLoadByIdWithRefs(context, RULE_MANAGER_USER, instance.internal_id);
         // In case of "inference of inference", element can be recursively cleanup by the deletion system
         if (processingElement) {
-          const derivedEvent = await rule.clean(processingElement, deletedDependencies);
-          await rulesApplyHandler(context, user, [derivedEvent]);
+          await rule.clean(processingElement, deletedDependencies);
         }
       }
     }
@@ -296,11 +290,7 @@ const ruleStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>>, lastE
   // Inferences directly handle recursively by the manager
   const compatibleEvents = streamEvents.filter((event) => {
     const eventVersion = parseInt(event.data?.version ?? '0', 10);
-    const isCompatibleVersion = eventVersion >= MIN_LIVE_STREAM_EVENT_VERSION;
-    if (!isCompatibleVersion) {
-      return false;
-    }
-    return !(event.data?.data?.extensions[STIX_EXT_OCTI].is_inferred ?? false);
+    return eventVersion >= MIN_LIVE_STREAM_EVENT_VERSION;
   });
   if (compatibleEvents.length > 0) {
     const ruleEvents: Array<BaseEvent> = compatibleEvents.map((e) => e.data);
