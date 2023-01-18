@@ -199,6 +199,10 @@ const TriggerEditionOverview: FunctionComponent<TriggerEditionOverviewProps> = (
                   'confidence',
                   'indicator_types',
                   'pattern_type',
+                  'fromId',
+                  'toId',
+                  'fromTypes',
+                  'toTypes',
                 ]}
                 handleAddFilter={handleAddFilter}
                 noDirectFilters={true}

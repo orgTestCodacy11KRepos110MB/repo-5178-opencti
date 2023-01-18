@@ -10,13 +10,23 @@ import { internalFindByIds } from '../database/middleware-loader';
 import { isUserCanAccessStixElement, SYSTEM_USER } from './access';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 import { getParentTypes } from '../schema/schemaUtils';
+import { STIX_TYPE_RELATION, STIX_TYPE_SIGHTING } from '../database/stix';
 
 // Resolutions
 export const MARKING_FILTER = 'markedBy';
 export const CREATOR_FILTER = 'createdBy';
 export const ASSIGNEE_FILTER = 'assigneeTo';
 export const OBJECT_CONTAINS_FILTER = 'objectContains';
-export const RESOLUTION_FILTERS = [MARKING_FILTER, CREATOR_FILTER, ASSIGNEE_FILTER, OBJECT_CONTAINS_FILTER];
+export const RELATION_FROM = 'fromId';
+export const RELATION_TO = 'toId';
+export const RESOLUTION_FILTERS = [
+  MARKING_FILTER,
+  CREATOR_FILTER,
+  ASSIGNEE_FILTER,
+  OBJECT_CONTAINS_FILTER,
+  RELATION_FROM,
+  RELATION_TO
+];
 // Values
 export const LABEL_FILTER = 'labelledBy';
 export const TYPE_FILTER = 'entity_type';
@@ -27,6 +37,8 @@ export const WORKFLOW_FILTER = 'x_opencti_workflow_id';
 export const CONFIDENCE_FILTER = 'confidence';
 export const REVOKED_FILTER = 'revoked';
 export const PATTERN_FILTER = 'pattern_type';
+export const RELATION_FROM_TYPES = 'fromTypes';
+export const RELATION_TO_TYPES = 'toTypes';
 
 export const GlobalFilters = {
   createdBy: buildRefRelationKey(RELATION_CREATED_BY),
@@ -279,6 +291,94 @@ export const isStixMatchFilters = async (context, user, stix, filters) => {
           return false;
         }
       }
+      // region specific for relationships
+      if (stix.type === STIX_TYPE_RELATION) {
+        if (key === RELATION_FROM) { // 'fromId'
+          const ids = values.map((v) => v.id);
+          const idFromFound = ids.includes(stix.source_ref);
+          if (!idFromFound) {
+            return false;
+          }
+        }
+        if (key === RELATION_TO) { // 'toId'
+          const ids = values.map((v) => v.id);
+          const idToFound = ids.includes(stix.target_ref);
+          if (!idToFound) {
+            return false;
+          }
+        }
+        if (key === RELATION_FROM_TYPES) { // fromTypes
+          const sourceType = stix.extensions[STIX_EXT_OCTI].source_type;
+          const sourceAllTypes = [sourceType, ...getParentTypes(sourceType)];
+          const isTypeAvailable = values.some((v) => sourceAllTypes.includes(v.id));
+          // If source type is available but must not be
+          if (operator === 'not_eq' && isTypeAvailable) {
+            return false;
+          }
+          // If source type is not available but must be
+          if (operator === 'eq' && !isTypeAvailable) {
+            return false;
+          }
+        }
+        if (key === RELATION_TO_TYPES) { // toTypes
+          const targetType = stix.extensions[STIX_EXT_OCTI].target_type;
+          const targetAllTypes = [targetType, ...getParentTypes(targetType)];
+          const isTypeAvailable = values.some((v) => targetAllTypes.includes(v.id));
+          // If source type is available but must not be
+          if (operator === 'not_eq' && isTypeAvailable) {
+            return false;
+          }
+          // If source type is not available but must be
+          if (operator === 'eq' && !isTypeAvailable) {
+            return false;
+          }
+        }
+      }
+      // endregion
+      // region specific for sightings
+      if (stix.type === STIX_TYPE_SIGHTING) {
+        if (key === RELATION_FROM) { // 'fromId'
+          const ids = values.map((v) => v.id);
+          const isFromFound = ids.includes(stix.sighting_of_ref);
+          if (!isFromFound) {
+            return false;
+          }
+        }
+        if (key === RELATION_TO) { // 'toId'
+          const ids = values.map((v) => v.id);
+          const idsFromFound = ids.some((r) => stix.where_sighted_refs.includes(r));
+          if (!idsFromFound) {
+            return false;
+          }
+        }
+        if (key === RELATION_FROM_TYPES) { // fromTypes
+          const sourceType = stix.extensions[STIX_EXT_OCTI].sighting_of_type;
+          const sourceAllTypes = [sourceType, ...getParentTypes(sourceType)];
+          const isTypeAvailable = values.some((v) => sourceAllTypes.includes(v.id));
+          // If source type is available but must not be
+          if (operator === 'not_eq' && isTypeAvailable) {
+            return false;
+          }
+          // If source type is not available but must be
+          if (operator === 'eq' && !isTypeAvailable) {
+            return false;
+          }
+        }
+        if (key === RELATION_TO_TYPES) { // toTypes
+          const targetTypes = stix.extensions[STIX_EXT_OCTI].where_sighted_types;
+          const targetAllTypes = targetTypes.map((t) => [t, ...getParentTypes(t)]).flat();
+          const isTypeAvailable = values.some((v) => targetAllTypes.includes(v.id));
+          // If source type is available but must not be
+          if (operator === 'not_eq' && isTypeAvailable) {
+            return false;
+          }
+          // If source type is not available but must be
+          if (operator === 'eq' && !isTypeAvailable) {
+            return false;
+          }
+        }
+      }
+      // endregion
     }
   }
   return true;

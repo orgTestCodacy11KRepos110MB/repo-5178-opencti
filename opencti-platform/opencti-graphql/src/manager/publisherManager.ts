@@ -23,8 +23,12 @@ import type { AuthContext } from '../types/user';
 import type { StixCoreObject } from '../types/stix-common';
 import { now } from '../utils/format';
 
+const DOC_URI = 'https://www.notion.so/OpenCTI-Public-Knowledge-Base-d411e5e477734c59887dad3649f20518';
 const PUBLISHER_ENGINE_KEY = conf.get('publisher_manager:lock_key');
 const STREAM_SCHEDULE_TIME = 10000;
+const OUTCOME_TYPE_UI = 'UI';
+const OUTCOME_TYPE_EMAIL = 'EMAIL';
+const OUTCOME_TYPE_WEBHOOK = 'WEBHOOK';
 
 const processNotificationEvent = async (
   context: AuthContext,
@@ -32,8 +36,8 @@ const processNotificationEvent = async (
   user: NotificationUser,
   data: Array<{ notification_id: string, instance: StixCoreObject, type: string }>
 ) => {
-  const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
   const outcomes = STATIC_OUTCOMES; // TODO @JRI add database fetching
+  const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
   const outcomeMap = new Map(outcomes.map((n) => [n.internal_id, n]));
   const notifications = await getNotifications(context); // TODO @JRI add caching
   const notificationMap = new Map(notifications.map((n) => [n.trigger.internal_id, n.trigger]));
@@ -59,14 +63,13 @@ const processNotificationEvent = async (
     }
     const content = Object.entries(generatedContent).map(([k, v]) => ({ title: k, messages: v }));
     // region data generation
-    const doc_uri = 'https://www.notion.so/OpenCTI-Public-Knowledge-Base-d411e5e477734c59887dad3649f20518';
     const platform_uri = baseUrl + basePath;
     const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);
-    const platformOpts = { doc_uri, platform_uri, background_color };
+    const platformOpts = { doc_uri: DOC_URI, platform_uri, background_color };
     const title = `New ${trigger_type} notification for ${notification.name}`;
     const templateData = { title, content, notification, settings, user, data, ...platformOpts };
     // endregion
-    if (outcome_type === 'UI') {
+    if (outcome_type === OUTCOME_TYPE_UI) {
       const createNotification = {
         name: notification_name,
         notification_type: trigger_type,
@@ -82,7 +85,7 @@ const processNotificationEvent = async (
         logApp.error('[OPENCTI-MODULE] Error executing publication', { error: err });
       });
     }
-    if (outcome_type === 'EMAIL') {
+    if (outcome_type === OUTCOME_TYPE_EMAIL) {
       const { template } = configuration ?? {};
       const generatedEmail = ejs.render(template, templateData);
       const mail = { from: settings.platform_email, to: user.user_email, subject: title, html: generatedEmail };
@@ -93,7 +96,7 @@ const processNotificationEvent = async (
         logApp.error('[OPENCTI-MODULE] Error executing publication', { error: err });
       });
     }
-    if (outcome_type === 'WEBHOOK') {
+    if (outcome_type === OUTCOME_TYPE_WEBHOOK) {
       const { uri, template } = configuration ?? {};
       const generatedWebhook = ejs.render(template, templateData);
       const dataJson = JSON.parse(generatedWebhook);

@@ -1,6 +1,10 @@
 import type { StoreEntity } from './store';
-import type { ConvertFn } from '../database/stix-converter';
-import { registerStixDomainConverter, registerStixMetaConverter } from '../database/stix-converter';
+import type { ConvertFn, RepresentativeFn } from '../database/stix-converter';
+import {
+  registerStixDomainConverter,
+  registerStixMetaConverter,
+  registerStixRepresentativeConverter
+} from '../database/stix-converter';
 import { registerStixDomainAliased, registerStixDomainType, resolveAliasesField } from '../schema/stixDomainObject';
 import { registerGraphqlSchema } from '../graphql/schema';
 import { registerModelIdentifier } from '../schema/identifier';
@@ -38,10 +42,11 @@ import {
   STIX_META_RELATION_TO_FIELD
 } from '../schema/stixMetaRelationship';
 import { STIX_ATTRIBUTE_TO_META_FIELD } from '../schema/stixEmbeddedRelationship';
+import type { StixObject } from './stix-common';
 import { registerInternalObject } from '../schema/internalObject';
 
 export type AttrType = 'string' | 'date' | 'numeric' | 'boolean' | 'dictionary' | 'json';
-export interface ModuleDefinition<T extends StoreEntity> {
+export interface ModuleDefinition<T extends StoreEntity, Z extends StixObject> {
   type: {
     id: string;
     name: string;
@@ -60,6 +65,7 @@ export interface ModuleDefinition<T extends StoreEntity> {
       [f: string]: (data: object) => string
     };
   };
+  representative: RepresentativeFn<Z>;
   attributes: Array<{
     name: string;
     type: AttrType;
@@ -77,11 +83,11 @@ export interface ModuleDefinition<T extends StoreEntity> {
     multiple: boolean;
     checker: (fromType: string, toType: string) => boolean;
   }>;
-  converter: ConvertFn<T>;
+  converter: ConvertFn<T, Z>;
   depsKeys?: { src: string, types?: string[] }[]
 }
 
-export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefinition<T>) => {
+export const registerDefinition = <T extends StoreEntity, Z extends StixObject>(definition: ModuleDefinition<T, Z>) => {
   const attrsForType = (type: AttrType) => {
     return definition.attributes.filter((attr) => attr.type === type).map((attr) => attr.name);
   };
@@ -117,10 +123,16 @@ export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefi
       registerStixDomainAliased(definition.type.name);
     }
   }
+
+  // Register representative
+  registerStixRepresentativeConverter(definition.type.name, definition.representative);
+
   // Register graphQL schema
   registerGraphqlSchema(definition.graphql);
+
   // Register key identification
   registerModelIdentifier(definition.identifier);
+
   // Register model attributes
   const attributes = ['standard_id'];
   attributes.push(...definition.attributes.map((attr) => attr.name));
@@ -131,6 +143,7 @@ export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefi
     attributes.push(...['x_opencti_stix_ids', 'revoked', 'confidence', 'lang']);
   }
   schemaTypes.registerAttributes(definition.type.name, attributes);
+
   // Register upsert attributes
   const upsertAttributes = definition.attributes.filter((attr) => attr.upsert).map((attr) => attr.name);
   if (definition.type.category === ABSTRACT_STIX_DOMAIN_OBJECT) {

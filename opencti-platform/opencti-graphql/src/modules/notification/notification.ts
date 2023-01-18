@@ -4,7 +4,7 @@ import { convertNotificationToStix, convertTriggerToStix } from './notification-
 import notificationResolvers from './notification-resolver';
 import {
   ENTITY_TYPE_NOTIFICATION,
-  ENTITY_TYPE_TRIGGER,
+  ENTITY_TYPE_TRIGGER, StixNotification, StixTrigger,
   StoreEntityNotification,
   StoreEntityTrigger
 } from './notification-types';
@@ -16,7 +16,7 @@ import { ABSTRACT_INTERNAL_OBJECT } from '../../schema/general';
 // TODO
 
 // Triggers
-const TRIGGER_DEFINITION: ModuleDefinition<StoreEntityTrigger> = {
+const TRIGGER_DEFINITION: ModuleDefinition<StoreEntityTrigger, StixTrigger> = {
   type: {
     id: 'triggers',
     name: ENTITY_TYPE_TRIGGER,
@@ -39,12 +39,15 @@ const TRIGGER_DEFINITION: ModuleDefinition<StoreEntityTrigger> = {
     { name: 'filters', type: 'string', multiple: false, upsert: false },
   ],
   relations: [],
+  representative: (stix: StixTrigger) => {
+    return stix.name;
+  },
   converter: convertTriggerToStix
 };
 registerDefinition(TRIGGER_DEFINITION);
 
 // Notifications
-const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification> = {
+const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification, StixNotification> = {
   type: {
     id: 'notifications',
     name: ENTITY_TYPE_NOTIFICATION,
@@ -64,6 +67,9 @@ const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification> = {
     { name: 'is_read', type: 'boolean', multiple: false, upsert: true },
   ],
   relations: [],
+  representative: (stix: StixNotification) => {
+    return stix.messages.join(', ');
+  },
   converter: convertNotificationToStix
 };
 registerDefinition(NOTIFICATION_DEFINITION);

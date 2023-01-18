@@ -257,6 +257,10 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
               'confidence',
               'indicator_types',
               'pattern_type',
+              'fromId',
+              'toId',
+              'fromTypes',
+              'toTypes',
             ]}
             handleAddFilter={handleAddFilter}
             noDirectFilters={true}

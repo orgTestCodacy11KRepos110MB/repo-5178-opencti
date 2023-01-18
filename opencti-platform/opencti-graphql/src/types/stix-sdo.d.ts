@@ -233,14 +233,6 @@ export interface StixReport extends StixContainer {
   published: Date
 }
 
-// Grouping Specific Properties
-// name, description, context, object_refs
-interface StixGrouping extends StixContainer {
-  name: string;
-  description: string;
-  context: string;
-}
-
 // Threat Actor Specific Properties
 // name, description, threat_actor_types, aliases, first_seen, last_seen, roles, goals,
 // sophistication, resource_level, primary_motivation, secondary_motivations, personal_motivations

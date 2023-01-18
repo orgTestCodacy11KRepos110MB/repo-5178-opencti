@@ -32,9 +32,11 @@ export interface StixRelation extends StixRelationshipObject {
 // Sighting Specific Properties
 // description, first_seen, last_seen, count, sighting_of_ref, observed_data_refs, where_sighted_refs, summary
 export interface SightingExtension extends StixOpenctiExtension {
+  sighting_of_value: string;
   sighting_of_ref: StixId;
   sighting_of_ref_object_marking_refs: Array<string>;
   sighting_of_type: string;
+  where_sighted_values: Array<string>;
   where_sighted_refs: Array<StixId>;
   where_sighted_types: Array<string>;
   where_sighted_refs_object_marking_refs: Array<string>;
