@@ -11,38 +11,60 @@ import type {
   StoreProxyRelation
 } from '../types/store';
 import { FunctionalError, UnsupportedError } from '../config/errors';
+import type { InputMaybe } from '../generated/graphql';
 
 const MAX_SEARCH_SIZE = 5000;
 
-interface Filter {
-  key: string | string[];
-  operator?: string | null;
-  filterMode?: 'and' | 'or' | null;
-  values?: Array<unknown> | null;
-  nested?: Array<{
-    key: string;
-    values?: Array<unknown> | null;
-    operator?: string;
-  }>;
+enum FilterMode {
+  And = 'and',
+  Or = 'or',
 }
 
-export interface ListFilter<T extends BasicStoreCommon> {
+enum OrderMode {
+  Asc = 'asc',
+  Desc = 'desc',
+}
+
+export type GenericUtilityArgs<Args, Filtering, FilterKeys> = Omit<Args, 'filters' | 'orderMode'> & {
+  filters?: (Omit<Filtering, 'key' | 'values'> & {
+    key: (FilterKeys)[],
+    values?: FilterValueType[],
+  })[]
+  orderMode?: OrderMode,
+};
+
+export type FilterValueType = string | Date | number | boolean;
+
+type Filter<T extends string[]> = {
+  key: T;
+  operator?: string | null;
+  filterMode?: FilterMode | null;
+  values?: Array<FilterValueType>;
+  nested?: Array<{
+    key: T;
+    values?: Array<FilterValueType>;
+    operator?: string;
+  }>;
+};
+
+export interface ListFilter<T extends (BasicStoreCommon & { filters: string[], orderBy: string })> {
   indices?: Array<string>;
   first?: number | null;
   infinite?: boolean;
   after?: string | undefined | null;
-  orderBy?: string | Array<string> | null,
-  orderMode?: 'asc' | 'desc' | undefined | null,
-  filters?: Array<Filter> | null;
-  filterMode?: 'and' | 'or' | undefined | null;
+  orderBy?: T['orderBy'] | null,
+  orderMode?: OrderMode,
+  filters?: Array<Filter<T['filters']>>;
+  filterMode?: InputMaybe<FilterMode>;
   callback?: (result: Array<T>) => Promise<boolean | void>
 }
 
-type InternalListEntities = <T extends BasicStoreCommon>(context: AuthContext, user: AuthUser, entityTypes: Array<string>, args: EntityOptions<T>) => Promise<Array<T>>;
+// eslint-disable-next-line max-len
+type InternalListEntities = <T extends (BasicStoreCommon & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, entityTypes: Array<string>, args: EntityOptions<T>) => Promise<Array<T>>;
 type InternalFindByIds = (context: AuthContext, user: AuthUser, ids: string[], args?: { type?: string } & Record<string, string | boolean>) => Promise<BasicStoreObject[]>;
 
 // entities
-interface EntityFilters<T extends BasicStoreCommon> extends ListFilter<T> {
+interface EntityFilters<T extends (BasicStoreCommon & { filters: string[], orderBy: string })> extends ListFilter<T> {
   connectionFormat?: boolean;
   elementId?: string | Array<string>;
   fromId?: string | Array<string>;
@@ -57,11 +79,12 @@ interface EntityFilters<T extends BasicStoreCommon> extends ListFilter<T> {
   elementWithTargetTypes?: Array<string>;
 }
 
-export interface EntityOptions<T extends BasicStoreCommon> extends EntityFilters<T> {
+export interface EntityOptions<T extends (BasicStoreCommon & { filters: string[], orderBy: string })> extends EntityFilters<T> {
   indices?: Array<string>;
 }
 
-export const elList = async <T extends BasicStoreCommon>(context: AuthContext, user: AuthUser, indices: Array<string>, options: ListFilter<T> = {}): Promise<Array<T>> => {
+// eslint-disable-next-line max-len
+export const elList = async <T extends (BasicStoreCommon & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, indices: Array<string>, options: ListFilter<T> = {}): Promise<Array<T>> => {
   const { first = MAX_SEARCH_SIZE, infinite = false } = options;
   let hasNextPage = true;
   let continueProcess = true;
@@ -95,7 +118,7 @@ export const elList = async <T extends BasicStoreCommon>(context: AuthContext, u
 };
 
 // relations
-interface RelationFilters<T extends BasicStoreCommon> extends ListFilter<T> {
+interface RelationFilters<T extends (BasicStoreCommon & { filters: string[], orderBy: string })> extends ListFilter<T> {
   connectionFormat?: boolean;
   relationFilter?: {
     relation: string;
@@ -123,11 +146,11 @@ interface RelationFilters<T extends BasicStoreCommon> extends ListFilter<T> {
   confidences?: Array<number>,
 }
 
-export interface RelationOptions<T extends BasicStoreCommon> extends RelationFilters<T> {
+export interface RelationOptions<T extends (BasicStoreCommon & { filters: string[], orderBy: string })> extends RelationFilters<T> {
   indices?: Array<string>;
 }
 
-const buildRelationsFilter = <T extends BasicStoreCommon>(relationshipTypes: string | Array<string>, args: RelationFilters<T>) => {
+const buildRelationsFilter = <T extends (BasicStoreCommon & { filters: string[], orderBy: string })>(relationshipTypes: string | Array<string>, args: RelationFilters<T>) => {
   const relationsToGet = Array.isArray(relationshipTypes) ? relationshipTypes : [relationshipTypes || 'stix-core-relationship'];
   const { relationFilter } = args;
   const {
@@ -159,104 +182,88 @@ const buildRelationsFilter = <T extends BasicStoreCommon>(relationshipTypes: str
   const finalFilters = filters ?? [];
   if (relationFilter) {
     const { relation, id, relationId } = relationFilter;
-    finalFilters.push({ key: buildRefRelationKey(relation), values: [id] });
+    finalFilters.push({ key: [buildRefRelationKey(relation)], values: [id] });
     if (relationId) {
-      finalFilters.push({ key: 'internal_id', values: [relationId] });
+      finalFilters.push({ key: ['internal_id'], values: [relationId] });
     }
   }
   const nestedElement = [];
   if (elementId) {
-    nestedElement.push({ key: 'internal_id', values: Array.isArray(elementId) ? elementId : [elementId] });
+    nestedElement.push({ key: ['internal_id'], values: Array.isArray(elementId) ? elementId : [elementId] });
   }
   if (nestedElement.length > 0) {
-    finalFilters.push({ key: 'connections', nested: nestedElement });
+    finalFilters.push({ key: ['connections'], nested: nestedElement });
   }
   const nestedElementTypes = [];
   if (elementWithTargetTypes && elementWithTargetTypes.length > 0) {
-    nestedElementTypes.push({ key: 'types', values: elementWithTargetTypes });
+    nestedElementTypes.push({ key: ['types'], values: elementWithTargetTypes });
   }
   if (nestedElementTypes.length > 0) {
-    finalFilters.push({ key: 'connections', nested: nestedElementTypes });
+    finalFilters.push({ key: ['connections'], nested: nestedElementTypes });
   }
   // region from filtering
   const nestedFrom = [];
   if (fromId) {
-    nestedFrom.push({ key: 'internal_id', values: Array.isArray(fromId) ? fromId : [fromId] });
+    nestedFrom.push({ key: ['internal_id'], values: Array.isArray(fromId) ? fromId : [fromId] });
   }
   if (fromTypes && fromTypes.length > 0) {
-    nestedFrom.push({ key: 'types', values: fromTypes });
+    nestedFrom.push({ key: ['types'], values: fromTypes });
   }
   if (fromRole) {
-    nestedFrom.push({ key: 'role', values: [fromRole] });
+    nestedFrom.push({ key: ['role'], values: [fromRole] });
   } else if (fromId || (fromTypes && fromTypes.length > 0)) {
-    nestedFrom.push({ key: 'role', values: ['*_from'], operator: 'wildcard' });
+    nestedFrom.push({ key: ['role'], values: ['*_from'], operator: 'wildcard' });
   }
   if (nestedFrom.length > 0) {
-    finalFilters.push({ key: 'connections', nested: nestedFrom });
+    finalFilters.push({ key: ['connections'], nested: nestedFrom });
   }
   // endregion
   // region to filtering
   const nestedTo = [];
   if (toId) {
-    nestedTo.push({ key: 'internal_id', values: Array.isArray(toId) ? toId : [toId] });
+    nestedTo.push({ key: ['internal_id'], values: Array.isArray(toId) ? toId : [toId] });
   }
   if (toTypes && toTypes.length > 0) {
-    nestedTo.push({ key: 'types', values: toTypes });
+    nestedTo.push({ key: ['types'], values: toTypes });
   }
   if (toRole) {
-    nestedTo.push({ key: 'role', values: [toRole] });
+    nestedTo.push({ key: ['role'], values: [toRole] });
   } else if (toId || (toTypes && toTypes.length > 0)) {
-    nestedTo.push({ key: 'role', values: ['*_to'], operator: 'wildcard' });
+    nestedTo.push({ key: ['role'], values: ['*_to'], operator: 'wildcard' });
   }
   if (nestedTo.length > 0) {
-    finalFilters.push({ key: 'connections', nested: nestedTo });
+    finalFilters.push({ key: ['connections'], nested: nestedTo });
   }
   // endregion
-  if (startTimeStart) finalFilters.push({ key: 'start_time', values: [startTimeStart], operator: 'gt' });
-  if (startTimeStop) finalFilters.push({ key: 'start_time', values: [startTimeStop], operator: 'lt' });
-  if (stopTimeStart) finalFilters.push({ key: 'stop_time', values: [stopTimeStart], operator: 'gt' });
-  if (stopTimeStop) finalFilters.push({ key: 'stop_time', values: [stopTimeStop], operator: 'lt' });
-  if (firstSeenStart) finalFilters.push({ key: 'first_seen', values: [firstSeenStart], operator: 'gt' });
-  if (firstSeenStop) finalFilters.push({ key: 'first_seen', values: [firstSeenStop], operator: 'lt' });
-  if (lastSeenStart) finalFilters.push({ key: 'last_seen', values: [lastSeenStart], operator: 'gt' });
-  if (lastSeenStop) finalFilters.push({ key: 'last_seen', values: [lastSeenStop], operator: 'lt' });
-  if (startDate) finalFilters.push({ key: 'created_at', values: [startDate], operator: 'gt' });
-  if (endDate) finalFilters.push({ key: 'created_at', values: [endDate], operator: 'lt' });
+  if (startTimeStart) finalFilters.push({ key: ['start_time'], values: [startTimeStart], operator: 'gt' });
+  if (startTimeStop) finalFilters.push({ key: ['start_time'], values: [startTimeStop], operator: 'lt' });
+  if (stopTimeStart) finalFilters.push({ key: ['stop_time'], values: [stopTimeStart], operator: 'gt' });
+  if (stopTimeStop) finalFilters.push({ key: ['stop_time'], values: [stopTimeStop], operator: 'lt' });
+  if (firstSeenStart) finalFilters.push({ key: ['first_seen'], values: [firstSeenStart], operator: 'gt' });
+  if (firstSeenStop) finalFilters.push({ key: ['first_seen'], values: [firstSeenStop], operator: 'lt' });
+  if (lastSeenStart) finalFilters.push({ key: ['last_seen'], values: [lastSeenStart], operator: 'gt' });
+  if (lastSeenStop) finalFilters.push({ key: ['last_seen'], values: [lastSeenStop], operator: 'lt' });
+  if (startDate) finalFilters.push({ key: ['created_at'], values: [startDate], operator: 'gt' });
+  if (endDate) finalFilters.push({ key: ['created_at'], values: [endDate], operator: 'lt' });
   if (confidences && confidences.length > 0) {
-    finalFilters.push({ key: 'confidence', values: confidences });
+    finalFilters.push({ key: ['confidence'], values: confidences });
   }
   return R.pipe(R.assoc('types', relationsToGet), R.assoc('filters', finalFilters))(args);
 };
-export const listRelations = async <T extends StoreProxyRelation>(context: AuthContext, user: AuthUser, type: string | Array<string>,
+export const listRelations = async <T extends (StoreProxyRelation & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, type: string | Array<string>,
   args: RelationOptions<T> = {}): Promise<Array<T>> => {
   const { indices = READ_RELATIONSHIPS_INDICES } = args;
   const paginateArgs = buildRelationsFilter(type, args);
   return elPaginate(context, user, indices, paginateArgs);
 };
-export const listAllRelations = async <T extends StoreProxyRelation>(context: AuthContext, user: AuthUser, type: string | Array<string>,
+export const listAllRelations = async <T extends (StoreProxyRelation & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, type: string | Array<string>,
   args: RelationOptions<T> = {}): Promise<Array<T>> => {
   const { indices = READ_RELATIONSHIPS_INDICES } = args;
   const paginateArgs = buildRelationsFilter(type, args);
   return elList(context, user, indices, paginateArgs);
 };
 
-// entities
-interface EntityFilters<T extends BasicStoreCommon> extends ListFilter<T> {
-  connectionFormat?: boolean;
-  elementId?: string | Array<string>;
-  fromId?: string | Array<string>;
-  fromRole?: string;
-  toId?: string | Array<string>;
-  toRole?: string;
-  fromTypes?: Array<string>;
-  toTypes?: Array<string>;
-  types?: Array<string>;
-  entityTypes?: Array<string>;
-  relationshipTypes?: Array<string>;
-  elementWithTargetTypes?: Array<string>;
-}
-
-const buildEntityFilters = <T extends BasicStoreCommon>(args: EntityFilters<T> = {}) => {
+const buildEntityFilters = <T extends (BasicStoreCommon & { filters: string[], orderBy: string })>(args: EntityFilters<T> = {}) => {
   const builtFilters = { ...args };
   const { types = [], entityTypes = [], relationshipTypes = [] } = args;
   const { elementId, elementWithTargetTypes = [] } = args;
@@ -268,51 +275,51 @@ const buildEntityFilters = <T extends BasicStoreCommon>(args: EntityFilters<T> =
   // region element
   const nestedElement = [];
   if (elementId) {
-    nestedElement.push({ key: 'internal_id', values: Array.isArray(elementId) ? elementId : [elementId] });
+    nestedElement.push({ key: ['internal_id'], values: Array.isArray(elementId) ? elementId : [elementId] });
   }
   if (nestedElement.length > 0) {
-    customFilters.push({ key: 'connections', nested: nestedElement });
+    customFilters.push({ key: ['connections'], nested: nestedElement });
   }
   const nestedElementTypes = [];
   if (elementWithTargetTypes && elementWithTargetTypes.length > 0) {
-    nestedElementTypes.push({ key: 'types', values: elementWithTargetTypes });
+    nestedElementTypes.push({ key: ['types'], values: elementWithTargetTypes });
   }
   if (nestedElementTypes.length > 0) {
-    customFilters.push({ key: 'connections', nested: nestedElementTypes });
+    customFilters.push({ key: ['connections'], nested: nestedElementTypes });
   }
   // endregion
   // region from filtering
   const nestedFrom = [];
   if (fromId) {
-    nestedFrom.push({ key: 'internal_id', values: Array.isArray(fromId) ? fromId : [fromId] });
+    nestedFrom.push({ key: ['internal_id'], values: Array.isArray(fromId) ? fromId : [fromId] });
   }
   if (fromTypes && fromTypes.length > 0) {
-    nestedFrom.push({ key: 'types', values: fromTypes });
+    nestedFrom.push({ key: ['types'], values: fromTypes });
   }
   if (fromRole) {
-    nestedFrom.push({ key: 'role', values: [fromRole] });
+    nestedFrom.push({ key: ['role'], values: [fromRole] });
   } else if (fromId || (fromTypes && fromTypes.length > 0)) {
-    nestedFrom.push({ key: 'role', values: ['*_from'], operator: 'wildcard' });
+    nestedFrom.push({ key: ['role'], values: ['*_from'], operator: 'wildcard' });
   }
   if (nestedFrom.length > 0) {
-    customFilters.push({ key: 'connections', nested: nestedFrom });
+    customFilters.push({ key: ['connections'], nested: nestedFrom });
   }
   // endregion
   // region to filtering
   const nestedTo = [];
   if (toId) {
-    nestedTo.push({ key: 'internal_id', values: Array.isArray(toId) ? toId : [toId] });
+    nestedTo.push({ key: ['internal_id'], values: Array.isArray(toId) ? toId : [toId] });
   }
   if (toTypes && toTypes.length > 0) {
-    nestedTo.push({ key: 'types', values: toTypes });
+    nestedTo.push({ key: ['types'], values: toTypes });
   }
   if (toRole) {
-    nestedTo.push({ key: 'role', values: [toRole] });
+    nestedTo.push({ key: ['role'], values: [toRole] });
   } else if (toId || (toTypes && toTypes.length > 0)) {
-    nestedTo.push({ key: 'role', values: ['*_to'], operator: 'wildcard' });
+    nestedTo.push({ key: ['role'], values: ['*_to'], operator: 'wildcard' });
   }
   if (nestedTo.length > 0) {
-    customFilters.push({ key: 'connections', nested: nestedTo });
+    customFilters.push({ key: ['connections'], nested: nestedTo });
   }
   // endregion
   // Override some special filters
@@ -330,14 +337,15 @@ export const listEntities: InternalListEntities = async (context, user, entityTy
   const paginateArgs = buildEntityFilters({ entityTypes, ...args });
   return elPaginate(context, user, indices, paginateArgs);
 };
-export const listAllEntities = async <T extends BasicStoreEntity>(context: AuthContext, user: AuthUser, entityTypes: Array<string>,
+export const listAllEntities = async <T extends (BasicStoreEntity & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, entityTypes: Array<string>,
   args: EntityOptions<T> = {}): Promise<Array<T>> => {
   const { indices = READ_ENTITIES_INDICES } = args;
   const paginateArgs = buildEntityFilters({ entityTypes, ...args });
   return elList(context, user, indices, paginateArgs);
 };
 
-export const listEntitiesPaginated = async <T extends BasicStoreEntity>(context: AuthContext, user: AuthUser, entityTypes: Array<string>,
+// eslint-disable-next-line max-len
+export const listEntitiesPaginated = async <T extends (BasicStoreEntity & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, entityTypes: Array<string>,
   args: EntityOptions<T> = {}): Promise<StoreEntityConnection<T>> => {
   const { indices = READ_ENTITIES_INDICES, connectionFormat } = args;
   if (connectionFormat === false) {
@@ -347,7 +355,7 @@ export const listEntitiesPaginated = async <T extends BasicStoreEntity>(context:
   return elPaginate(context, user, indices, paginateArgs);
 };
 
-export const countAllThings = async <T extends BasicStoreCommon> (context: AuthContext, user: AuthUser, args: ListFilter<T> = {}) => {
+export const countAllThings = async <T extends (BasicStoreCommon & { filters: string[], orderBy: string })>(context: AuthContext, user: AuthUser, args: ListFilter<T> = {}) => {
   const { indices = READ_DATA_INDICES } = args;
   return elCount(context, user, indices, args);
 };

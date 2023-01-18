@@ -1,7 +1,11 @@
 import type { BasicStoreEntity, StoreEntity } from '../../types/store';
 import {
-  ENTITY_TYPE_ATTACK_PATTERN, ENTITY_TYPE_CONTAINER_NOTE, ENTITY_TYPE_CONTAINER_OPINION,
-  ENTITY_TYPE_CONTAINER_REPORT, ENTITY_TYPE_DATA_SOURCE, ENTITY_TYPE_INCIDENT,
+  ENTITY_TYPE_ATTACK_PATTERN,
+  ENTITY_TYPE_CONTAINER_NOTE,
+  ENTITY_TYPE_CONTAINER_OPINION,
+  ENTITY_TYPE_CONTAINER_REPORT,
+  ENTITY_TYPE_DATA_SOURCE,
+  ENTITY_TYPE_INCIDENT,
   ENTITY_TYPE_INDICATOR,
   ENTITY_TYPE_INFRASTRUCTURE,
   ENTITY_TYPE_INTRUSION_SET,
@@ -14,8 +18,15 @@ import { ENTITY_TYPE_CONTAINER_GROUPING } from '../grouping/grouping-types';
 import { ENTITY_TYPE_EVENT } from '../event/event-types';
 import { ENTITY_TYPE_CHANNEL } from '../channel/channel-types';
 import type { StixObject } from '../../types/stix-common';
-import type { VocabularyCategory } from '../../generated/graphql';
+import type {
+  QueryVocabulariesArgs,
+  VocabularyCategory,
+  VocabularyFilter,
+  VocabularyFiltering,
+  VocabularyOrdering
+} from '../../generated/graphql';
 import { ENTITY_TYPE_CONTAINER_CASE } from '../case/case-types';
+import type { GenericUtilityArgs } from '../../database/middleware-loader';
 
 export const ENTITY_TYPE_VOCABULARY = 'Vocabulary';
 
@@ -336,12 +347,16 @@ export const vocabularyDefinitions: Record<VocabularyCategory, VocabularyDefinit
   },
 };
 
+export type VocabulariesQueryArgs = GenericUtilityArgs<QueryVocabulariesArgs, VocabularyFiltering, VocabularyFilter>;
+
 // region Database types
 export interface BasicStoreEntityVocabulary extends BasicStoreEntity {
   name: string;
   description: string;
   category: VocabularyCategory;
   builtIn?: boolean;
+  filters: VocabularyFilter[],
+  orderBy: VocabularyOrdering,
 }
 
 export interface StoreEntityVocabulary extends StoreEntity {

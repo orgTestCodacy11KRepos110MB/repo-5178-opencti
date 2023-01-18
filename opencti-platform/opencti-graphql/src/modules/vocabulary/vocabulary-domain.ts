@@ -1,21 +1,21 @@
 import type { AuthContext, AuthUser } from '../../types/user';
 import { createEntity, deleteElementById, updateAttribute } from '../../database/middleware';
-import type { EditInput, QueryVocabulariesArgs, VocabularyAddInput, } from '../../generated/graphql';
+import type { EditInput, VocabularyAddInput, } from '../../generated/graphql';
 import { VocabularyFilter } from '../../generated/graphql';
 import { listEntitiesPaginated, storeLoadById } from '../../database/middleware-loader';
-import { BasicStoreEntityVocabulary, ENTITY_TYPE_VOCABULARY } from './vocabulary-types';
+import { BasicStoreEntityVocabulary, ENTITY_TYPE_VOCABULARY, VocabulariesQueryArgs } from './vocabulary-types';
 import { notify } from '../../database/redis';
 import { BUS_TOPICS } from '../../config/conf';
 import { elRawSearch, elRawUpdateByQuery } from '../../database/engine';
 import { READ_ENTITIES_INDICES } from '../../database/utils';
 import { getVocabulariesCategories, updateElasticVocabularyValue } from './vocabulary-utils';
-import type { DomainFindById } from '../../domain/domainTypes';
+import type { DomainFindAll, DomainFindById } from '../../domain/domainTypes';
 
 export const findById: DomainFindById<BasicStoreEntityVocabulary> = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById(context, user, id, ENTITY_TYPE_VOCABULARY);
 };
 
-export const findAll = (context: AuthContext, user: AuthUser, opts: QueryVocabulariesArgs) => {
+export const findAll: DomainFindAll<BasicStoreEntityVocabulary> = (context: AuthContext, user: AuthUser, opts: VocabulariesQueryArgs) => {
   const { category } = opts;
   let filters = opts.filters ?? [];
   const entityTypes = filters.find(({ key }) => key.includes(VocabularyFilter.EntityTypes));
@@ -23,7 +23,7 @@ export const findAll = (context: AuthContext, user: AuthUser, opts: QueryVocabul
     filters.push({ key: [VocabularyFilter.Category], values: [category] });
   } else if (entityTypes?.values && entityTypes?.values.length > 0) {
     const categories = entityTypes.values.flatMap((type) => getVocabulariesCategories()
-      .filter(({ entity_types }) => entity_types.includes(type))
+      .filter(({ entity_types }) => entity_types.includes(type.toString()))
       .map(({ key }) => key));
     filters = [
       ...filters.filter(({ key }) => !key.includes(VocabularyFilter.EntityTypes)),
