@@ -79,7 +79,7 @@ export const convertFiltersToQueryOptions = async (context, filters, opts = {}) 
   const queryFilters = [];
   const types = [...defaultTypes];
   if (filters) {
-    const adaptedFilters = await convertFiltersFrontendFormat(filters);
+    const adaptedFilters = await convertFiltersFrontendFormat(context, filters);
     for (let index = 0; index < adaptedFilters.length; index += 1) {
       // eslint-disable-next-line prefer-const
       let { key, operator, values, filterMode } = adaptedFilters[index];
