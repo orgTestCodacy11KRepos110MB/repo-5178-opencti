@@ -19,17 +19,20 @@ export const profileQuery = graphql`
     about {
       ...ProfileOverview_about
     }
+    settings {
+      ...ProfileOverview_settings
+    }
   }
 `;
 
 const Profile = () => {
   const classes = useStyles();
   const data = useLazyLoadQuery<ProfileQuery>(profileQuery, {});
-  const { me, about } = data;
+  const { me, about, settings } = data;
   return (
     <div className={classes.container}>
       <Suspense fallback={<Loader />}>
-        <ProfileOverview me={me} about={about} />
+        <ProfileOverview me={me} about={about} settings={settings} />
       </Suspense>
     </div>
   );

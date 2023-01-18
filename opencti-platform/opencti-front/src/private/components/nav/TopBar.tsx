@@ -176,9 +176,9 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
   const [isNewNotif, setIsNewNotif] = useState(false);
   const notificationListener = (payload: TopBarNotificationSubscription$data | null | undefined) => {
     if (payload && payload.notification && payload.notification.content.length > 0) {
-      const { content, notification_name, notification_type } = payload.notification;
+      const { content, name, notification_type } = payload.notification;
       if (notification_type === 'digest') {
-        MESSAGING$.notifySuccess(`New digest available for ${notification_name}`);
+        MESSAGING$.notifySuccess(`New digest available for ${name}`);
       } else {
         const { title, messages } = content.at(0) ?? {};
         const message = `${title} > ${(messages ?? []).at(0)}...`;
@@ -440,23 +440,24 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
                   variant="topBar"
                 />
                 <Filters
-                  variant="dialog"
-                  availableFilterKeys={[
-                    'entity_type',
-                    'markedBy',
-                    'labelledBy',
-                    'createdBy',
-                    'confidence',
-                    'x_opencti_organization_type',
-                    'created_start_date',
-                    'created_end_date',
-                    'created_at_start_date',
-                    'created_at_end_date',
-                    'creator',
-                  ]}
-                  disabled={location.pathname.includes('/dashboard/search/')} size={undefined} fontSize={undefined}
-                  noDirectFilters={undefined} availableEntityTypes={undefined} availableRelationshipTypes={undefined}
-                  allEntityTypes={undefined} handleAddFilter={undefined} type={undefined} />
+                    variant="dialog"
+                    availableFilterKeys={[
+                      'entity_type',
+                      'markedBy',
+                      'labelledBy',
+                      'createdBy',
+                      'confidence',
+                      'x_opencti_organization_type',
+                      'created_start_date',
+                      'created_end_date',
+                      'created_at_start_date',
+                      'created_at_end_date',
+                      'creator',
+                    ]}
+                    disabled={location.pathname.includes('/dashboard/search/')} size={undefined} fontSize={undefined}
+                    noDirectFilters={undefined} availableEntityTypes={undefined} availableRelationshipTypes={undefined}
+                    allEntityTypes={undefined} handleAddFilter={undefined} type={undefined}
+                    availableRelationFilterTypes={undefined} />
                 <Tooltip title={t('Bulk search')}>
                   <IconButton component={Link} to="/dashboard/search_bulk"
                     color={location.pathname.includes('/dashboard/search_bulk') ? 'secondary' : 'default'}

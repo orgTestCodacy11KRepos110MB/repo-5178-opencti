@@ -14,8 +14,6 @@ import conf, { logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import type { DataEvent, SseEvent, StreamNotifEvent, UpdateEvent } from '../types/event';
-import type { BasicFilterValue } from '../utils/sseFiltering';
-import { isInstanceMatchFilters } from '../utils/sseFiltering';
 import type { AuthContext, AuthUser } from '../types/user';
 import type { BasicStoreRelation } from '../types/store';
 import { listAllEntities, listAllRelations } from '../database/middleware-loader';
@@ -31,6 +29,7 @@ import {
   BasicStoreEntityTrigger,
   ENTITY_TYPE_TRIGGER
 } from '../modules/notification/notification-types';
+import { isStixMatchFilters } from '../utils/filtering';
 
 const EVENT_NOTIFICATION_VERSION = '1';
 const NOTIFICATION_ENGINE_KEY = conf.get('notification_manager:lock_key');
@@ -46,8 +45,6 @@ Subscribe to new threats targeting a specific identity or location (targets)
 Subscribe to new sighting sighted-in a specific entity (sightings in France, IMPORTANT)
 Subscribe to new malware used by a threat (uses)
  */
-
-export type FrontendFilter = Record<string, Array<BasicFilterValue>>;
 
 interface ResolvedTrigger {
   users: Array<AuthUser>
@@ -372,8 +369,8 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
-            const isPreviousMatch = await isInstanceMatchFilters(context, user, previous, frontendFilters);
-            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, frontendFilters);
+            const isPreviousMatch = await isStixMatchFilters(context, user, previous, frontendFilters);
+            const isCurrentlyMatch = await isStixMatchFilters(context, user, data, frontendFilters);
             if (isPreviousMatch && !isCurrentlyMatch && event_types.includes(EVENT_TYPE_DELETE)) { // No longer visible
               targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_DELETE });
             } else if (!isPreviousMatch && isCurrentlyMatch && event_types.includes(EVENT_TYPE_CREATE)) { // Newly visible
@@ -386,7 +383,7 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
             // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
-            const isCurrentlyMatch = await isInstanceMatchFilters(context, user, data, frontendFilters);
+            const isCurrentlyMatch = await isStixMatchFilters(context, user, data, frontendFilters);
             if (isCurrentlyMatch) {
               targets.push({ user: convertToNotificationUser(user, outcomes), type: eventType });
             }

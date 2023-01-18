@@ -45,16 +45,6 @@ export interface StixCourseOfAction extends StixDomainObject {
   };
 }
 
-// TODO Add support for Grouping
-// Grouping Specific Properties
-// name, description, context, object_refs
-export interface StixGrouping extends StixDomainObject {
-  name: string; // optional
-  description: string; // optional
-  context: string; // grouping-context-ov
-  object_refs: Array<StixId>;
-}
-
 // Identity Specific Properties
 export interface StixIdentityExtension extends StixOpenctiExtension {
   firstname: string;
@@ -200,13 +190,17 @@ export interface StixMalwareAnalysis extends StixDomainObject {
   sample_ref: StixId; // optional
 }
 
+// Container specific Properties
+export interface StixContainer extends StixDomainObject {
+  object_refs: Array<StixId>;
+}
+
 // Note Specific Properties
 // abstract, content, authors, object_refs
-export interface StixNote extends StixDomainObject {
+export interface StixNote extends StixContainer {
   abstract: string;
   content: string;
   authors: Array<string>;
-  object_refs: Array<StixId>;
   note_types: Array<string>;
   likelihood: number;
   extensions: {
@@ -216,11 +210,10 @@ export interface StixNote extends StixDomainObject {
 
 // Observed Data Specific Properties
 // first_observed, last_observed, number_observed, objects, object_refs
-export interface StixObservedData extends StixDomainObject {
+export interface StixObservedData extends StixContainer {
   first_observed: Date;
   last_observed: Date;
   number_observed: number;
-  object_refs: Array<StixId>;
   extensions: {
     [STIX_EXT_OCTI]: StixContainerExtension;
   };
@@ -228,11 +221,10 @@ export interface StixObservedData extends StixDomainObject {
 
 // Opinion Specific Properties
 // explanation, authors, opinion, object_refs
-export interface StixOpinion extends StixDomainObject {
+export interface StixOpinion extends StixContainer {
   explanation: string; // optional
   authors: Array<string>; // optional
   opinion: 'strongly-disagree' | 'disagree' | 'neutral' | 'agree' | 'strongly-agree';
-  object_refs: Array<StixId>;
   extensions: {
     [STIX_EXT_OCTI]: StixContainerExtension;
   };
@@ -240,12 +232,11 @@ export interface StixOpinion extends StixDomainObject {
 
 // Report Specific Properties
 // name, description, report_types, published, object_refs
-export interface StixReport extends StixDomainObject {
+export interface StixReport extends StixContainer {
   name: string;
   description: string;
   report_types: Array<string>;
   published: Date;
-  object_refs: Array<StixId>;
   extensions: {
     [STIX_EXT_OCTI]: StixContainerExtension;
   };
@@ -253,11 +244,10 @@ export interface StixReport extends StixDomainObject {
 
 // Grouping Specific Properties
 // name, description, context, object_refs
-interface StixGrouping extends StixDomainObject {
+interface StixGrouping extends StixContainer {
   name: string;
   description: string;
   context: string;
-  object_refs: Array<StixId>;
 }
 
 // Threat Actor Specific Properties

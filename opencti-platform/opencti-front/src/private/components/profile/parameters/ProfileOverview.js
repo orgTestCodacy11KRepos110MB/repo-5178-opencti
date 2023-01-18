@@ -27,7 +27,7 @@ import { OPENCTI_ADMIN_UUID } from '../../../../utils/hooks/useGranted';
 import Loader from '../../../../components/Loader';
 import { convertOrganizations } from '../../../../utils/edition';
 import ObjectOrganizationField from '../../common/form/ObjectOrganizationField';
-import { OTP_CODE_SIZE } from '../../../public/components/OtpActivation';
+import { OTP_CODE_SIZE } from '../../../../public/components/OtpActivation';
 
 const styles = () => ({
   panel: {
@@ -228,7 +228,7 @@ const OtpComponent = ({ closeFunction }) => (
 );
 
 const ProfileOverviewComponent = (props) => {
-  const { t, me, classes, about } = props;
+  const { t, me, classes, about, settings } = props;
   const { external, otp_activated: useOtp } = me;
   const objectOrganization = convertOrganizations(me);
   const [display2FA, setDisplay2FA] = useState(false);

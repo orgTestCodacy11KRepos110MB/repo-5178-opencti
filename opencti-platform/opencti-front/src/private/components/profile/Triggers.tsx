@@ -89,7 +89,7 @@ const Triggers: FunctionComponent = () => {
   return (
     <div>
       {renderLines()}
-      <TriggerCreation paginationOptions={paginationOptions} />
+      <TriggerCreation paginationOptions={paginationOptions} handleClose={() => {}} open={false}/>
     </div>
   );
 };

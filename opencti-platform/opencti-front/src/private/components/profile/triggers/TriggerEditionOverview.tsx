@@ -186,24 +186,24 @@ const TriggerEditionOverview: FunctionComponent<TriggerEditionOverviewProps> = (
           </Field>
           <div style={{ marginTop: 35 }}>
             <Filters
-              variant="text"
-              availableFilterKeys={[
-                'entity_type',
-                'markedBy',
-                'labelledBy',
-                'createdBy',
-                'x_opencti_score',
-                'x_opencti_detection',
-                'revoked',
-                'confidence',
-                'indicator_types',
-                'pattern_type',
-              ]}
-              handleAddFilter={handleAddFilter}
-              noDirectFilters={true}
-              disabled={undefined} size={undefined} fontSize={undefined}
-              availableEntityTypes={undefined} availableRelationshipTypes={undefined} allEntityTypes={undefined}
-              type={undefined} />
+                variant="text"
+                availableFilterKeys={[
+                  'entity_type',
+                  'markedBy',
+                  'labelledBy',
+                  'createdBy',
+                  'x_opencti_score',
+                  'x_opencti_detection',
+                  'revoked',
+                  'confidence',
+                  'indicator_types',
+                  'pattern_type',
+                ]}
+                handleAddFilter={handleAddFilter}
+                noDirectFilters={true}
+                disabled={undefined} size={undefined} fontSize={undefined}
+                availableEntityTypes={undefined} availableRelationshipTypes={undefined} allEntityTypes={undefined}
+                type={undefined} availableRelationFilterTypes={undefined} />
           </div>
           <FilterCard filters={filters} handleRemoveFilter={handleRemoveFilter}/>
         </Form>
