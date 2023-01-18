@@ -191,6 +191,7 @@ const TriggerEditionOverview: FunctionComponent<TriggerEditionOverviewProps> = (
                   'entity_type',
                   'markedBy',
                   'labelledBy',
+                  'objectContains',
                   'createdBy',
                   'x_opencti_score',
                   'x_opencti_detection',

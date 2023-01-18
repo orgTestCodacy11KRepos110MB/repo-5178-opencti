@@ -196,15 +196,26 @@ export const isStixMatchFilters = async (context, user, stix, filters) => {
       }
       // Labels filtering
       if (key === LABEL_FILTER) {
-        const labels = values.map((v) => v.value);
-        const isLabelAvailable = labels.some((r) => stix.labels.includes(r));
-        // If label is available but must not be
-        if (operator === 'not_eq' && isLabelAvailable) {
+        // Handle no label filtering
+        const isNoLabelRequire = values.map((v) => v.id).includes(null);
+        if (operator === 'not_eq' && isNoLabelRequire && (stix.labels ?? []).length === 0) {
           return false;
         }
-        // If label is not available but must be
-        if (operator === 'eq' && !isLabelAvailable) {
+        if (operator === 'eq' && isNoLabelRequire && (stix.labels ?? []).length > 0) {
           return false;
+        }
+        // Get only required labels
+        const labels = values.map((v) => (v.id ? v.value : null)).filter((v) => v !== null);
+        if (labels.length > 0) {
+          const isLabelAvailable = labels.some((r) => (stix.labels ?? []).includes(r));
+          // If label is available but must not be
+          if (operator === 'not_eq' && isLabelAvailable) {
+            return false;
+          }
+          // If label is not available but must be
+          if (operator === 'eq' && !isLabelAvailable) {
+            return false;
+          }
         }
       }
       // Revoked or Detected filtering
@@ -256,7 +267,7 @@ export const isStixMatchFilters = async (context, user, stix, filters) => {
       }
       // object Refs filtering
       if (key === OBJECT_CONTAINS_FILTER) {
-        const instanceObjects = stix.object_refs || [];
+        const instanceObjects = [...(stix.object_refs ?? []), ...(stix.extensions[STIX_EXT_OCTI].object_refs_inferred ?? [])];
         const ids = values.map((v) => v.id);
         const isRefFound = ids.some((r) => instanceObjects.includes(r));
         // If ref is available but must not be

@@ -247,6 +247,7 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
             variant="text"
             availableFilterKeys={[
               'entity_type',
+              'objectContains',
               'markedBy',
               'labelledBy',
               'createdBy',

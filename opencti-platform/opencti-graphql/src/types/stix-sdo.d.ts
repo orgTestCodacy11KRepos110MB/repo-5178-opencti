@@ -193,53 +193,44 @@ export interface StixMalwareAnalysis extends StixDomainObject {
 // Container specific Properties
 export interface StixContainer extends StixDomainObject {
   object_refs: Array<StixId>;
+  extensions: {
+    [STIX_EXT_OCTI]: StixContainerExtension;
+  };
 }
 
 // Note Specific Properties
 // abstract, content, authors, object_refs
 export interface StixNote extends StixContainer {
-  abstract: string;
-  content: string;
-  authors: Array<string>;
-  note_types: Array<string>;
-  likelihood: number;
-  extensions: {
-    [STIX_EXT_OCTI]: StixContainerExtension;
-  };
+  abstract: string
+  content: string
+  authors: Array<string>
+  note_types: Array<string>
+  likelihood: number
 }
 
 // Observed Data Specific Properties
 // first_observed, last_observed, number_observed, objects, object_refs
 export interface StixObservedData extends StixContainer {
-  first_observed: Date;
-  last_observed: Date;
-  number_observed: number;
-  extensions: {
-    [STIX_EXT_OCTI]: StixContainerExtension;
-  };
+  first_observed: Date
+  last_observed: Date
+  number_observed: number
 }
 
 // Opinion Specific Properties
 // explanation, authors, opinion, object_refs
 export interface StixOpinion extends StixContainer {
-  explanation: string; // optional
-  authors: Array<string>; // optional
-  opinion: 'strongly-disagree' | 'disagree' | 'neutral' | 'agree' | 'strongly-agree';
-  extensions: {
-    [STIX_EXT_OCTI]: StixContainerExtension;
-  };
+  explanation: string // optional
+  authors: Array<string> // optional
+  opinion: 'strongly-disagree' | 'disagree' | 'neutral' | 'agree' | 'strongly-agree'
 }
 
 // Report Specific Properties
 // name, description, report_types, published, object_refs
 export interface StixReport extends StixContainer {
-  name: string;
-  description: string;
-  report_types: Array<string>;
-  published: Date;
-  extensions: {
-    [STIX_EXT_OCTI]: StixContainerExtension;
-  };
+  name: string
+  description: string
+  report_types: Array<string>
+  published: Date
 }
 
 // Grouping Specific Properties
