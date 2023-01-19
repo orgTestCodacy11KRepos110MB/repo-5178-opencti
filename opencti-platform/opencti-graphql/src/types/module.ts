@@ -12,7 +12,6 @@ import {
   ABSTRACT_INTERNAL_OBJECT,
   ABSTRACT_STIX_DOMAIN_OBJECT,
   ABSTRACT_STIX_META_OBJECT,
-  ABSTRACT_INTERNAL_OBJECT,
   DEPS_KEYS,
   ENTITY_TYPE_CONTAINER, ENTITY_TYPE_LOCATION,
   schemaTypes,
@@ -32,7 +31,6 @@ import {
   RelationDefinition,
   stixCoreRelationshipsMapping as coreRels,
 } from '../database/stix';
-import { registerInternalType } from '../schema/internalObject';
 import { UnsupportedError } from '../config/errors';
 import {
   SINGLE_STIX_META_RELATIONSHIPS,
