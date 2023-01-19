@@ -62,11 +62,6 @@ import TopMenuData from './TopMenuData';
 import TopMenuSettings from './TopMenuSettings';
 import TopMenuTechniques from './TopMenuTechniques';
 import { commitMutation, MESSAGING$ } from '../../../relay/environment';
-import Security, {
-  EXPLORE,
-  KNOWLEDGE,
-  KNOWLEDGE_KNASKIMPORT,
-} from '../../../utils/Security';
 import Security from '../../../utils/Security';
 import TopMenuCourseOfAction from './TopMenuCourseOfAction';
 import TopMenuWorkspacesDashboards from './TopMenuWorkspacesDashboards';

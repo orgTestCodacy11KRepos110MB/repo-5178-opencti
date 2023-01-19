@@ -2,7 +2,7 @@ import ejs from 'ejs';
 import axios from 'axios';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import { createStreamProcessor, lockResource, NOTIFICATION_STREAM_NAME, StreamProcessor } from '../database/redis';
-import conf, { basePath, baseUrl, logApp } from '../config/conf';
+import conf, { basePath, baseUrl, booleanConf, logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import {
@@ -186,6 +186,13 @@ const initPublisherManager = () => {
   return {
     start: async () => {
       streamScheduler = setIntervalAsync(() => notificationHandler(), STREAM_SCHEDULE_TIME);
+    },
+    status: () => {
+      return {
+        id: 'PUBLISHER_MANAGER',
+        enable: booleanConf('publisher_manager:enabled', false),
+        running: false,
+      };
     },
     shutdown: async () => {
       publisherListening = false;

@@ -10,7 +10,7 @@ import {
   storeNotificationEvent,
   StreamProcessor
 } from '../database/redis';
-import conf, { logApp } from '../config/conf';
+import conf, { booleanConf, logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import type { DataEvent, SseEvent, StreamNotifEvent, UpdateEvent } from '../types/event';
@@ -477,6 +477,13 @@ const initNotificationManager = () => {
     start: async () => {
       streamScheduler = setIntervalAsync(() => notificationHandler(), STREAM_SCHEDULE_TIME);
       cronScheduler = setIntervalAsync(() => notificationDigestHandler(), CRON_SCHEDULE_TIME);
+    },
+    status: () => {
+      return {
+        id: 'NOTIFICATION_MANAGER',
+        enable: booleanConf('notification_manager:enabled', false),
+        running: false,
+      };
     },
     shutdown: async () => {
       notificationListening = false;
