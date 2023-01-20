@@ -75,6 +75,7 @@ enum NotificationsOrdering {
 # Filtering
 enum NotificationFilter {
     created
+    is_read
 }
 input NotificationsFiltering {
     key: [NotificationFilter!]!

@@ -17,7 +17,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const TopMenuProfile = () => {
+const TopMenuNotifications = () => {
   const location = useLocation();
   const { t } = useFormatter();
   const classes = useStyles();
@@ -25,22 +25,42 @@ const TopMenuProfile = () => {
     <div>
       <Button
         component={Link}
-        to="/dashboard/profile/me"
+        to="/dashboard/profile/notifications"
         size="small"
         variant={
-          location.pathname === '/dashboard/profile/me' ? 'contained' : 'text'
+          location.pathname === '/dashboard/profile/notifications'
+            ? 'contained'
+            : 'text'
         }
         color={
-          location.pathname === '/dashboard/profile/me'
+          location.pathname === '/dashboard/profile/notifications'
             ? 'secondary'
             : 'primary'
         }
         classes={{ root: classes.button }}
       >
-        {t('Profile')}
+        {t('Notifications')}
+      </Button>
+      <Button
+        component={Link}
+        to="/dashboard/profile/triggers"
+        size="small"
+        variant={
+          location.pathname === '/dashboard/profile/triggers'
+            ? 'contained'
+            : 'text'
+        }
+        color={
+          location.pathname === '/dashboard/profile/triggers'
+            ? 'secondary'
+            : 'primary'
+        }
+        classes={{ root: classes.button }}
+      >
+        {t('Triggers')}
       </Button>
     </div>
   );
 };
 
-export default TopMenuProfile;
+export default TopMenuNotifications;

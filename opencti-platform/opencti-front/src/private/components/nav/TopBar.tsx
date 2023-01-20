@@ -12,7 +12,7 @@ import {
   InsertChartOutlined,
   NotificationsOutlined,
 } from '@mui/icons-material';
-import { UploadOutline } from 'mdi-material-ui';
+import { DatabaseCogOutline } from 'mdi-material-ui';
 import Menu from '@mui/material/Menu';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
@@ -83,9 +83,14 @@ import {
   TopBarNotificationSubscription$data,
 } from './__generated__/TopBarNotificationSubscription.graphql';
 import { Theme } from '../../../components/Theme';
-import { EXPLORE, KNOWLEDGE, KNOWLEDGE_KNASKIMPORT } from '../../../utils/hooks/useGranted';
+import {
+  EXPLORE,
+  KNOWLEDGE,
+  KNOWLEDGE_KNASKIMPORT,
+} from '../../../utils/hooks/useGranted';
 import TopMenuProfile from '../profile/TopMenuProfile';
 import TopMenuTrigger from '../profile/triggers/TopMenuTrigger';
+import TopMenuNotifications from '../profile/TopMenuNotifications';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   appBar: {
@@ -154,14 +159,20 @@ const notificationSubscription = graphql`
 `;
 
 interface TopBarProps {
-  keyword?: string
-  handleChangeTimeField?: (event: React.MouseEvent) => void
-  handleChangeDashboard?: (event: React.MouseEvent) => void
-  timeField?: 'technical' | 'functional'
-  dashboard?: string
+  keyword?: string;
+  handleChangeTimeField?: (event: React.MouseEvent) => void;
+  handleChangeDashboard?: (event: React.MouseEvent) => void;
+  timeField?: 'technical' | 'functional';
+  dashboard?: string;
 }
 
-const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField, timeField, handleChangeDashboard, dashboard }) => {
+const TopBar: FunctionComponent<TopBarProps> = ({
+  keyword,
+  handleChangeTimeField,
+  timeField,
+  handleChangeDashboard,
+  dashboard,
+}) => {
   const theme = useTheme<Theme>();
   const history = useHistory();
   const location = useLocation();
@@ -169,8 +180,14 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
   const { t } = useFormatter();
 
   const [isNewNotif, setIsNewNotif] = useState(false);
-  const notificationListener = (payload: TopBarNotificationSubscription$data | null | undefined) => {
-    if (payload && payload.notification && payload.notification.content.length > 0) {
+  const notificationListener = (
+    payload: TopBarNotificationSubscription$data | null | undefined,
+  ) => {
+    if (
+      payload
+      && payload.notification
+      && payload.notification.content.length > 0
+    ) {
       const { content, name, notification_type } = payload.notification;
       if (notification_type === 'digest') {
         MESSAGING$.notifySuccess(`New digest available for ${name}`);
@@ -183,11 +200,16 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
       setIsNewNotif(true);
     }
   };
-  const subConfig = useMemo<GraphQLSubscriptionConfig<TopBarNotificationSubscription>>(() => ({
-    subscription: notificationSubscription,
-    variables: {},
-    onNext: notificationListener,
-  }), [notificationSubscription]);
+  const subConfig = useMemo<
+  GraphQLSubscriptionConfig<TopBarNotificationSubscription>
+  >(
+    () => ({
+      subscription: notificationSubscription,
+      variables: {},
+      onNext: notificationListener,
+    }),
+    [notificationSubscription],
+  );
   useSubscription(subConfig);
 
   const [navOpen, setNavOpen] = useState(
@@ -201,9 +223,14 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
       sub.unsubscribe();
     };
   });
-  const [menuOpen, setMenuOpen] = useState<{ open: boolean, anchorEl: HTMLButtonElement | null }>({ open: false, anchorEl: null });
+  const [menuOpen, setMenuOpen] = useState<{
+    open: boolean;
+    anchorEl: HTMLButtonElement | null;
+  }>({ open: false, anchorEl: null });
   const [openDrawer, setOpenDrawer] = useState(false);
-  const handleOpenMenu = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const handleOpenMenu = (
+    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
     event.preventDefault();
     setMenuOpen({ open: true, anchorEl: event.currentTarget });
   };
@@ -240,7 +267,12 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
   };
 
   return (
-    <AppBar position="fixed" className={classes.appBar} variant="elevation" elevation={1}>
+    <AppBar
+      position="fixed"
+      className={classes.appBar}
+      variant="elevation"
+      elevation={1}
+    >
       <Toolbar>
         <div className={classes.logoContainer}>
           <Link to="/dashboard">
@@ -266,9 +298,10 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
             || location.pathname.match('/dashboard/analysis/[a-z_]+$')) && (
             <TopMenuAnalysis />
           )}
-          {(location.pathname === '/dashboard/profile'
-            || location.pathname.match('/dashboard/profile/[a-z_]+$')) && (
-            <TopMenuProfile />
+          {location.pathname === '/dashboard/profile/me' && <TopMenuProfile />}
+          {location.pathname !== '/dashboard/profile/me'
+            && location.pathname.includes('/dashboard/profile/') && (
+              <TopMenuNotifications />
           )}
           {location.pathname.includes('/dashboard/profile/triggers/') && (
             <TopMenuTrigger />
@@ -435,28 +468,42 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
                   variant="topBar"
                 />
                 <Filters
-                    variant="dialog"
-                    availableFilterKeys={[
-                      'entity_type',
-                      'markedBy',
-                      'labelledBy',
-                      'createdBy',
-                      'confidence',
-                      'x_opencti_organization_type',
-                      'created_start_date',
-                      'created_end_date',
-                      'created_at_start_date',
-                      'created_at_end_date',
-                      'creator',
-                    ]}
-                    disabled={location.pathname.includes('/dashboard/search/')} size={undefined} fontSize={undefined}
-                    noDirectFilters={undefined} availableEntityTypes={undefined} availableRelationshipTypes={undefined}
-                    allEntityTypes={undefined} handleAddFilter={undefined} type={undefined}
-                    availableRelationFilterTypes={undefined} />
+                  variant="dialog"
+                  availableFilterKeys={[
+                    'entity_type',
+                    'markedBy',
+                    'labelledBy',
+                    'createdBy',
+                    'confidence',
+                    'x_opencti_organization_type',
+                    'created_start_date',
+                    'created_end_date',
+                    'created_at_start_date',
+                    'created_at_end_date',
+                    'creator',
+                  ]}
+                  disabled={location.pathname.includes('/dashboard/search/')}
+                  size={undefined}
+                  fontSize={undefined}
+                  noDirectFilters={undefined}
+                  availableEntityTypes={undefined}
+                  availableRelationshipTypes={undefined}
+                  allEntityTypes={undefined}
+                  handleAddFilter={undefined}
+                  type={undefined}
+                  availableRelationFilterTypes={undefined}
+                />
                 <Tooltip title={t('Bulk search')}>
-                  <IconButton component={Link} to="/dashboard/search_bulk"
-                    color={location.pathname.includes('/dashboard/search_bulk') ? 'secondary' : 'default'}
-                    size="medium">
+                  <IconButton
+                    component={Link}
+                    to="/dashboard/search_bulk"
+                    color={
+                      location.pathname.includes('/dashboard/search_bulk')
+                        ? 'secondary'
+                        : 'default'
+                    }
+                    size="medium"
+                  >
                     <ContentPasteSearchOutlined fontSize="medium" />
                   </IconButton>
                 </Tooltip>
@@ -468,55 +515,103 @@ const TopBar: FunctionComponent<TopBarProps> = ({ keyword, handleChangeTimeField
             <Security needs={[EXPLORE]}>
               <React.Fragment>
                 <Tooltip title={t('Custom dashboards')}>
-                  <IconButton component={Link} to="/dashboard/workspaces/dashboards"
-                    color={location.pathname.includes('/dashboard/workspaces/dashboards') ? 'secondary' : 'default'}
-                    size="medium">
+                  <IconButton
+                    component={Link}
+                    to="/dashboard/workspaces/dashboards"
+                    color={
+                      location.pathname.includes(
+                        '/dashboard/workspaces/dashboards',
+                      )
+                        ? 'secondary'
+                        : 'default'
+                    }
+                    size="medium"
+                  >
                     <InsertChartOutlined fontSize="medium" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title={t('Investigations')}>
-                  <IconButton component={Link} to="/dashboard/workspaces/investigations"
-                    color={location.pathname.includes('/dashboard/workspaces/investigations') ? 'secondary' : 'default'}
-                    size="medium">
+                  <IconButton
+                    component={Link}
+                    to="/dashboard/workspaces/investigations"
+                    color={
+                      location.pathname.includes(
+                        '/dashboard/workspaces/investigations',
+                      )
+                        ? 'secondary'
+                        : 'default'
+                    }
+                    size="medium"
+                  >
                     <ExploreOutlined fontSize="medium" />
                   </IconButton>
                 </Tooltip>
               </React.Fragment>
             </Security>
             <Security needs={[KNOWLEDGE_KNASKIMPORT]}>
-              <Tooltip title={t('Data import')}>
-                <IconButton component={Link} to="/dashboard/import"
-                  color={location.pathname.includes('/dashboard/import') ? 'secondary' : 'default'}
-                  size="medium">
-                  <UploadOutline fontSize="medium" />
+              <Tooltip title={t('Data import and analyst workbenches')}>
+                <IconButton
+                  component={Link}
+                  to="/dashboard/import"
+                  color={
+                    location.pathname.includes('/dashboard/import')
+                      ? 'secondary'
+                      : 'default'
+                  }
+                  size="medium"
+                >
+                  <DatabaseCogOutline fontSize="medium" />
                 </IconButton>
               </Tooltip>
             </Security>
-            <IconButton size="medium"
+            <Tooltip title={t('Notifications and triggers')}>
+              <IconButton
+                size="medium"
+                classes={{ root: classes.button }}
+                aria-haspopup="true"
+                component={Link}
+                to="/dashboard/profile/notifications"
+                color={
+                  location.pathname === '/dashboard/profile/notifications'
+                    ? 'secondary'
+                    : 'default'
+                }
+              >
+                <Badge color="warning" variant="dot" invisible={!isNewNotif}>
+                  <NotificationsOutlined fontSize="medium" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            <IconButton
+              size="medium"
               classes={{ root: classes.button }}
               aria-owns={menuOpen.open ? 'menu-appbar' : undefined}
               aria-haspopup="true"
-              onClick={handleOpenMenu}>
+              onClick={handleOpenMenu}
+              color={
+                location.pathname === '/dashboard/profile/me'
+                  ? 'secondary'
+                  : 'default'
+              }
+            >
               <AccountCircleOutlined fontSize="medium" />
             </IconButton>
-            <Menu id="menu-appbar"
+            <Menu
+              id="menu-appbar"
               anchorEl={menuOpen.anchorEl}
               open={menuOpen.open}
-              onClose={handleCloseMenu}>
-              <MenuItem component={Link} to="/dashboard/profile" onClick={handleCloseMenu}>
+              onClose={handleCloseMenu}
+            >
+              <MenuItem
+                component={Link}
+                to="/dashboard/profile"
+                onClick={handleCloseMenu}
+              >
                 {t('Profile')}
               </MenuItem>
-              <MenuItem onClick={handleOpenDrawer}>
-                {t('Feedback')}
-              </MenuItem>
+              <MenuItem onClick={handleOpenDrawer}>{t('Feedback')}</MenuItem>
               <MenuItem onClick={handleLogout}>{t('Logout')}</MenuItem>
             </Menu>
-            <IconButton size="medium" classes={{ root: classes.button }} aria-haspopup="true"
-                        component={Link} to="/dashboard/profile/notifications">
-              <Badge color="secondary" variant="dot" invisible={!isNewNotif}>
-                <NotificationsOutlined fontSize="medium"/>
-              </Badge>
-            </IconButton>
           </div>
         </div>
       </Toolbar>

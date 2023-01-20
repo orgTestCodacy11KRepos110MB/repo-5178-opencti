@@ -22,7 +22,11 @@ import { useTheme } from '@mui/styles';
 import inject18n, { useFormatter } from '../../../../components/i18n';
 import TextField from '../../../../components/TextField';
 import SelectField from '../../../../components/SelectField';
-import { commitMutation, MESSAGING$, QueryRenderer } from '../../../../relay/environment';
+import {
+  commitMutation,
+  MESSAGING$,
+  QueryRenderer,
+} from '../../../../relay/environment';
 import { OPENCTI_ADMIN_UUID } from '../../../../utils/hooks/useGranted';
 import Loader from '../../../../components/Loader';
 import { convertOrganizations } from '../../../../utils/edition';
@@ -30,17 +34,11 @@ import ObjectOrganizationField from '../../common/form/ObjectOrganizationField';
 import { OTP_CODE_SIZE } from '../../../../public/components/OtpActivation';
 
 const styles = () => ({
-  panel: {
-    width: '100%',
-    height: 768,
+  container: {
+    width: 900,
     margin: '0 auto',
-    marginBottom: 30,
-    padding: '20px 20px 20px 20px',
-    textAlign: 'left',
-    borderRadius: 6,
-    position: 'relative',
   },
-  classic: {
+  paper: {
     width: '100%',
     margin: '0 auto',
     marginBottom: 30,
@@ -284,13 +282,14 @@ const ProfileOverviewComponent = (props) => {
       },
     });
   };
-
   return (
-    <div>
-      <Dialog open={display2FA}
+    <div className={classes.container}>
+      <Dialog
+        open={display2FA}
         PaperProps={{ elevation: 1 }}
         keepMounted={false}
-        onClose={() => setDisplay2FA(false)}>
+        onClose={() => setDisplay2FA(false)}
+      >
         <DialogTitle style={{ textAlign: 'center' }}>
           {t('Enable two-factor authentication')}
         </DialogTitle>
@@ -298,261 +297,247 @@ const ProfileOverviewComponent = (props) => {
           <OtpComponent closeFunction={() => setDisplay2FA(false)} />
         </DialogContent>
       </Dialog>
-      <Grid container={true} spacing={3}>
-        <Grid item={true} xs={6}>
-          <Paper classes={{ root: classes.panel }} variant="outlined">
-            <Typography variant="h1" gutterBottom={true}>
-              {t('Profile')} {external && `(${t('external')})`}
-            </Typography>
-            <Formik
-              enableReinitialize={true}
-              initialValues={initialValues}
-              validationSchema={userValidation(t)}
-            >
-              {() => (
-                <Form style={{ margin: '20px 0 20px 0' }}>
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="name"
-                    disabled={external}
-                    label={t('Name')}
-                    fullWidth={true}
-                    onSubmit={handleSubmitField}
-                  />
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="user_email"
-                    disabled={external}
-                    label={t('Email address')}
-                    fullWidth={true}
-                    style={{ marginTop: 20 }}
-                    onSubmit={handleSubmitField}
-                  />
-                  <ObjectOrganizationField
-                    name="objectOrganization"
-                    label="Organizations"
-                    disabled={true}
-                    style={{ marginTop: 20, width: '100%' }}
-                    outlined={false}
-                  />
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="firstname"
-                    label={t('Firstname')}
-                    fullWidth={true}
-                    style={{ marginTop: 20 }}
-                    onSubmit={handleSubmitField}
-                  />
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="lastname"
-                    label={t('Lastname')}
-                    fullWidth={true}
-                    style={{ marginTop: 20 }}
-                    onSubmit={handleSubmitField}
-                  />
-                  <Field
-                    component={SelectField}
-                    variant="standard"
-                    name="theme"
-                    label={t('Theme')}
-                    fullWidth={true}
-                    inputProps={{
-                      name: 'theme',
-                      id: 'theme',
-                    }}
-                    containerstyle={{ marginTop: 20, width: '100%' }}
-                    onChange={handleSubmitField}
-                  >
-                    <MenuItem value="default">{t('Default')}</MenuItem>
-                    <MenuItem value="dark">{t('Dark')}</MenuItem>
-                    <MenuItem value="light">{t('Light')}</MenuItem>
-                  </Field>
-                  <Field
-                    component={SelectField}
-                    variant="standard"
-                    name="language"
-                    label={t('Language')}
-                    fullWidth={true}
-                    inputProps={{
-                      name: 'language',
-                      id: 'language',
-                    }}
-                    containerstyle={{ marginTop: 20, width: '100%' }}
-                    onChange={handleSubmitField}
-                  >
-                    <MenuItem value="auto">
-                      <em>{t('Automatic')}</em>
-                    </MenuItem>
-                    <MenuItem value="en-us">English</MenuItem>
-                    <MenuItem value="fr-fr">Français</MenuItem>
-                    <MenuItem value="es-es">Español</MenuItem>
-                    <MenuItem value="ja-jp">日本語</MenuItem>
-                    <MenuItem value="zh-cn">简化字</MenuItem>
-                  </Field>
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="description"
-                    label={t('Description')}
-                    fullWidth={true}
-                    multiline={true}
-                    rows={4}
-                    style={{ marginTop: 20 }}
-                    onSubmit={handleSubmitField}
-                  />
-                </Form>
-              )}
-            </Formik>
-          </Paper>
-        </Grid>
-        <Grid item={true} xs={6}>
-          <Paper classes={{ root: classes.classic }} variant="outlined">
-            <Typography
-              variant="h1"
-              gutterBottom={true}
-              style={{ float: 'left' }}
-            >
-              {t('Authentication')}
-            </Typography>
-            <div style={{ float: 'right', marginTop: -5 }}>
-              {useOtp && (
-                <Button
-                  type="button"
-                  color="primary"
-                  startIcon={<NoEncryptionOutlined />}
-                  onClick={disableOtp}
-                  classes={{ root: classes.button }}
-                  disabled={settings.otp_mandatory}
-                >
-                  {t('Disable two-factor authentication')}
-                </Button>
-              )}
-              {!useOtp && (
-                <Button
-                  type="button"
-                  color="secondary"
-                  startIcon={<LockOutlined />}
-                  onClick={() => setDisplay2FA(true)}
-                  classes={{ root: classes.button }}
-                >
-                  {t('Enable two-factor authentication')}
-                </Button>
-              )}
-            </div>
-            <div className="clearfix" />
-            <Formik
-              enableReinitialize={true}
-              initialValues={{
-                current_password: '',
-                password: '',
-                confirmation: '',
-              }}
-              validationSchema={passwordValidation(t)}
-              onSubmit={handleSubmitPasswords}
-            >
-              {({ submitForm, isSubmitting }) => (
-                <Form style={{ margin: '20px 0 20px 0' }}>
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="current_password"
-                    label={t('Current password')}
-                    type="password"
-                    fullWidth={true}
-                    disabled={external}
-                  />
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="password"
-                    label={t('New password')}
-                    type="password"
-                    fullWidth={true}
-                    style={{ marginTop: 20 }}
-                    disabled={external}
-                  />
-                  <Field
-                    component={TextField}
-                    variant="standard"
-                    name="confirmation"
-                    label={t('Confirmation')}
-                    type="password"
-                    fullWidth={true}
-                    style={{ marginTop: 20 }}
-                    disabled={external}
-                  />
-                  <div style={{ marginTop: 20 }}>
-                    <Button
-                      variant="contained"
-                      type="button"
-                      color="primary"
-                      onClick={submitForm}
-                      disabled={external || isSubmitting}
-                      classes={{ root: classes.button }}
-                    >
-                      {t('Update')}
-                    </Button>
-                  </div>
-                </Form>
-              )}
-            </Formik>
-          </Paper>
-          <Paper classes={{ root: classes.classic }} variant="outlined">
-            <Typography variant="h1" gutterBottom={true}>
-              {t('API access')}
-            </Typography>
-            <div style={{ marginTop: 20 }}>
-              <Typography variant="h4" gutterBottom={true}>
-                {t('OpenCTI version')}
-              </Typography>
-              <pre>{about.version}</pre>
-              <Typography
-                variant="h4"
-                gutterBottom={true}
+      <Paper classes={{ root: classes.paper }} variant="outlined">
+        <Typography variant="h1" gutterBottom={true}>
+          {t('Profile')} {external && `(${t('external')})`}
+        </Typography>
+        <Formik
+          enableReinitialize={true}
+          initialValues={initialValues}
+          validationSchema={userValidation(t)}
+        >
+          {() => (
+            <Form style={{ margin: '20px 0 20px 0' }}>
+              <Field
+                component={TextField}
+                variant="standard"
+                name="name"
+                disabled={external}
+                label={t('Name')}
+                fullWidth={true}
+                onSubmit={handleSubmitField}
+              />
+              <Field
+                component={TextField}
+                variant="standard"
+                name="user_email"
+                disabled={external}
+                label={t('Email address')}
+                fullWidth={true}
                 style={{ marginTop: 20 }}
+                onSubmit={handleSubmitField}
+              />
+              <ObjectOrganizationField
+                name="objectOrganization"
+                label="Organizations"
+                disabled={true}
+                style={{ marginTop: 20, width: '100%' }}
+                outlined={false}
+              />
+              <Field
+                component={TextField}
+                variant="standard"
+                name="firstname"
+                label={t('Firstname')}
+                fullWidth={true}
+                style={{ marginTop: 20 }}
+                onSubmit={handleSubmitField}
+              />
+              <Field
+                component={TextField}
+                variant="standard"
+                name="lastname"
+                label={t('Lastname')}
+                fullWidth={true}
+                style={{ marginTop: 20 }}
+                onSubmit={handleSubmitField}
+              />
+              <Field
+                component={SelectField}
+                variant="standard"
+                name="theme"
+                label={t('Theme')}
+                fullWidth={true}
+                inputProps={{
+                  name: 'theme',
+                  id: 'theme',
+                }}
+                containerstyle={{ marginTop: 20, width: '100%' }}
+                onChange={handleSubmitField}
               >
-                {t('API key')}
-              </Typography>
-              <pre>{me.api_token}</pre>
-              {me.id !== OPENCTI_ADMIN_UUID && (
+                <MenuItem value="default">{t('Default')}</MenuItem>
+                <MenuItem value="dark">{t('Dark')}</MenuItem>
+                <MenuItem value="light">{t('Light')}</MenuItem>
+              </Field>
+              <Field
+                component={SelectField}
+                variant="standard"
+                name="language"
+                label={t('Language')}
+                fullWidth={true}
+                inputProps={{
+                  name: 'language',
+                  id: 'language',
+                }}
+                containerstyle={{ marginTop: 20, width: '100%' }}
+                onChange={handleSubmitField}
+              >
+                <MenuItem value="auto">
+                  <em>{t('Automatic')}</em>
+                </MenuItem>
+                <MenuItem value="en-us">English</MenuItem>
+                <MenuItem value="fr-fr">Français</MenuItem>
+                <MenuItem value="es-es">Español</MenuItem>
+                <MenuItem value="ja-jp">日本語</MenuItem>
+                <MenuItem value="zh-cn">简化字</MenuItem>
+              </Field>
+              <Field
+                component={TextField}
+                variant="standard"
+                name="description"
+                label={t('Description')}
+                fullWidth={true}
+                multiline={true}
+                rows={4}
+                style={{ marginTop: 20 }}
+                onSubmit={handleSubmitField}
+              />
+            </Form>
+          )}
+        </Formik>
+      </Paper>
+      <Paper classes={{ root: classes.paper }} variant="outlined">
+        <Typography variant="h1" gutterBottom={true} style={{ float: 'left' }}>
+          {t('Authentication')}
+        </Typography>
+        <div style={{ float: 'right', marginTop: -5 }}>
+          {useOtp && (
+            <Button
+              type="button"
+              color="primary"
+              startIcon={<NoEncryptionOutlined />}
+              onClick={disableOtp}
+              classes={{ root: classes.button }}
+              disabled={settings.otp_mandatory}
+            >
+              {t('Disable two-factor authentication')}
+            </Button>
+          )}
+          {!useOtp && (
+            <Button
+              type="button"
+              color="secondary"
+              startIcon={<LockOutlined />}
+              onClick={() => setDisplay2FA(true)}
+              classes={{ root: classes.button }}
+            >
+              {t('Enable two-factor authentication')}
+            </Button>
+          )}
+        </div>
+        <div className="clearfix" />
+        <Formik
+          enableReinitialize={true}
+          initialValues={{
+            current_password: '',
+            password: '',
+            confirmation: '',
+          }}
+          validationSchema={passwordValidation(t)}
+          onSubmit={handleSubmitPasswords}
+        >
+          {({ submitForm, isSubmitting }) => (
+            <Form style={{ margin: '20px 0 20px 0' }}>
+              <Field
+                component={TextField}
+                variant="standard"
+                name="current_password"
+                label={t('Current password')}
+                type="password"
+                fullWidth={true}
+                disabled={external}
+              />
+              <Field
+                component={TextField}
+                variant="standard"
+                name="password"
+                label={t('New password')}
+                type="password"
+                fullWidth={true}
+                style={{ marginTop: 20 }}
+                disabled={external}
+              />
+              <Field
+                component={TextField}
+                variant="standard"
+                name="confirmation"
+                label={t('Confirmation')}
+                type="password"
+                fullWidth={true}
+                style={{ marginTop: 20 }}
+                disabled={external}
+              />
+              <div style={{ marginTop: 20 }}>
                 <Button
                   variant="contained"
+                  type="button"
                   color="primary"
-                  onClick={renewToken}
+                  onClick={submitForm}
+                  disabled={external || isSubmitting}
+                  classes={{ root: classes.button }}
                 >
-                  {t('Renew')}
+                  {t('Update')}
                 </Button>
-              )}
-              <Typography
-                variant="h4"
-                gutterBottom={true}
-                style={{ marginTop: 20 }}
-              >
-                {t('Required headers')}
-              </Typography>
-              <pre>
-                Content-Type: application/json
-                <br />
-                Authorization: Bearer {me.api_token}
-              </pre>
-              <Button
-                variant="contained"
-                color="primary"
-                component={Link}
-                to="/graphql"
-                target="_blank"
-              >
-                {t('Playground')}
-              </Button>
-            </div>
-          </Paper>
-        </Grid>
-      </Grid>
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </Paper>
+      <Paper classes={{ root: classes.paper }} variant="outlined">
+        <Typography variant="h1" gutterBottom={true}>
+          {t('API access')}
+        </Typography>
+        <div style={{ marginTop: 20 }}>
+          <Typography variant="h4" gutterBottom={true}>
+            {t('OpenCTI version')}
+          </Typography>
+          <pre>{about.version}</pre>
+          <Typography
+            variant="h4"
+            gutterBottom={true}
+            style={{ marginTop: 20 }}
+          >
+            {t('API key')}
+          </Typography>
+          <pre>{me.api_token}</pre>
+          {me.id !== OPENCTI_ADMIN_UUID && (
+            <Button variant="contained" color="primary" onClick={renewToken}>
+              {t('Renew')}
+            </Button>
+          )}
+          <Typography
+            variant="h4"
+            gutterBottom={true}
+            style={{ marginTop: 20 }}
+          >
+            {t('Required headers')}
+          </Typography>
+          <pre>
+            Content-Type: application/json
+            <br />
+            Authorization: Bearer {me.api_token}
+          </pre>
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            to="/graphql"
+            target="_blank"
+          >
+            {t('Playground')}
+          </Button>
+        </div>
+      </Paper>
     </div>
   );
 };
