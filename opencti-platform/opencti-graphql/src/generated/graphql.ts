@@ -25001,23 +25001,6 @@ export type AuthDirectiveArgs = {
 
 export type AuthDirectiveResolver<Result, Parent, ContextType = any, Args = AuthDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
-export type ConstraintDirectiveArgs = {
-  endsWith?: Maybe<Scalars['String']>;
-  exclusiveMax?: Maybe<Scalars['Int']>;
-  exclusiveMin?: Maybe<Scalars['Int']>;
-  format?: Maybe<Scalars['String']>;
-  max?: Maybe<Scalars['Int']>;
-  maxLength?: Maybe<Scalars['Int']>;
-  min?: Maybe<Scalars['Int']>;
-  minLength?: Maybe<Scalars['Int']>;
-  multipleOf?: Maybe<Scalars['Int']>;
-  notContains?: Maybe<Scalars['String']>;
-  pattern?: Maybe<Scalars['String']>;
-  startsWith?: Maybe<Scalars['String']>;
-};
-
-export type ConstraintDirectiveResolver<Result, Parent, ContextType = any, Args = ConstraintDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
 export type AckDetailsResolvers<ContextType = any, ParentType extends ResolversParentTypes['AckDetails'] = ResolversParentTypes['AckDetails']> = ResolversObject<{
   rate?: Resolver<Maybe<ResolversTypes['Float']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -31705,5 +31688,4 @@ export type Resolvers<ContextType = any> = ResolversObject<{
 
 export type DirectiveResolvers<ContextType = any> = ResolversObject<{
   auth?: AuthDirectiveResolver<any, any, ContextType>;
-  constraint?: ConstraintDirectiveResolver<any, any, ContextType>;
 }>;

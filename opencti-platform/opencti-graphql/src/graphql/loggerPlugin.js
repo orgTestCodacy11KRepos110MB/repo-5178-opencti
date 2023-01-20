@@ -35,20 +35,20 @@ export default {
     const start = Date.now();
     let op;
     return {
-      didResolveOperation: (context) => {
-        op = context.operationName;
+      didResolveOperation: (resolveContext) => {
+        op = resolveContext.operationName;
       },
-      willSendResponse: async (context) => {
-        const isCallError = context.errors && context.errors.length > 0;
+      willSendResponse: async (sendContext) => {
+        const isCallError = sendContext.errors && sendContext.errors.length > 0;
         const stop = Date.now();
         const elapsed = stop - start;
         if (!isCallError && !perfLog) {
           return;
         }
-        const contextVariables = context.request.variables || {};
+        const contextVariables = sendContext.request.variables || {};
         const size = Buffer.byteLength(JSON.stringify(contextVariables));
-        const isWrite = context.operation && context.operation.operation === 'mutation';
-        const contextUser = context.context.user;
+        const isWrite = sendContext.operation && sendContext.operation.operation === 'mutation';
+        const contextUser = sendContext.contextValue.user;
         const origin = contextUser ? contextUser.origin : undefined;
         const [variables] = await tryResolveKeyPromises(contextVariables);
         // Compute inner relations
@@ -69,7 +69,7 @@ export default {
         const callMetaData = {
           user: origin,
           type: operationType + (isCallError ? '_ERROR' : ''),
-          operation_query: stripIgnoredCharacters(context.request.query),
+          operation_query: stripIgnoredCharacters(sendContext.request.query),
           inner_relation_creation: innerRelationCount,
           operation: op || 'Unspecified',
           time: elapsed,
@@ -77,7 +77,7 @@ export default {
           size,
         };
         if (isCallError) {
-          const currentError = head(context.errors);
+          const currentError = head(sendContext.errors);
           const callError = currentError.originalError ? currentError.originalError : currentError;
           const { data, path, stack } = callError;
           const error = { data, path, stacktrace: stack.split('\n').map((line) => line.trim()) };

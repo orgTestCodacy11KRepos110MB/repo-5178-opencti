@@ -2,19 +2,21 @@ import https from 'node:https';
 import http from 'node:http';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { readFileSync } from 'node:fs';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
-// eslint-disable-next-line import/extensions
-import { execute, subscribe } from 'graphql/index.js';
+import { WebSocketServer } from 'ws';
+import { useServer } from 'graphql-ws/lib/use/ws';
 import nconf from 'nconf';
+import cors from 'cors';
+import { json } from 'body-parser';
 import express from 'express';
+import { expressMiddleware } from '@apollo/server/express4';
 import conf, { basePath, booleanConf, logApp, PORT } from '../config/conf';
 import createApp from './httpPlatform';
 import createApolloServer from '../graphql/graphql';
 import { isStrategyActivated, STRATEGY_CERT } from '../config/providers';
-import { applicationSession, initializeSession } from '../database/session';
-import { checkSystemDependencies } from '../initialization';
-import { getSettings } from '../domain/settings';
+import { initializeSession } from '../database/session';
 import { executionContext } from '../utils/access';
+import { authenticateUserFromRequest, userWithOrigin } from '../domain/user';
+import createSchema from '../graphql/schema';
 
 const MIN_20 = 20 * 60 * 1000;
 const REQ_TIMEOUT = conf.get('app:request_timeout');
@@ -23,13 +25,11 @@ const CERT_KEY_CERT = conf.get('app:https_cert:crt');
 const CA_CERTS = conf.get('app:https_cert:ca');
 const rejectUnauthorized = booleanConf('app:https_cert:reject_unauthorized', true);
 
-const onHealthCheck = () => checkSystemDependencies().then(() => getSettings());
-
 const createHttpServer = async () => {
   const app = express();
+  const schema = createSchema();
   const appSessionHandler = initializeSession();
   app.use(appSessionHandler.session);
-  const { schema, apolloServer } = createApolloServer();
   let httpServer;
   if (CERT_KEY_PATH && CERT_KEY_CERT) {
     const key = readFileSync(CERT_KEY_PATH);
@@ -43,56 +43,47 @@ const createHttpServer = async () => {
     httpServer = http.createServer(app);
   }
   httpServer.setTimeout(REQ_TIMEOUT || MIN_20);
-  // subscriptionServer
-  const subscriptionServer = SubscriptionServer.create(
-    {
-      schema,
-      execute,
-      subscribe,
-      async onConnect(connectionParams, webSocket) {
-        const wsSession = await new Promise((resolve) => {
-          // use same session parser as normal gql queries
-          const { session } = applicationSession();
-          session(webSocket.upgradeReq, {}, () => {
-            if (webSocket.upgradeReq.session) {
-              resolve(webSocket.upgradeReq.session);
-            }
-            return false;
-          });
-        });
-        // We have a good session. attach to context
-        if (wsSession.user) {
-          const context = executionContext('api');
-          context.user = wsSession.user;
-          return context;
-        }
-        throw new Error('User must be authenticated');
-      },
-    },
-    {
-      server: httpServer,
-      path: `${basePath}${apolloServer.graphqlPath}`,
+  const wsServer = new WebSocketServer({ server: httpServer, path: `${basePath}/graphql` });
+  const serverCleanup = useServer({
+    schema,
+    context: (ctx, msg, args) => {
+      console.log(msg);
+      console.log(ctx);
+      console.log(args);
+      if (ctx.user) {
+        const context = executionContext('api');
+        context.user = ctx.user;
+        return context;
+      }
+      throw new Error('User must be authenticated');
     }
-  );
-  apolloServer.plugins.push({
-    async serverWillStart() {
-      return {
-        async drainServer() {
-          subscriptionServer.close();
-        },
-      };
-    },
-  });
+  }, wsServer);
+  const apolloServer = createApolloServer(schema, httpServer, serverCleanup);
   await apolloServer.start();
   const requestSizeLimit = nconf.get('app:max_payload_body_size') || '50mb';
   app.use(graphqlUploadExpress());
-  apolloServer.applyMiddleware({
-    app,
-    cors: true,
-    bodyParserConfig: { limit: requestSizeLimit },
-    onHealthCheck,
-    path: `${basePath}/graphql`,
-  });
+  app.use(
+    `${basePath}/graphql`,
+    cors(),
+    json({ limit: requestSizeLimit }),
+    expressMiddleware(apolloServer, {
+      context: async ({ req, res, connection }) => {
+        const executeContext = executionContext('api');
+        executeContext.req = req;
+        executeContext.res = res;
+        executeContext.workId = req.headers['opencti-work-id'];
+        if (connection && connection.context.user) {
+          executeContext.user = userWithOrigin(req, connection.context.user);
+        } else {
+          const user = await authenticateUserFromRequest(executeContext, req, res);
+          if (user) {
+            executeContext.user = userWithOrigin(req, user);
+          }
+        }
+        return executeContext;
+      },
+    }),
+  );
   const { seeMiddleware } = await createApp(app);
   return { httpServer, seeMiddleware };
 };

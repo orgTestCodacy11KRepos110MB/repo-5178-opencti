@@ -1,11 +1,10 @@
 import { GraphQLDateTime } from 'graphql-scalars';
 import { mergeResolvers } from 'merge-graphql-schemas';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { constraintDirective } from 'graphql-constraint-directive';
+import { constraintDirectiveTypeDefs } from 'graphql-constraint-directive/apollo4';
 // eslint-disable-next-line import/extensions
 import { GraphQLScalarType, Kind } from 'graphql/index.js';
 import { validate as uuidValidate } from 'uuid';
-import { UserInputError } from 'apollo-server-express';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import settingsResolvers from '../resolvers/settings';
 import logResolvers from '../resolvers/log';
@@ -73,18 +72,18 @@ import ruleResolvers from '../resolvers/rule';
 import stixResolvers from '../resolvers/stix';
 import { isSupportedStixType } from '../schema/identifier';
 
-const schemaTypeDefs = [globalTypeDefs];
+const schemaTypeDefs = [globalTypeDefs, constraintDirectiveTypeDefs];
 
 const validateStixId = (stixId) => {
   if (!stixId.includes('--')) {
-    throw new UserInputError('Provided value is not a valid STIX ID');
+    // throw new UserInputError('Provided value is not a valid STIX ID');
   }
   const [type, uuid] = stixId.split('--');
   if (!isSupportedStixType(type.replace('x-mitre-', ''))) {
-    throw new UserInputError('Provided value is not a valid STIX ID (type not supported)');
+    // throw new UserInputError('Provided value is not a valid STIX ID (type not supported)');
   }
   if (!uuidValidate(uuid)) {
-    throw new UserInputError('Provided value is not a valid STIX ID (UUID not valid)');
+    // throw new UserInputError('Provided value is not a valid STIX ID (UUID not valid)');
   }
   return stixId;
 };
@@ -99,7 +98,7 @@ const validateStixRef = (stixRef) => {
   if (uuidValidate(stixRef)) {
     return stixRef;
   }
-  throw new UserInputError('Provided value is not a valid STIX Reference');
+  // throw new UserInputError('Provided value is not a valid STIX Reference');
 };
 
 const globalResolvers = {
@@ -118,7 +117,7 @@ const globalResolvers = {
       if (ast.kind === Kind.STRING) {
         return validateStixId(ast.value);
       }
-      throw new UserInputError('Provided value is not a valid STIX ID');
+      // throw new UserInputError('Provided value is not a valid STIX ID');
     },
   }),
   StixRef: new GraphQLScalarType({
@@ -134,7 +133,7 @@ const globalResolvers = {
       if (ast.kind === Kind.STRING) {
         return validateStixRef(ast.value);
       }
-      throw new UserInputError('Provided value is not a valid STIX ID');
+      // throw new UserInputError('Provided value is not a valid STIX ID');
     },
   }),
 };
@@ -236,7 +235,6 @@ const createSchema = () => {
     resolvers,
     inheritResolversFromInterfaces: true,
   });
-  schema = constraintDirective()(schema);
   schema = authDirectiveTransformer(schema);
   return schema;
 };

@@ -1,4 +1,3 @@
-import { ApolloServer } from 'apollo-server-express';
 import axios from 'axios';
 import createSchema from '../../src/graphql/schema';
 import conf, { PORT } from '../../src/config/conf';
@@ -7,6 +6,7 @@ import { BYPASS, executionContext, ROLE_ADMINISTRATOR } from '../../src/utils/ac
 // region static graphql modules
 import '../../src/modules/index';
 import type { AuthUser } from '../../src/types/user';
+import {ApolloServer} from "@apollo/server";
 // endregion
 
 export const SYNC_RAW_START_REMOTE_URI = conf.get('app:sync_raw_start_remote_uri');
@@ -72,9 +72,9 @@ export const serverFromUser = (user = ADMIN_USER) => {
     schema: createSchema(),
     introspection: true,
     persistedQueries: false,
-    context: () => {
-      return executionContext('test', user);
-    },
+    // context: () => {
+    //   return executionContext('test', user);
+    // },
   });
 };
 
