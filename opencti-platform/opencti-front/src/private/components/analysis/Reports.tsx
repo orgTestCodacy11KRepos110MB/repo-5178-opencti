@@ -166,13 +166,13 @@ const Reports: FunctionComponent<ReportsProps> = ({
           numberOfElements={numberOfElements}
           iconExtension={true}
           availableFilterKeys={[
-            'report_types',
             'x_opencti_workflow_id',
+            'assigneeTo',
             'labelledBy',
             'createdBy',
             'creator',
-            'assigneeTo',
             'markedBy',
+            'report_types',
             'confidence',
             'published_start_date',
             'published_end_date',

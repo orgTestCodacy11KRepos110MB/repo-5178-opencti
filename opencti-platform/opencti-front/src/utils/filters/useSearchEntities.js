@@ -302,7 +302,7 @@ const useSearchEntities = ({
         })
           .toPromise()
           .then((data) => {
-            const assignees = R.pipe(
+            const assigneeToEntities = R.pipe(
               R.pathOr([], ['assignees', 'edges']),
               R.map((n) => ({
                 label: n.node.name,
@@ -310,7 +310,7 @@ const useSearchEntities = ({
                 type: 'User',
               })),
             )(data);
-            unionSetEntities('assignee', assignees);
+            unionSetEntities('assigneeTo', assigneeToEntities);
           });
         break;
       case 'createdBy':
@@ -644,6 +644,24 @@ const useSearchEntities = ({
           type: 'Vocabulary',
         }));
         unionSetEntities('revoked', revokedEntities);
+        break;
+      case 'priority':
+        fetchQuery(attributesSearchQuery, {
+          attributeName: 'priority',
+          search: event.target.value !== 0 ? event.target.value : '',
+          first: 10,
+        })
+          .toPromise()
+          .then((data) => {
+            const priorityEntities = (data?.runtimeAttributes?.edges ?? []).map(
+              (n) => ({
+                label: n.node.value,
+                value: n.node.value,
+                type: 'Vocabulary',
+              }),
+            );
+            unionSetEntities('priority', priorityEntities);
+          });
         break;
       case 'pattern_type':
         // eslint-disable-next-line no-case-declarations

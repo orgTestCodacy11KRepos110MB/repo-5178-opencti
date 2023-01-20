@@ -7,7 +7,6 @@ export type BackendFilters = { key: string, values: string[], operator: string, 
 
 export const onlyGroupOrganization = ['x_opencti_workflow_id'];
 export const directFilters = [
-  'report_types',
   'channel_types',
   'x_opencti_detection',
   'sightedBy',
