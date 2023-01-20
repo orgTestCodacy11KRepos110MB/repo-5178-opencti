@@ -17,6 +17,7 @@ import { statusFieldStatusesSearchQuery } from '../../private/components/common/
 import { useFormatter } from '../../components/i18n';
 import { vocabCategoriesQuery } from '../hooks/useVocabularyCategory';
 import { vocabularySearchQuery } from '../../private/components/settings/VocabularyQuery';
+import { objectAssigneeFieldAssigneesSearchQuery } from '../../private/components/common/form/ObjectAssigneeField';
 
 const filtersAllTypesQuery = graphql`
   query useSearchEntitiesAllTypesQuery {
@@ -292,6 +293,24 @@ const useSearchEntities = ({
               })),
             )(data);
             unionSetEntities('creator', creators);
+          });
+        break;
+      case 'assigneeTo':
+        fetchQuery(objectAssigneeFieldAssigneesSearchQuery, {
+          search: event.target.value !== 0 ? event.target.value : '',
+          first: 10,
+        })
+          .toPromise()
+          .then((data) => {
+            const assignees = R.pipe(
+              R.pathOr([], ['assignees', 'edges']),
+              R.map((n) => ({
+                label: n.node.name,
+                value: n.node.id,
+                type: 'User',
+              })),
+            )(data);
+            unionSetEntities('assignee', assignees);
           });
         break;
       case 'createdBy':
@@ -653,11 +672,13 @@ const useSearchEntities = ({
         })
           .toPromise()
           .then((data) => {
-            const severityEntities = (data?.runtimeAttributes?.edges ?? []).map((n) => ({
-              label: n.node.value,
-              value: n.node.value,
-              type: 'Vocabulary',
-            }));
+            const severityEntities = (data?.runtimeAttributes?.edges ?? []).map(
+              (n) => ({
+                label: n.node.value,
+                value: n.node.value,
+                type: 'Vocabulary',
+              }),
+            );
             unionSetEntities('x_opencti_base_severity', severityEntities);
           });
         break;
@@ -669,7 +690,9 @@ const useSearchEntities = ({
         })
           .toPromise()
           .then((data) => {
-            const attackVectorEntities = (data?.runtimeAttributes?.edges ?? []).map((n) => ({
+            const attackVectorEntities = (
+              data?.runtimeAttributes?.edges ?? []
+            ).map((n) => ({
               label: n.node.value,
               value: n.node.value,
               type: 'Vocabulary',
@@ -685,7 +708,9 @@ const useSearchEntities = ({
         })
           .toPromise()
           .then((data) => {
-            const attackVectorEntities = (data?.runtimeAttributes?.edges ?? []).map((n) => ({
+            const attackVectorEntities = (
+              data?.runtimeAttributes?.edges ?? []
+            ).map((n) => ({
               label: n.node.value,
               value: n.node.value,
               type: 'Vocabulary',
@@ -723,7 +748,9 @@ const useSearchEntities = ({
         })
           .toPromise()
           .then((data) => {
-            const organizationTypeEntities = (data?.runtimeAttributes?.edges ?? []).map((n) => ({
+            const organizationTypeEntities = (
+              data?.runtimeAttributes?.edges ?? []
+            ).map((n) => ({
               label: n.node.value,
               value: n.node.value,
               type: 'Vocabulary',

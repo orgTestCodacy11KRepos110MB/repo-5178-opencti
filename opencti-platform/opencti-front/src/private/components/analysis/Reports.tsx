@@ -171,6 +171,7 @@ const Reports: FunctionComponent<ReportsProps> = ({
             'labelledBy',
             'createdBy',
             'creator',
+            'assigneeTo',
             'markedBy',
             'confidence',
             'published_start_date',
