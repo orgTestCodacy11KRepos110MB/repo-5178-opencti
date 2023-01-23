@@ -20,8 +20,9 @@ import { ENTITY_TYPE_SETTINGS } from '../schema/internalObject';
 import type { BasicStoreSettings } from '../types/store';
 import { addNotification } from '../modules/notification/notification-domain';
 import type { AuthContext } from '../types/user';
-import type { StixCoreObject } from '../types/stix-common';
+import type { StixCoreObject, StixRelationshipObject } from '../types/stix-common';
 import { now } from '../utils/format';
+import type { NotificationContentEvent } from '../modules/notification/notification-types';
 
 const DOC_URI = 'https://www.notion.so/OpenCTI-Public-Knowledge-Base-d411e5e477734c59887dad3649f20518';
 const PUBLISHER_ENGINE_KEY = conf.get('publisher_manager:lock_key');
@@ -34,7 +35,7 @@ const processNotificationEvent = async (
   context: AuthContext,
   notificationId: string,
   user: NotificationUser,
-  data: Array<{ notification_id: string, instance: StixCoreObject, type: string }>
+  data: Array<{ notification_id: string, instance: StixCoreObject | StixRelationshipObject, type: string }>
 ) => {
   const outcomes = STATIC_OUTCOMES; // TODO @JRI add database fetching
   const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
@@ -47,21 +48,21 @@ const processNotificationEvent = async (
   for (let outcomeIndex = 0; outcomeIndex < user.outcomes.length; outcomeIndex += 1) {
     const outcome = user.outcomes[outcomeIndex];
     const { outcome_type, name, configuration } = outcomeMap.get(outcome) ?? {};
-    const generatedContent: Record<string, Array<string>> = {};
+    const generatedContent: Record<string, Array<NotificationContentEvent>> = {};
     for (let index = 0; index < data.length; index += 1) {
       const { notification_id, instance, type } = data[index];
-      const message = `${type}s ${(extractStixRepresentative(instance))}`;
+      const event = { operation: type, message: `${type}s ${(extractStixRepresentative(instance))}`, instance_id: instance.id };
       const eventNotification = notificationMap.get(notification_id);
       if (eventNotification) {
         const notificationName = eventNotification.name;
         if (generatedContent[notificationName]) {
-          generatedContent[notificationName] = [...generatedContent[notificationName], message];
+          generatedContent[notificationName] = [...generatedContent[notificationName], event];
         } else {
-          generatedContent[notificationName] = [message];
+          generatedContent[notificationName] = [event];
         }
       }
     }
-    const content = Object.entries(generatedContent).map(([k, v]) => ({ title: k, messages: v }));
+    const content = Object.entries(generatedContent).map(([k, v]) => ({ title: k, events: v }));
     // region data generation
     const platform_uri = baseUrl + basePath;
     const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);

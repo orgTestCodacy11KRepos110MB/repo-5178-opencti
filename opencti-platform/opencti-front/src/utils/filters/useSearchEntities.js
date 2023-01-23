@@ -645,6 +645,15 @@ const useSearchEntities = ({
         }));
         unionSetEntities('revoked', revokedEntities);
         break;
+      case 'is_read':
+        // eslint-disable-next-line no-case-declarations
+        const isReadEntities = ['true', 'false'].map((n) => ({
+          label: t(n),
+          value: n,
+          type: 'Vocabulary',
+        }));
+        unionSetEntities('is_read', isReadEntities);
+        break;
       case 'priority':
         fetchQuery(attributesSearchQuery, {
           attributeName: 'priority',

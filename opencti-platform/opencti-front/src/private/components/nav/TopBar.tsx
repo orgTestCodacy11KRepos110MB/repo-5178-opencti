@@ -151,7 +151,9 @@ const notificationSubscription = graphql`
       notification_type
       content {
         title
-        messages
+        events {
+          message
+        }
       }
       is_read
     }
@@ -178,7 +180,6 @@ const TopBar: FunctionComponent<TopBarProps> = ({
   const location = useLocation();
   const classes = useStyles();
   const { t } = useFormatter();
-
   const [isNewNotif, setIsNewNotif] = useState(false);
   const notificationListener = (
     payload: TopBarNotificationSubscription$data | null | undefined,
@@ -192,11 +193,10 @@ const TopBar: FunctionComponent<TopBarProps> = ({
       if (notification_type === 'digest') {
         MESSAGING$.notifySuccess(`New digest available for ${name}`);
       } else {
-        const { title, messages } = content.at(0) ?? {};
-        const message = `${title} > ${(messages ?? []).at(0)}...`;
+        const { title, events } = content.at(0) ?? {};
+        const message = `${title} > ${(events ?? []).at(0)}...`;
         MESSAGING$.notifySuccess(message);
       }
-
       setIsNewNotif(true);
     }
   };

@@ -49,9 +49,14 @@ type TriggerEdge {
 }
 
 # Notifications
+type NotificationEvent {
+    message: String!
+    instance_id: String!
+    operation: String!
+}
 type NotificationContent {
     title: String!
-    messages: [String!]!
+    events: [NotificationEvent!]!
 }
 
 type Notification implements InternalObject & BasicObject {

@@ -3,11 +3,17 @@ import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage'
 import type { Filters } from '../../../components/list_lines';
 import ListLines from '../../../components/list_lines/ListLines';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
-import NotificationsLines, { notificationsLinesQuery } from './notifications/NotificationsLines';
+import NotificationsLines, {
+  notificationsLinesQuery,
+} from './notifications/NotificationsLines';
 import {
-  NotificationsLinesPaginationQuery, NotificationsLinesPaginationQuery$variables,
+  NotificationsLinesPaginationQuery,
+  NotificationsLinesPaginationQuery$variables,
 } from './notifications/__generated__/NotificationsLinesPaginationQuery.graphql';
 import { NotificationLineDummy } from './notifications/NotificationLine';
+import ToolBar from './notifications/ToolBar';
+import useEntityToggle from '../../../utils/hooks/useEntityToggle';
+import { NotificationLine_node$data } from './notifications/__generated__/NotificationLine_node.graphql';
 
 export const LOCAL_STORAGE_KEY_DATA_SOURCES = 'view-notifications';
 
@@ -18,7 +24,6 @@ const Notifications: FunctionComponent = () => {
       searchTerm: '',
       sortBy: 'created',
       orderAsc: false,
-      openExports: false,
       filters: {} as Filters,
       numberOfElements: {
         number: 0,
@@ -26,15 +31,19 @@ const Notifications: FunctionComponent = () => {
       },
     },
   );
+  const {
+    onToggleEntity,
+    numberOfSelectedElements,
+    handleClearSelectedElements,
+    selectedElements,
+    deSelectedElements,
+    handleToggleSelectAll,
+    selectAll,
+  } = useEntityToggle<NotificationLine_node$data>(
+    LOCAL_STORAGE_KEY_DATA_SOURCES,
+  );
   const renderLines = () => {
-    const {
-      searchTerm,
-      sortBy,
-      orderAsc,
-      filters,
-      openExports,
-      numberOfElements,
-    } = viewStorage;
+    const { searchTerm, sortBy, orderAsc, filters, numberOfElements } = viewStorage;
     const dataColumns = {
       created: {
         label: 'Creation date',
@@ -52,7 +61,10 @@ const Notifications: FunctionComponent = () => {
         isSortable: false,
       },
     };
-    const queryRef = useQueryLoading<NotificationsLinesPaginationQuery>(notificationsLinesQuery, paginationOptions);
+    const queryRef = useQueryLoading<NotificationsLinesPaginationQuery>(
+      notificationsLinesQuery,
+      paginationOptions,
+    );
     return (
       <ListLines
         sortBy={sortBy}
@@ -62,21 +74,27 @@ const Notifications: FunctionComponent = () => {
         handleSearch={helpers.handleSearch}
         handleAddFilter={helpers.handleAddFilter}
         handleRemoveFilter={helpers.handleRemoveFilter}
-        handleToggleExports={helpers.handleToggleExports}
-        openExports={openExports}
-        exportEntityType="Trigger"
+        handleToggleSelectAll={handleToggleSelectAll}
         keyword={searchTerm}
         filters={filters}
+        iconExtension={true}
         paginationOptions={paginationOptions}
         numberOfElements={numberOfElements}
-        availableFilterKeys={[]}
+        availableFilterKeys={[
+          'is_read',
+          'created_start_date',
+          'created_end_date',
+        ]}
       >
         {queryRef && (
           <React.Suspense
             fallback={
               <>
                 {Array.from(Array(20).keys()).map((idx) => (
-                    <NotificationLineDummy key={`NotificationLineDummy-${idx}`} dataColumns={dataColumns} />
+                  <NotificationLineDummy
+                    key={`NotificationLineDummy-${idx}`}
+                    dataColumns={dataColumns}
+                  />
                 ))}
               </>
             }
@@ -87,6 +105,20 @@ const Notifications: FunctionComponent = () => {
               dataColumns={dataColumns}
               onLabelClick={helpers.handleAddFilter}
               setNumberOfElements={helpers.handleSetNumberOfElements}
+              selectedElements={selectedElements}
+              deSelectedElements={deSelectedElements}
+              onToggleEntity={onToggleEntity}
+              selectAll={selectAll}
+            />
+            <ToolBar
+              selectedElements={selectedElements}
+              deSelectedElements={deSelectedElements}
+              numberOfSelectedElements={numberOfSelectedElements}
+              handleClearSelectedElements={handleClearSelectedElements}
+              selectAll={selectAll}
+              filters={{
+                entity_type: [{ id: 'Notification', value: 'Notification' }],
+              }}
             />
           </React.Suspense>
         )}
@@ -94,11 +126,7 @@ const Notifications: FunctionComponent = () => {
     );
   };
 
-  return (
-    <div>
-      {renderLines()}
-    </div>
-  );
+  return <div>{renderLines()}</div>;
 };
 
 export default Notifications;

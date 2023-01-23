@@ -164,7 +164,9 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
                                 <td bgcolor="#ffffff" style="padding:10px 20px; background: #ffffff; background-color: #ffffff;" valign="top">
                                     <p style="margin: 0 0 10pt 0; padding: 0; color:#999999; font-size:18pt;"><%= contentLine.title %></p>
                                     <p style="margin: 0 0 10pt 0; padding: 0; font-size:12pt;">
-                                        <%= contentLine.messages.join("<br/>"); %>
+                                        <% contentLine.events.forEach((contentEvent)=> { %>
+                                            <%= contentEvent %><br />
+                                        <% }) %>                                        
                                     </p>
                                 </td>
                               </tr>

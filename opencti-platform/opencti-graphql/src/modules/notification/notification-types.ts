@@ -1,5 +1,5 @@
 import type { BasicStoreEntity, StoreEntity } from '../../types/store';
-import type { StixObject, StixOpenctiExtensionSDO } from '../../types/stix-common';
+import type { StixObject, StixOpenctiExtensionSDO, StixCoreObject, StixRelationshipObject } from '../../types/stix-common';
 import { STIX_EXT_OCTI } from '../../types/stix-extensions';
 
 // Outcomes
@@ -50,6 +50,12 @@ export interface StixTrigger extends StixObject {
 // region Notifications
 export const ENTITY_TYPE_NOTIFICATION = 'Notification';
 
+export interface NotificationContentEvent {
+  operation: string
+  message: string
+  instance_id: string
+}
+
 export interface NotificationAddInput {
   user_id: string
   is_read: boolean
@@ -57,7 +63,7 @@ export interface NotificationAddInput {
   notification_type: string
   content: Array<{
     title: string,
-    messages: Array<string>
+    events: Array<NotificationContentEvent>
   }>
 }
 
