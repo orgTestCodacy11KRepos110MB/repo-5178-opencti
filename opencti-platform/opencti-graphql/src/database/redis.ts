@@ -85,20 +85,20 @@ const createRedisClient = (provider: string, database?: number): Redis => {
   client.on('reconnecting', () => logApp.info(`[REDIS] '${provider}' Redis client reconnecting`));
   client.defineCommand('cacheGet', {
     lua:
-      'local index = 1\n'
-      + 'local resolvedKeys = redis.call(\'mget\', unpack(KEYS))\n'
-      + 'for p, k in pairs(resolvedKeys) do \n'
-      + '    if (k==nil or (type(k) == "boolean" and not k)) then \n'
-      + '        index = index+1\n'
-      + '    elseif (k:sub(0, 1) == "@") then \n'
-      + '        local subKey = "cache:" .. k:sub(2, #k)\n'
-      + '        resolvedKeys[index] = redis.call(\'get\', subKey)\n'
-      + '        index = index+1\n'
-      + '    else \n'
-      + '        index = index+1\n'
-      + '    end\n'
-      + 'end\n'
-      + 'return resolvedKeys\n',
+        'local index = 1\n'
+        + 'local resolvedKeys = redis.call(\'mget\', unpack(KEYS))\n'
+        + 'for p, k in pairs(resolvedKeys) do \n'
+        + '    if (k==nil or (type(k) == "boolean" and not k)) then \n'
+        + '        index = index+1\n'
+        + '    elseif (k:sub(0, 1) == "@") then \n'
+        + '        local subKey = "cache:" .. k:sub(2, #k)\n'
+        + '        resolvedKeys[index] = redis.call(\'get\', subKey)\n'
+        + '        index = index+1\n'
+        + '    else \n'
+        + '        index = index+1\n'
+        + '    end\n'
+        + 'end\n'
+        + 'return resolvedKeys\n',
   });
   return client;
 };
@@ -744,7 +744,7 @@ export const registerClusterInstance = async (instanceId: string, instanceConfig
 };
 export const getClusterInstances = async () => {
   const instances = await clientBase.zrange(CLUSTER_LIST_KEY, 0, -1);
-  if (instances && instances.length > 0) {
+  if (instances) {
     const instancesConfig = await clientBase.mget(...instances);
     return instancesConfig.filter(filterEmpty).map((n) => JSON.parse(n));
   }
