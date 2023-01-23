@@ -2,7 +2,7 @@ import ejs from 'ejs';
 import axios from 'axios';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import { createStreamProcessor, lockResource, NOTIFICATION_STREAM_NAME, StreamProcessor } from '../database/redis';
-import conf, { basePath, baseUrl, booleanConf, logApp } from '../config/conf';
+import conf, { getBaseUrl, booleanConf, logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import {
@@ -64,9 +64,8 @@ const processNotificationEvent = async (
     }
     const content = Object.entries(generatedContent).map(([k, v]) => ({ title: k, events: v }));
     // region data generation
-    const platform_uri = baseUrl + basePath;
     const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);
-    const platformOpts = { doc_uri: DOC_URI, platform_uri, background_color };
+    const platformOpts = { doc_uri: DOC_URI, platform_uri: getBaseUrl(), background_color };
     const title = `New ${trigger_type} notification for ${notification.name}`;
     const templateData = { title, content, notification, settings, user, data, ...platformOpts };
     // endregion
