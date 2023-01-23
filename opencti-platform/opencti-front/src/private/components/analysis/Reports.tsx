@@ -77,12 +77,10 @@ const Reports: FunctionComponent<ReportsProps> = ({
   } = useEntityToggle<ReportLine_node$data>(
     'view-reports',
   );
-
   const queryRef = useQueryLoading<ReportsLinesPaginationQuery>(
     reportsLinesQuery,
     paginationOptions,
   );
-
   const renderLines = (helper: ModuleHelper | undefined) => {
     let exportContext = null;
     if (objectId) {

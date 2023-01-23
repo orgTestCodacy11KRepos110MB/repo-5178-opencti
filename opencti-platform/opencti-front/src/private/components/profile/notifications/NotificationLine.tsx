@@ -20,6 +20,7 @@ import { deepPurple, green, indigo, pink } from '@mui/material/colors';
 import Collapse from '@mui/material/Collapse';
 import List from '@mui/material/List';
 import { ListItemButton } from '@mui/material';
+import Chip from '@mui/material/Chip';
 import { DataColumns } from '../../../../components/list_lines';
 import {
   NotificationLine_node$data,
@@ -50,6 +51,12 @@ const useStyles = makeStyles<Theme>((theme) => ({
   },
   itemIconDisabled: {
     color: theme.palette.grey?.[700],
+  },
+  chipInList: {
+    fontSize: 12,
+    height: 20,
+    float: 'left',
+    width: 100,
   },
   placeholder: {
     display: 'inline-block',
@@ -113,13 +120,19 @@ NotificationLineProps
   index,
 }) => {
   const classes = useStyles();
-  const { fldt } = useFormatter();
+  const { t, fldt } = useFormatter();
   const [open, setOpen] = useState('');
   const data = useFragment(notificationLineFragment, node);
   const allEvents = data.content.map((n) => n.events).flat();
   const firstEvent = allEvents.at(0);
   const otherEvents = allEvents;
   otherEvents.shift();
+  const eventTypes: Record<string, string> = {
+    create: t('Creation'),
+    update: t('Modification'),
+    delete: t('Deletion'),
+    none: t('Unknown'),
+  };
   const iconSelector = (operation: string) => {
     switch (operation) {
       case 'create':
@@ -138,7 +151,7 @@ NotificationLineProps
       divider={true}
       button={true}
       component={Link}
-      to={`/dashboard/profile/notifications/${data.id}`}
+      to={`/dashboard/id/${firstEvent?.instance_id}`}
     >
       <ListItemIcon
         classes={{ root: classes.itemIcon }}
@@ -167,6 +180,23 @@ NotificationLineProps
           <div>
             <div
               className={classes.bodyItem}
+              style={{ width: dataColumns.operation.width }}
+            >
+              <Chip
+                classes={{ root: classes.chipInList }}
+                color="primary"
+                variant="outlined"
+                label={eventTypes[firstEvent?.operation ?? 'none']}
+              />
+            </div>
+            <div
+              className={classes.bodyItem}
+              style={{ width: dataColumns.message.width }}
+            >
+              {firstEvent?.message}
+            </div>
+            <div
+              className={classes.bodyItem}
               style={{ width: dataColumns.created.width }}
             >
               {fldt(data.created)}
@@ -176,12 +206,6 @@ NotificationLineProps
               style={{ width: dataColumns.name.width }}
             >
               {data.name}
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.message.width }}
-            >
-              {firstEvent?.message}
             </div>
           </div>
         }
@@ -198,7 +222,12 @@ NotificationLineProps
         <Collapse in={open === data.id} timeout="auto" unmountOnExit={true}>
           <List component="div" disablePadding>
             {otherEvents.map((event, i) => (
-              <ListItemButton key={i} sx={{ pl: 4 }}>
+              <ListItemButton
+                key={i}
+                sx={{ pl: 4 }}
+                component={Link}
+                to={`/dashboard/id/${event.instance_id}`}
+              >
                 <ListItemIcon classes={{ root: classes.itemIcon }}>
                   <Badge color="warning" variant="dot" invisible={data.is_read}>
                     {iconSelector(event.operation ?? 'none')}
@@ -209,21 +238,20 @@ NotificationLineProps
                     <div>
                       <div
                         className={classes.bodyItem}
-                        style={{ width: dataColumns.created.width }}
+                        style={{ width: '30%' }}
                       >
-                        test
+                        <Chip
+                          classes={{ root: classes.chipInList }}
+                          color="primary"
+                          variant="outlined"
+                          label={eventTypes[event?.operation ?? 'none']}
+                        />
                       </div>
                       <div
                         className={classes.bodyItem}
-                        style={{ width: dataColumns.name.width }}
+                        style={{ width: '50%' }}
                       >
-                        test
-                      </div>
-                      <div
-                        className={classes.bodyItem}
-                        style={{ width: dataColumns.message.width }}
-                      >
-                        test
+                        {event?.message}
                       </div>
                     </div>
                   }
@@ -245,45 +273,32 @@ export const NotificationLineDummy = ({
   const classes = useStyles();
   return (
     <ListItem classes={{ root: classes.item }} divider={true}>
+      <ListItemIcon
+        classes={{ root: classes.itemIconDisabled }}
+        style={{ minWidth: 40 }}
+      >
+        <Checkbox edge="start" disabled={true} disableRipple={true} />
+      </ListItemIcon>
       <ListItemIcon classes={{ root: classes.itemIcon }}>
         <Skeleton animation="wave" variant="circular" width={30} height={30} />
       </ListItemIcon>
       <ListItemText
         primary={
           <div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.created.width }}
-            >
-              <Skeleton
-                animation="wave"
-                variant="rectangular"
-                width="90%"
-                height="100%"
-              />
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.name.width }}
-            >
-              <Skeleton
-                animation="wave"
-                variant="rectangular"
-                width="90%"
-                height="100%"
-              />
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.message.width }}
-            >
-              <Skeleton
-                animation="wave"
-                variant="rectangular"
-                width="90%"
-                height="100%"
-              />
-            </div>
+            {Object.values(dataColumns).map((value) => (
+              <div
+                key={value.label}
+                className={classes.bodyItem}
+                style={{ width: value.width }}
+              >
+                <Skeleton
+                  animation="wave"
+                  variant="rectangular"
+                  width="90%"
+                  height={20}
+                />
+              </div>
+            ))}
           </div>
         }
       />

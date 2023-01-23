@@ -45,20 +45,25 @@ const Notifications: FunctionComponent = () => {
   const renderLines = () => {
     const { searchTerm, sortBy, orderAsc, filters, numberOfElements } = viewStorage;
     const dataColumns = {
+      operation: {
+        label: 'Operation',
+        width: '15%',
+        isSortable: false,
+      },
+      message: {
+        label: 'Message',
+        width: '40%',
+        isSortable: false,
+      },
       created: {
-        label: 'Creation date',
-        width: '20%',
+        label: 'Date',
+        width: '15%',
         isSortable: true,
       },
       name: {
         label: 'Trigger',
         width: '15%',
         isSortable: true,
-      },
-      message: {
-        label: 'Message',
-        width: '55%',
-        isSortable: false,
       },
     };
     const queryRef = useQueryLoading<NotificationsLinesPaginationQuery>(

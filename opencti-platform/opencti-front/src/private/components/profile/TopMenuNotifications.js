@@ -57,7 +57,7 @@ const TopMenuNotifications = () => {
         }
         classes={{ root: classes.button }}
       >
-        {t('Triggers')}
+        {t('Triggers and digests')}
       </Button>
     </div>
   );

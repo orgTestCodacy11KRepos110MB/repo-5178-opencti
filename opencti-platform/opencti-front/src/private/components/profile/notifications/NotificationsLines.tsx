@@ -2,7 +2,7 @@ import React, { FunctionComponent } from 'react';
 import { graphql, PreloadedQuery } from 'react-relay';
 import { DataColumns } from '../../../../components/list_lines';
 import ListLinesContent from '../../../../components/list_lines/ListLinesContent';
-import { UseLocalStorage } from '../../../../utils/hooks/useLocalStorage';
+import { UseLocalStorageHelpers } from '../../../../utils/hooks/useLocalStorage';
 import usePreloadedPaginationFragment from '../../../../utils/hooks/usePreloadedPaginationFragment';
 import {
   NotificationLineComponent,
@@ -21,7 +21,7 @@ interface NotificationLinesProps {
   queryRef: PreloadedQuery<NotificationsLinesPaginationQuery>;
   dataColumns: DataColumns;
   paginationOptions?: NotificationsLinesPaginationQuery$variables;
-  setNumberOfElements: UseLocalStorage[2]['handleSetNumberOfElements'];
+  setNumberOfElements: UseLocalStorageHelpers['handleSetNumberOfElements'];
   onLabelClick: (
     k: string,
     id: string,

@@ -20,7 +20,6 @@ const Triggers: FunctionComponent = () => {
       searchTerm: '',
       sortBy: 'name',
       orderAsc: true,
-      openExports: false,
       filters: {} as Filters,
       numberOfElements: {
         number: 0,
@@ -29,22 +28,38 @@ const Triggers: FunctionComponent = () => {
     },
   );
   const renderLines = () => {
-    const {
-      searchTerm,
-      sortBy,
-      orderAsc,
-      filters,
-      openExports,
-      numberOfElements,
-    } = viewStorage;
+    const { searchTerm, sortBy, orderAsc, filters, numberOfElements } = viewStorage;
     const dataColumns = {
       name: {
         label: 'Name',
-        width: '35%',
+        width: '12%',
         isSortable: true,
       },
+      description: {
+        label: 'Description',
+        width: '18%',
+        isSortable: true,
+      },
+      outcomes: {
+        label: 'Notification',
+        width: '12%',
+        isSortable: true,
+      },
+      event_types: {
+        label: 'Event',
+        width: '20%',
+        isSortable: true,
+      },
+      filters: {
+        label: 'Filters',
+        width: '28%',
+        isSortable: false,
+      },
     };
-    const queryRef = useQueryLoading<TriggersLinesPaginationQuery>(triggersLinesQuery, paginationOptions);
+    const queryRef = useQueryLoading<TriggersLinesPaginationQuery>(
+      triggersLinesQuery,
+      paginationOptions,
+    );
     return (
       <ListLines
         sortBy={sortBy}
@@ -54,9 +69,6 @@ const Triggers: FunctionComponent = () => {
         handleSearch={helpers.handleSearch}
         handleAddFilter={helpers.handleAddFilter}
         handleRemoveFilter={helpers.handleRemoveFilter}
-        handleToggleExports={helpers.handleToggleExports}
-        openExports={openExports}
-        exportEntityType="Trigger"
         keyword={searchTerm}
         filters={filters}
         paginationOptions={paginationOptions}
@@ -68,7 +80,10 @@ const Triggers: FunctionComponent = () => {
             fallback={
               <>
                 {Array.from(Array(20).keys()).map((idx) => (
-                    <TriggerLineDummy key={`TriggerLineDummy-${idx}`} dataColumns={dataColumns} />
+                  <TriggerLineDummy
+                    key={`TriggerLineDummy-${idx}`}
+                    dataColumns={dataColumns}
+                  />
                 ))}
               </>
             }
@@ -89,7 +104,11 @@ const Triggers: FunctionComponent = () => {
   return (
     <div>
       {renderLines()}
-      <TriggerCreation paginationOptions={paginationOptions} handleClose={() => {}} open={false}/>
+      <TriggerCreation
+        paginationOptions={paginationOptions}
+        handleClose={() => {}}
+        open={false}
+      />
     </div>
   );
 };

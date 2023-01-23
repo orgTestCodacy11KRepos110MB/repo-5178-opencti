@@ -6,7 +6,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import { Close, DepartureBoardOutlined, RocketLaunchOutlined } from '@mui/icons-material';
+import {
+  BackupTableOutlined,
+  CampaignOutlined,
+  Close,
+} from '@mui/icons-material';
 import * as Yup from 'yup';
 import { graphql, useMutation } from 'react-relay';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
@@ -19,6 +23,10 @@ import Typography from '@mui/material/Typography';
 import Drawer from '@mui/material/Drawer';
 import * as R from 'ramda';
 import MenuItem from '@mui/material/MenuItem';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Checkbox from '@mui/material/Checkbox';
+import ListItemText from '@mui/material/ListItemText';
 import TextField from '../../../../components/TextField';
 import MarkDownField from '../../../../components/MarkDownField';
 import { Theme } from '../../../../components/Theme';
@@ -120,10 +128,10 @@ const triggerValidation = (t: (message: string) => string) => Yup.object().shape
 });
 
 interface TriggerLiveAddInput {
-  name: string
-  description: string
-  event_types: string[]
-  outcomes: string[]
+  name: string;
+  description: string;
+  event_types: string[];
+  outcomes: string[];
 }
 
 const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
@@ -163,6 +171,16 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
     event_types: ['create'],
     outcomes: [],
   };
+  const eventTypesOptions: Record<string, string> = {
+    create: t('Creation'),
+    update: t('Modification'),
+    delete: t('Deletion'),
+  };
+  const outcomesOptions: Record<string, string> = {
+    'f4ee7b33-006a-4b0d-b57d-411ad288653d': t('User interface'),
+    '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822': t('Email'),
+    webhook: t('Webhook'),
+  };
   const onLiveSubmit: FormikConfig<TriggerLiveAddInput>['onSubmit'] = (
     values: TriggerLiveAddInput,
     { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerLiveAddInput>,
@@ -180,7 +198,12 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
         input: finalValues,
       },
       updater: (store) => {
-        insertNode(store, 'Pagination_triggers', paginationOptions, 'triggerLiveAdd');
+        insertNode(
+          store,
+          'Pagination_triggers',
+          paginationOptions,
+          'triggerLiveAdd',
+        );
       },
       onError: (error: Error) => {
         handleErrorInForm(error, setErrors);
@@ -199,6 +222,7 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
       value: unknown,
       shouldValidate?: boolean | undefined
     ) => void,
+    values: TriggerLiveAddInput,
   ) => (
     <React.Fragment>
       <Field
@@ -217,107 +241,176 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
         rows="4"
         style={{ marginTop: 20 }}
       />
-      <Field component={SelectField}
+      <Field
+        component={SelectField}
         variant="standard"
         name="event_types"
         label={t('Triggering on')}
         fullWidth={true}
         multiple={true}
-        onChange={(name: string, value: string[]) => setFieldValue('event_types', value)}
-        inputProps={{ name: 'type', id: 'type' }}
-        containerstyle={{ marginTop: 20, width: '100%' }}>
-        <MenuItem value="create">{t('Creation')}</MenuItem>
-        <MenuItem value="update">{t('Update')}</MenuItem>
-        <MenuItem value="delete">{t('Deletion')}</MenuItem>
+        onChange={(name: string, value: string[]) => setFieldValue('event_types', value)
+        }
+        inputProps={{ name: 'event_types', id: 'event_types' }}
+        containerstyle={{ marginTop: 20, width: '100%' }}
+        renderValue={(selected: Array<string>) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {selected.map((value) => (
+              <Chip key={value} label={eventTypesOptions[value]} />
+            ))}
+          </Box>
+        )}
+      >
+        <MenuItem value="create">
+          <Checkbox checked={values.event_types.indexOf('create') > -1} />
+          <ListItemText primary={eventTypesOptions.create} />
+        </MenuItem>
+        <MenuItem value="update">
+          <Checkbox checked={values.event_types.indexOf('update') > -1} />
+          <ListItemText primary={eventTypesOptions.update} />
+        </MenuItem>
+        <MenuItem value="delete">
+          <Checkbox checked={values.event_types.indexOf('delete') > -1} />
+          <ListItemText primary={eventTypesOptions.delete} />
+        </MenuItem>
       </Field>
-      <Field component={SelectField}
-             variant="standard"
-             name="outcomes"
-             label={t('Targeting')}
-             fullWidth={true}
-             multiple={true}
-             onChange={(name: string, value: string[]) => setFieldValue('outcomes', value)}
-             inputProps={{ name: 'type', id: 'type' }}
-             containerstyle={{ marginTop: 20, width: '100%' }}>
-        <MenuItem value='f4ee7b33-006a-4b0d-b57d-411ad288653d'>{t('User interface')}</MenuItem>
-        <MenuItem value='44fcf1f4-8e31-4b31-8dbc-cd6993e1b822'>{t('Email')}</MenuItem>
+      <Field
+        component={SelectField}
+        variant="standard"
+        name="outcomes"
+        label={t('Notification')}
+        fullWidth={true}
+        multiple={true}
+        onChange={(name: string, value: string[]) => setFieldValue('outcomes', value)
+        }
+        inputProps={{ name: 'outcomes', id: 'outcomes' }}
+        containerstyle={{ marginTop: 20, width: '100%' }}
+        renderValue={(selected: Array<string>) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {selected.map((value) => (
+              <Chip key={value} label={outcomesOptions[value]} />
+            ))}
+          </Box>
+        )}
+      >
+        <MenuItem value="f4ee7b33-006a-4b0d-b57d-411ad288653d">
+          <Checkbox
+            checked={
+              values.outcomes.indexOf('f4ee7b33-006a-4b0d-b57d-411ad288653d')
+              > -1
+            }
+          />
+          <ListItemText
+            primary={outcomesOptions['f4ee7b33-006a-4b0d-b57d-411ad288653d']}
+          />
+        </MenuItem>
+        <MenuItem value="44fcf1f4-8e31-4b31-8dbc-cd6993e1b822">
+          <Checkbox
+            checked={
+              values.outcomes.indexOf('44fcf1f4-8e31-4b31-8dbc-cd6993e1b822')
+              > -1
+            }
+          />
+          <ListItemText
+            primary={outcomesOptions['44fcf1f4-8e31-4b31-8dbc-cd6993e1b822']}
+          />
+        </MenuItem>
+        <MenuItem value="webhook" disabled={true}>
+          <Checkbox checked={values.outcomes.indexOf('webhook') > -1} />
+          <ListItemText primary={outcomesOptions.webhook} />
+        </MenuItem>
       </Field>
       <div style={{ marginTop: 35 }}>
         <Filters
-            variant="text"
-            availableFilterKeys={[
-              'entity_type',
-              'objectContains',
-              'markedBy',
-              'labelledBy',
-              'createdBy',
-              'x_opencti_score',
-              'x_opencti_detection',
-              'revoked',
-              'confidence',
-              'indicator_types',
-              'pattern_type',
-              'fromId',
-              'toId',
-              'fromTypes',
-              'toTypes',
-            ]}
-            handleAddFilter={handleAddFilter}
-            noDirectFilters={true}
-            disabled={undefined}
-            size={undefined}
-            fontSize={undefined}
-            availableEntityTypes={undefined}
-            availableRelationshipTypes={undefined}
-            allEntityTypes={undefined}
-            type={undefined}
-            availableRelationFilterTypes={undefined}
+          variant="text"
+          availableFilterKeys={[
+            'entity_type',
+            'x_opencti_workflow_id',
+            'assigneeTo',
+            'objectContains',
+            'markedBy',
+            'labelledBy',
+            'createdBy',
+            'x_opencti_score',
+            'x_opencti_detection',
+            'revoked',
+            'confidence',
+            'indicator_types',
+            'pattern_type',
+            'fromId',
+            'toId',
+            'fromTypes',
+            'toTypes',
+          ]}
+          handleAddFilter={handleAddFilter}
+          noDirectFilters={true}
+          disabled={undefined}
+          size={undefined}
+          fontSize={undefined}
+          availableEntityTypes={undefined}
+          availableRelationshipTypes={undefined}
+          allEntityTypes={undefined}
+          type={undefined}
+          availableRelationFilterTypes={undefined}
         />
       </div>
-      <FilterCard filters={filters} handleRemoveFilter={handleRemoveFilter}/>
+      <FilterCard filters={filters} handleRemoveFilter={handleRemoveFilter} />
     </React.Fragment>
   );
   const renderClassic = () => (
     <div>
-      <Drawer disableRestoreFocus={true}
-        open={open} anchor="right"
-        elevation={1} sx={{ zIndex: 1202 }}
+      <Drawer
+        disableRestoreFocus={true}
+        open={open}
+        anchor="right"
+        elevation={1}
+        sx={{ zIndex: 1202 }}
         classes={{ paper: classes.drawerPaper }}
-        onClose={handleClose}>
+        onClose={handleClose}
+      >
         <div className={classes.header}>
-          <IconButton aria-label="Close"
+          <IconButton
+            aria-label="Close"
             className={classes.closeButton}
             onClick={handleClose}
             size="large"
-            color="primary">
+            color="primary"
+          >
             <Close fontSize="small" color="primary" />
           </IconButton>
           <Typography variant="h6">{t('Create a live trigger')}</Typography>
         </div>
         <div className={classes.container}>
-          <Formik<TriggerLiveAddInput> initialValues={liveInitialValues}
+          <Formik<TriggerLiveAddInput>
+            initialValues={liveInitialValues}
             validationSchema={triggerValidation(t)}
-            onSubmit={onLiveSubmit} onReset={onReset}>
+            onSubmit={onLiveSubmit}
+            onReset={onReset}
+          >
             {({
               submitForm,
               handleReset,
               isSubmitting,
               setFieldValue,
+              values,
             }) => (
               <Form style={{ margin: '20px 0 20px 0' }}>
-                {liveFields(setFieldValue)}
+                {liveFields(setFieldValue, values)}
                 <div className={classes.buttons}>
-                  <Button variant="contained"
+                  <Button
+                    variant="contained"
                     onClick={handleReset}
                     disabled={isSubmitting}
-                    classes={{ root: classes.button }}>
+                    classes={{ root: classes.button }}
+                  >
                     {t('Cancel')}
                   </Button>
-                  <Button variant="contained"
+                  <Button
+                    variant="contained"
                     color="secondary"
                     onClick={submitForm}
                     disabled={isSubmitting}
-                    classes={{ root: classes.button }}>
+                    classes={{ root: classes.button }}
+                  >
                     {t('Create')}
                   </Button>
                 </div>
@@ -330,24 +423,37 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
   );
   const renderContextual = () => (
     <div style={{ display: display ? 'block' : 'none' }}>
-      <Dialog disableRestoreFocus={true} open={open} onClose={handleClose} PaperProps={{ elevation: 1 }}>
-        <Formik initialValues={liveInitialValues}
+      <Dialog
+        disableRestoreFocus={true}
+        open={open}
+        onClose={handleClose}
+        PaperProps={{ elevation: 1 }}
+      >
+        <Formik
+          initialValues={liveInitialValues}
           validationSchema={triggerValidation(t)}
-          onSubmit={onLiveSubmit} onReset={onReset}>
+          onSubmit={onLiveSubmit}
+          onReset={onReset}
+        >
           {({
             submitForm,
             handleReset,
             isSubmitting,
             setFieldValue,
+            values,
           }) => (
             <div>
               <DialogTitle>{t('Create a live trigger')}</DialogTitle>
-              <DialogContent>{liveFields(setFieldValue)}</DialogContent>
+              <DialogContent>{liveFields(setFieldValue, values)}</DialogContent>
               <DialogActions classes={{ root: classes.dialogActions }}>
                 <Button onClick={handleReset} disabled={isSubmitting}>
                   {t('Cancel')}
                 </Button>
-                <Button color="secondary" onClick={submitForm} disabled={isSubmitting}>
+                <Button
+                  color="secondary"
+                  onClick={submitForm}
+                  disabled={isSubmitting}
+                >
                   {t('Create')}
                 </Button>
               </DialogActions>
@@ -371,9 +477,9 @@ const triggerDigestAddMutation = graphql`
 `;
 
 interface TriggerDigestAddInput {
-  name: string
-  description: string
-  outcomes: string[]
+  name: string;
+  description: string;
+  outcomes: string[];
 }
 
 const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
@@ -393,9 +499,23 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
     description: '',
     outcomes: [],
   };
+  const eventTypesOptions: Record<string, string> = {
+    create: t('Creation'),
+    update: t('Modification'),
+    delete: t('Deletion'),
+  };
+  const outcomesOptions: Record<string, string> = {
+    'f4ee7b33-006a-4b0d-b57d-411ad288653d': t('User interface'),
+    '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822': t('Email'),
+    webhook: t('Webhook'),
+  };
   const onDigestSubmit: FormikConfig<TriggerDigestAddInput>['onSubmit'] = (
     values: TriggerDigestAddInput,
-    { setSubmitting, setErrors, resetForm }: FormikHelpers<TriggerDigestAddInput>,
+    {
+      setSubmitting,
+      setErrors,
+      resetForm,
+    }: FormikHelpers<TriggerDigestAddInput>,
   ) => {
     const finalValues = {
       name: values.name,
@@ -407,7 +527,12 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
         input: finalValues,
       },
       updater: (store) => {
-        insertNode(store, 'Pagination_triggers', paginationOptions, 'triggerDigestAdd');
+        insertNode(
+          store,
+          'Pagination_triggers',
+          paginationOptions,
+          'triggerDigestAdd',
+        );
       },
       onError: (error: Error) => {
         handleErrorInForm(error, setErrors);
@@ -426,6 +551,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       value: unknown,
       shouldValidate?: boolean | undefined
     ) => void,
+    values: TriggerDigestAddInput,
   ) => (
     <React.Fragment>
       <Field
@@ -444,61 +570,109 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
         rows="4"
         style={{ marginTop: 20 }}
       />
-      <Field component={SelectField}
-             variant="standard"
-             name="outcomes"
-             label={t('Targeting')}
-             fullWidth={true}
-             multiple={true}
-             onChange={(name: string, value: string[]) => setFieldValue('outcomes', value)}
-             inputProps={{ name: 'type', id: 'type' }}
-             containerstyle={{ marginTop: 20, width: '100%' }}>
-        <MenuItem value='f4ee7b33-006a-4b0d-b57d-411ad288653d'>{t('User interface')}</MenuItem>
-        <MenuItem value='44fcf1f4-8e31-4b31-8dbc-cd6993e1b822'>{t('Email')}</MenuItem>
+      <Field
+        component={SelectField}
+        variant="standard"
+        name="outcomes"
+        label={t('Notification')}
+        fullWidth={true}
+        multiple={true}
+        onChange={(name: string, value: string[]) => setFieldValue('outcomes', value)
+        }
+        inputProps={{ name: 'outcomes', id: 'outcomes' }}
+        containerstyle={{ marginTop: 20, width: '100%' }}
+        renderValue={(selected: Array<string>) => (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {selected.map((value) => (
+              <Chip key={value} label={outcomesOptions[value]} />
+            ))}
+          </Box>
+        )}
+      >
+        <MenuItem value="f4ee7b33-006a-4b0d-b57d-411ad288653d">
+          <Checkbox
+            checked={
+              values.outcomes.indexOf('f4ee7b33-006a-4b0d-b57d-411ad288653d')
+              > -1
+            }
+          />
+          <ListItemText
+            primary={outcomesOptions['f4ee7b33-006a-4b0d-b57d-411ad288653d']}
+          />
+        </MenuItem>
+        <MenuItem value="44fcf1f4-8e31-4b31-8dbc-cd6993e1b822">
+          <Checkbox
+            checked={
+              values.outcomes.indexOf('44fcf1f4-8e31-4b31-8dbc-cd6993e1b822')
+              > -1
+            }
+          />
+          <ListItemText
+            primary={outcomesOptions['44fcf1f4-8e31-4b31-8dbc-cd6993e1b822']}
+          />
+        </MenuItem>
+        <MenuItem value="webhook" disabled={true}>
+          <Checkbox checked={values.outcomes.indexOf('webhook') > -1} />
+          <ListItemText primary={outcomesOptions.webhook} />
+        </MenuItem>
       </Field>
     </React.Fragment>
   );
   const renderClassic = () => (
     <div>
-      <Drawer disableRestoreFocus={true}
-              open={open} anchor="right"
-              elevation={1} sx={{ zIndex: 1202 }}
-              classes={{ paper: classes.drawerPaper }}
-              onClose={handleClose}>
+      <Drawer
+        disableRestoreFocus={true}
+        open={open}
+        anchor="right"
+        elevation={1}
+        sx={{ zIndex: 1202 }}
+        classes={{ paper: classes.drawerPaper }}
+        onClose={handleClose}
+      >
         <div className={classes.header}>
-          <IconButton aria-label="Close"
-                      className={classes.closeButton}
-                      onClick={handleClose}
-                      size="large"
-                      color="primary">
+          <IconButton
+            aria-label="Close"
+            className={classes.closeButton}
+            onClick={handleClose}
+            size="large"
+            color="primary"
+          >
             <Close fontSize="small" color="primary" />
           </IconButton>
-          <Typography variant="h6">{t('Create a digest')}</Typography>
+          <Typography variant="h6">{t('Create a regular digest')}</Typography>
         </div>
         <div className={classes.container}>
-          <Formik<TriggerDigestAddInput> initialValues={digestInitialValues}
-                                   validationSchema={triggerValidation(t)}
-                                   onSubmit={onDigestSubmit} onReset={onReset}>
+          <Formik<TriggerDigestAddInput>
+            initialValues={digestInitialValues}
+            validationSchema={triggerValidation(t)}
+            onSubmit={onDigestSubmit}
+            onReset={onReset}
+          >
             {({
               submitForm,
               handleReset,
               isSubmitting,
               setFieldValue,
+              values,
             }) => (
               <Form style={{ margin: '20px 0 20px 0' }}>
-                {digestFields(setFieldValue)}
+                {digestFields(setFieldValue, values)}
                 <div className={classes.buttons}>
-                  <Button variant="contained"
-                          onClick={handleReset}
-                          disabled={isSubmitting}
-                          classes={{ root: classes.button }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleReset}
+                    disabled={isSubmitting}
+                    classes={{ root: classes.button }}
+                  >
                     {t('Cancel')}
                   </Button>
-                  <Button variant="contained"
-                          color="secondary"
-                          onClick={submitForm}
-                          disabled={isSubmitting}
-                          classes={{ root: classes.button }}>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={submitForm}
+                    disabled={isSubmitting}
+                    classes={{ root: classes.button }}
+                  >
                     {t('Create')}
                   </Button>
                 </div>
@@ -511,24 +685,39 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
   );
   const renderContextual = () => (
     <div style={{ display: display ? 'block' : 'none' }}>
-      <Dialog disableRestoreFocus={true} open={open} onClose={handleClose} PaperProps={{ elevation: 1 }}>
-        <Formik initialValues={digestInitialValues}
-                validationSchema={triggerValidation(t)}
-                onSubmit={onDigestSubmit} onReset={onReset}>
+      <Dialog
+        disableRestoreFocus={true}
+        open={open}
+        onClose={handleClose}
+        PaperProps={{ elevation: 1 }}
+      >
+        <Formik
+          initialValues={digestInitialValues}
+          validationSchema={triggerValidation(t)}
+          onSubmit={onDigestSubmit}
+          onReset={onReset}
+        >
           {({
             submitForm,
             handleReset,
             isSubmitting,
             setFieldValue,
+            values,
           }) => (
             <div>
-              <DialogTitle>{t('Create a digest')}</DialogTitle>
-              <DialogContent>{digestFields(setFieldValue)}</DialogContent>
+              <DialogTitle>{t('Create a regular digest')}</DialogTitle>
+              <DialogContent>
+                {digestFields(setFieldValue, values)}
+              </DialogContent>
               <DialogActions classes={{ root: classes.dialogActions }}>
                 <Button onClick={handleReset} disabled={isSubmitting}>
                   {t('Cancel')}
                 </Button>
-                <Button color="secondary" onClick={submitForm} disabled={isSubmitting}>
+                <Button
+                  color="secondary"
+                  onClick={submitForm}
+                  disabled={isSubmitting}
+                >
                   {t('Create')}
                 </Button>
               </DialogActions>
@@ -563,36 +752,50 @@ const TriggerCreation: FunctionComponent<TriggerCreationProps> = ({
     setOpenSpeedDial(false);
     setOpenDigest(true);
   };
-  return <>
-    <SpeedDial className={classes.createButton}
-               ariaLabel="Create"
-               icon={<SpeedDialIcon />}
-               onClose={() => setOpenSpeedDial(false)}
-               onOpen={() => setOpenSpeedDial(true)}
-               open={openSpeedDial}
-               FabProps={{ color: 'secondary' }}>
-      <SpeedDialAction
-        title={t('Live trigger')}
-        icon={<RocketLaunchOutlined />}
-        tooltipTitle={t('Create an observable')}
-        onClick={handleOpenCreateLive}
-        FabProps={{ classes: { root: classes.speedDialButton } }}
+  return (
+    <>
+      <SpeedDial
+        className={classes.createButton}
+        ariaLabel="Create"
+        icon={<SpeedDialIcon />}
+        onClose={() => setOpenSpeedDial(false)}
+        onOpen={() => setOpenSpeedDial(true)}
+        open={openSpeedDial}
+        FabProps={{ color: 'secondary' }}
+      >
+        <SpeedDialAction
+          title={t('Live trigger')}
+          icon={<CampaignOutlined />}
+          tooltipTitle={t('Create a live trigger')}
+          onClick={handleOpenCreateLive}
+          FabProps={{ classes: { root: classes.speedDialButton } }}
+        />
+        <SpeedDialAction
+          title={t('Regular digest')}
+          icon={<BackupTableOutlined />}
+          tooltipTitle={t('Create a regular digest')}
+          onClick={handleOpenCreateDigest}
+          FabProps={{ classes: { root: classes.speedDialButton } }}
+        />
+      </SpeedDial>
+      <TriggerLiveCreation
+        contextual={contextual}
+        display={display}
+        inputValue={inputValue}
+        paginationOptions={paginationOptions}
+        open={openLive}
+        handleClose={() => setOpenLive(false)}
       />
-      <SpeedDialAction
-        title={t('Digest')}
-        icon={<DepartureBoardOutlined />}
-        tooltipTitle={t('Create a digest')}
-        onClick={handleOpenCreateDigest}
-        FabProps={{ classes: { root: classes.speedDialButton } }}
+      <TriggerDigestCreation
+        contextual={contextual}
+        display={display}
+        inputValue={inputValue}
+        paginationOptions={paginationOptions}
+        open={openDigest}
+        handleClose={() => setOpenDigest(false)}
       />
-    </SpeedDial>
-    <TriggerLiveCreation contextual={contextual} display={display}
-                         inputValue={inputValue} paginationOptions={paginationOptions} open={openLive}
-                         handleClose={() => setOpenLive(false)} />
-    <TriggerDigestCreation contextual={contextual} display={display}
-                         inputValue={inputValue} paginationOptions={paginationOptions} open={openDigest}
-                         handleClose={() => setOpenDigest(false)} />
-  </>;
+    </>
+  );
 };
 
 export default TriggerCreation;

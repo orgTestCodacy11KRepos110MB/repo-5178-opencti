@@ -2,7 +2,7 @@ import React, { FunctionComponent } from 'react';
 import { graphql, PreloadedQuery } from 'react-relay';
 import { DataColumns } from '../../../../components/list_lines';
 import ListLinesContent from '../../../../components/list_lines/ListLinesContent';
-import { UseLocalStorage } from '../../../../utils/hooks/useLocalStorage';
+import { UseLocalStorageHelpers } from '../../../../utils/hooks/useLocalStorage';
 import usePreloadedPaginationFragment from '../../../../utils/hooks/usePreloadedPaginationFragment';
 import { TriggerLineComponent, TriggerLineDummy } from './TriggerLine';
 import {
@@ -14,11 +14,16 @@ import { TriggersLines_data$key } from './__generated__/TriggersLines_data.graph
 const nbOfRowsToLoad = 50;
 
 interface TriggerLinesProps {
-  queryRef: PreloadedQuery<TriggersLinesPaginationQuery>,
-  dataColumns: DataColumns,
-  paginationOptions?: TriggersLinesPaginationQuery$variables,
-  setNumberOfElements: UseLocalStorage[2]['handleSetNumberOfElements'],
-  onLabelClick: (k: string, id: string, value: Record<string, unknown>, event: React.KeyboardEvent) => void,
+  queryRef: PreloadedQuery<TriggersLinesPaginationQuery>;
+  dataColumns: DataColumns;
+  paginationOptions?: TriggersLinesPaginationQuery$variables;
+  setNumberOfElements: UseLocalStorageHelpers['handleSetNumberOfElements'];
+  onLabelClick: (
+    k: string,
+    id: string,
+    value: Record<string, unknown>,
+    event: React.KeyboardEvent
+  ) => void;
 }
 
 export const triggersLinesQuery = graphql`
@@ -30,14 +35,15 @@ export const triggersLinesQuery = graphql`
     $orderMode: OrderingMode
     $filters: [TriggersFiltering!]
   ) {
-    ...TriggersLines_data @arguments(
-      search: $search
-      count: $count
-      cursor: $cursor
-      orderBy: $orderBy
-      orderMode: $orderMode
-      filters: $filters
-    )
+    ...TriggersLines_data
+      @arguments(
+        search: $search
+        count: $count
+        cursor: $cursor
+        orderBy: $orderBy
+        orderMode: $orderMode
+        filters: $filters
+      )
   }
 `;
 
@@ -50,7 +56,8 @@ const triggersLinesFragment = graphql`
     orderBy: { type: "TriggersOrdering", defaultValue: name }
     orderMode: { type: "OrderingMode", defaultValue: asc }
     filters: { type: "[TriggersFiltering!]" }
-  ) @refetchable(queryName: "TriggersLinesRefetchQuery") {
+  )
+  @refetchable(queryName: "TriggersLinesRefetchQuery") {
     triggers(
       search: $search
       first: $count
@@ -76,20 +83,23 @@ const triggersLinesFragment = graphql`
   }
 `;
 
-const TriggersLines: FunctionComponent<TriggerLinesProps> = ({ setNumberOfElements, queryRef, dataColumns, paginationOptions, onLabelClick }) => {
-  const {
-    data,
-    hasMore,
-    loadMore,
-    isLoadingMore,
-  } = usePreloadedPaginationFragment<TriggersLinesPaginationQuery, TriggersLines_data$key>({
+const TriggersLines: FunctionComponent<TriggerLinesProps> = ({
+  setNumberOfElements,
+  queryRef,
+  dataColumns,
+  paginationOptions,
+  onLabelClick,
+}) => {
+  const { data, hasMore, loadMore, isLoadingMore } = usePreloadedPaginationFragment<
+  TriggersLinesPaginationQuery,
+  TriggersLines_data$key
+  >({
     linesQuery: triggersLinesQuery,
     linesFragment: triggersLinesFragment,
     queryRef,
     nodePath: ['triggers', 'pageInfo', 'globalCount'],
     setNumberOfElements,
   });
-
   return (
     <ListLinesContent
       initialLoading={!data}
@@ -98,8 +108,8 @@ const TriggersLines: FunctionComponent<TriggerLinesProps> = ({ setNumberOfElemen
       hasMore={hasMore}
       dataList={data?.triggers?.edges ?? []}
       globalCount={data?.triggers?.pageInfo?.globalCount ?? nbOfRowsToLoad}
-      LineComponent={ TriggerLineComponent }
-      DummyLineComponent={ TriggerLineDummy }
+      LineComponent={TriggerLineComponent}
+      DummyLineComponent={TriggerLineDummy}
       dataColumns={dataColumns}
       nbOfRowsToLoad={nbOfRowsToLoad}
       paginationOptions={paginationOptions}

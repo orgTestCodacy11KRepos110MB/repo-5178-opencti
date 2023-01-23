@@ -24,7 +24,7 @@ import type { StixCoreObject, StixRelationshipObject } from '../types/stix-commo
 import { now } from '../utils/format';
 import type { NotificationContentEvent } from '../modules/notification/notification-types';
 
-const DOC_URI = 'https://www.notion.so/OpenCTI-Public-Knowledge-Base-d411e5e477734c59887dad3649f20518';
+const DOC_URI = 'https://filigran.notion.site/OpenCTI-Public-Knowledge-Base-d411e5e477734c59887dad3649f20518';
 const PUBLISHER_ENGINE_KEY = conf.get('publisher_manager:lock_key');
 const STREAM_SCHEDULE_TIME = 10000;
 const OUTCOME_TYPE_UI = 'UI';
@@ -51,7 +51,7 @@ const processNotificationEvent = async (
     const generatedContent: Record<string, Array<NotificationContentEvent>> = {};
     for (let index = 0; index < data.length; index += 1) {
       const { notification_id, instance, type } = data[index];
-      const event = { operation: type, message: `${type}s ${(extractStixRepresentative(instance))}`, instance_id: instance.id };
+      const event = { operation: type, message: `[${instance.type}] ${(extractStixRepresentative(instance))}`, instance_id: instance.id };
       const eventNotification = notificationMap.get(notification_id);
       if (eventNotification) {
         const notificationName = eventNotification.name;

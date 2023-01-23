@@ -18,19 +18,19 @@ import Dialog from '@mui/material/Dialog';
 import OtpInput from 'react-otp-input';
 import DialogTitle from '@mui/material/DialogTitle';
 import { useTheme } from '@mui/styles';
-import inject18n, { useFormatter } from '../../../../components/i18n';
-import TextField from '../../../../components/TextField';
-import SelectField from '../../../../components/SelectField';
+import inject18n, { useFormatter } from '../../../components/i18n';
+import TextField from '../../../components/TextField';
+import SelectField from '../../../components/SelectField';
 import {
   commitMutation,
   MESSAGING$,
   QueryRenderer,
-} from '../../../../relay/environment';
-import { OPENCTI_ADMIN_UUID } from '../../../../utils/hooks/useGranted';
-import Loader from '../../../../components/Loader';
-import { convertOrganizations } from '../../../../utils/edition';
-import ObjectOrganizationField from '../../common/form/ObjectOrganizationField';
-import { OTP_CODE_SIZE } from '../../../../public/components/OtpActivation';
+} from '../../../relay/environment';
+import { OPENCTI_ADMIN_UUID } from '../../../utils/hooks/useGranted';
+import Loader from '../../../components/Loader';
+import { convertOrganizations } from '../../../utils/edition';
+import ObjectOrganizationField from '../common/form/ObjectOrganizationField';
+import { OTP_CODE_SIZE } from '../../../public/components/OtpActivation';
 
 const styles = () => ({
   container: {

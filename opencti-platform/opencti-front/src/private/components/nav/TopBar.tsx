@@ -89,7 +89,6 @@ import {
   KNOWLEDGE_KNASKIMPORT,
 } from '../../../utils/hooks/useGranted';
 import TopMenuProfile from '../profile/TopMenuProfile';
-import TopMenuTrigger from '../profile/triggers/TopMenuTrigger';
 import TopMenuNotifications from '../profile/TopMenuNotifications';
 
 const useStyles = makeStyles<Theme>((theme) => ({
@@ -302,9 +301,6 @@ const TopBar: FunctionComponent<TopBarProps> = ({
           {location.pathname !== '/dashboard/profile/me'
             && location.pathname.includes('/dashboard/profile/') && (
               <TopMenuNotifications />
-          )}
-          {location.pathname.includes('/dashboard/profile/triggers/') && (
-            <TopMenuTrigger />
           )}
           {(location.pathname === '/dashboard/cases'
             || location.pathname.match('/dashboard/cases/[a-z_]+$')) && (
