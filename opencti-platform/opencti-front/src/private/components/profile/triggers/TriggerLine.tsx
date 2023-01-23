@@ -140,6 +140,7 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
             >
               {data.event_types.map((n: string) => (
                 <Chip
+                  key={n}
                   classes={{ root: classes.chipInList }}
                   color="primary"
                   variant="outlined"

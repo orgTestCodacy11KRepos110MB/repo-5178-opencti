@@ -244,14 +244,14 @@ NotificationLineProps
                           classes={{ root: classes.chipInList }}
                           color="primary"
                           variant="outlined"
-                          label={eventTypes[event?.operation ?? 'none']}
+                          label={eventTypes[event.operation ?? 'none']}
                         />
                       </div>
                       <div
                         className={classes.bodyItem}
                         style={{ width: '50%' }}
                       >
-                        {event?.message}
+                        {event.message}
                       </div>
                     </div>
                   }
