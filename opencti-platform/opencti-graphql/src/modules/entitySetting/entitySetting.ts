@@ -1,14 +1,15 @@
-import { ModuleDefinition, registerDefinition } from '../../types/module';
 import type { StoreEntityEntitySetting } from './entitySetting-types';
+import { ENTITY_TYPE_ENTITY_SETTING } from './entitySetting-types';
 import { ABSTRACT_INTERNAL_OBJECT } from '../../schema/general';
 import entitySettingResolvers from './entitySetting-resolvers';
 import entitySettingTypeDefs from './entitySetting.graphql';
 import convertEntitySettingToStix from './entitySetting-converter';
-import { ENTITY_TYPE_ENTITY_SETTING } from './entitySetting-types';
+import { attributeConfiguration, validateEntitySetting } from './entitySetting-utils';
+import { moduleRegisterDefinition, ModuleRegisterDefinition } from '../../schema/module-register';
 
 const TARGET_TYPE = 'target_type';
 
-const ENTITY_SETTING_DEFINITION: ModuleDefinition<StoreEntityEntitySetting> = {
+const ENTITY_SETTING_DEFINITION: ModuleRegisterDefinition<StoreEntityEntitySetting> = {
   type: {
     id: 'entitysettings',
     name: ENTITY_TYPE_ENTITY_SETTING,
@@ -30,13 +31,15 @@ const ENTITY_SETTING_DEFINITION: ModuleDefinition<StoreEntityEntitySetting> = {
     },
   },
   attributes: [
-    { name: 'target_type', type: 'string', multiple: false, upsert: false },
-    { name: 'platform_entity_files_ref', type: 'boolean', multiple: false, upsert: true },
-    { name: 'platform_hidden_type', type: 'boolean', multiple: false, upsert: true },
-    { name: 'enforce_reference', type: 'boolean', multiple: false, upsert: true },
+    { name: 'target_type', type: 'string', mandatoryType: 'internal', multiple: false, upsert: false },
+    { name: 'platform_entity_files_ref', type: 'boolean', mandatoryType: 'external', multiple: false, upsert: false },
+    { name: 'platform_hidden_type', type: 'boolean', mandatoryType: 'external', multiple: false, upsert: false },
+    { name: 'enforce_reference', type: 'boolean', mandatoryType: 'external', multiple: false, upsert: false },
+    { name: 'attributes_configuration', type: 'json', mandatoryType: 'no', multiple: false, upsert: false, schemaDef: attributeConfiguration },
   ],
   relations: [],
-  converter: convertEntitySettingToStix
+  converter: convertEntitySettingToStix,
+  validator: validateEntitySetting,
 };
 
-registerDefinition(ENTITY_SETTING_DEFINITION);
+moduleRegisterDefinition(ENTITY_SETTING_DEFINITION);

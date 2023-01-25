@@ -857,6 +857,11 @@ export type Attribute = {
   value: Scalars['String'];
 };
 
+export type AttributeConfiguration = {
+  __typename?: 'AttributeConfiguration';
+  name?: Maybe<Scalars['String']>;
+};
+
 export type AttributeConnection = {
   __typename?: 'AttributeConnection';
   edges?: Maybe<Array<Maybe<AttributeEdge>>>;
@@ -5349,6 +5354,7 @@ export type EmailMimePartTypeAddInput = {
 
 export type EntitySetting = BasicObject & InternalObject & {
   __typename?: 'EntitySetting';
+  attributes_configuration?: Maybe<Scalars['String']>;
   created_at: Scalars['DateTime'];
   enforce_reference?: Maybe<Scalars['Boolean']>;
   entity_type: Scalars['String'];
@@ -20482,9 +20488,17 @@ export type SubType = {
   __typename?: 'SubType';
   id: Scalars['ID'];
   label: Scalars['String'];
+  mandatoryAttributes: Array<SubTypeAttribute>;
   settings?: Maybe<EntitySetting>;
   statuses?: Maybe<StatusConnection>;
   workflowEnabled?: Maybe<Scalars['Boolean']>;
+};
+
+export type SubTypeAttribute = {
+  __typename?: 'SubTypeAttribute';
+  builtIn: Scalars['Boolean'];
+  mandatory: Scalars['Boolean'];
+  name: Scalars['String'];
 };
 
 export type SubTypeConnection = {
@@ -24101,6 +24115,7 @@ export type ResolversTypes = ResolversObject<{
   AttackPatternsFiltering: AttackPatternsFiltering;
   AttackPatternsOrdering: AttackPatternsOrdering;
   Attribute: ResolverTypeWrapper<Attribute>;
+  AttributeConfiguration: ResolverTypeWrapper<AttributeConfiguration>;
   AttributeConnection: ResolverTypeWrapper<AttributeConnection>;
   AttributeEdge: ResolverTypeWrapper<AttributeEdge>;
   AttributeEditMutations: ResolverTypeWrapper<AttributeEditMutations>;
@@ -24632,6 +24647,7 @@ export type ResolversTypes = ResolversObject<{
   StreamCollectionOrdering: StreamCollectionOrdering;
   String: ResolverTypeWrapper<Scalars['String']>;
   SubType: ResolverTypeWrapper<Omit<SubType, 'settings'> & { settings?: Maybe<ResolversTypes['EntitySetting']> }>;
+  SubTypeAttribute: ResolverTypeWrapper<SubTypeAttribute>;
   SubTypeConnection: ResolverTypeWrapper<Omit<SubTypeConnection, 'edges'> & { edges: Array<ResolversTypes['SubTypeEdge']> }>;
   SubTypeEdge: ResolverTypeWrapper<Omit<SubTypeEdge, 'node'> & { node: ResolversTypes['SubType'] }>;
   SubTypeEditMutations: ResolverTypeWrapper<Omit<SubTypeEditMutations, 'statusAdd' | 'statusDelete' | 'statusFieldPatch'> & { statusAdd?: Maybe<ResolversTypes['SubType']>, statusDelete?: Maybe<ResolversTypes['SubType']>, statusFieldPatch?: Maybe<ResolversTypes['SubType']> }>;
@@ -24783,6 +24799,7 @@ export type ResolversParentTypes = ResolversObject<{
   AttackPatternEditMutations: Omit<AttackPatternEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'relationDelete'> & { contextClean?: Maybe<ResolversParentTypes['AttackPattern']>, contextPatch?: Maybe<ResolversParentTypes['AttackPattern']>, fieldPatch?: Maybe<ResolversParentTypes['AttackPattern']>, relationDelete?: Maybe<ResolversParentTypes['AttackPattern']> };
   AttackPatternsFiltering: AttackPatternsFiltering;
   Attribute: Attribute;
+  AttributeConfiguration: AttributeConfiguration;
   AttributeConnection: AttributeConnection;
   AttributeEdge: AttributeEdge;
   AttributeEditMutations: AttributeEditMutations;
@@ -25209,6 +25226,7 @@ export type ResolversParentTypes = ResolversObject<{
   StreamCollectionEditMutations: Omit<StreamCollectionEditMutations, 'addGroup' | 'deleteGroup' | 'fieldPatch'> & { addGroup?: Maybe<ResolversParentTypes['StreamCollection']>, deleteGroup?: Maybe<ResolversParentTypes['StreamCollection']>, fieldPatch?: Maybe<ResolversParentTypes['StreamCollection']> };
   String: Scalars['String'];
   SubType: Omit<SubType, 'settings'> & { settings?: Maybe<ResolversParentTypes['EntitySetting']> };
+  SubTypeAttribute: SubTypeAttribute;
   SubTypeConnection: Omit<SubTypeConnection, 'edges'> & { edges: Array<ResolversParentTypes['SubTypeEdge']> };
   SubTypeEdge: Omit<SubTypeEdge, 'node'> & { node: ResolversParentTypes['SubType'] };
   SubTypeEditMutations: Omit<SubTypeEditMutations, 'statusAdd' | 'statusDelete' | 'statusFieldPatch'> & { statusAdd?: Maybe<ResolversParentTypes['SubType']>, statusDelete?: Maybe<ResolversParentTypes['SubType']>, statusFieldPatch?: Maybe<ResolversParentTypes['SubType']> };
@@ -25593,6 +25611,11 @@ export type AttributeResolvers<ContextType = any, ParentType extends ResolversPa
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type AttributeConfigurationResolvers<ContextType = any, ParentType extends ResolversParentTypes['AttributeConfiguration'] = ResolversParentTypes['AttributeConfiguration']> = ResolversObject<{
+  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -26799,6 +26822,7 @@ export type EmailMimePartTypeResolvers<ContextType = any, ParentType extends Res
 }>;
 
 export type EntitySettingResolvers<ContextType = any, ParentType extends ResolversParentTypes['EntitySetting'] = ResolversParentTypes['EntitySetting']> = ResolversObject<{
+  attributes_configuration?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   enforce_reference?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   entity_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -30670,9 +30694,17 @@ export type StreamCollectionEditMutationsResolvers<ContextType = any, ParentType
 export type SubTypeResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubType'] = ResolversParentTypes['SubType']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   label?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  mandatoryAttributes?: Resolver<Array<ResolversTypes['SubTypeAttribute']>, ParentType, ContextType>;
   settings?: Resolver<Maybe<ResolversTypes['EntitySetting']>, ParentType, ContextType>;
   statuses?: Resolver<Maybe<ResolversTypes['StatusConnection']>, ParentType, ContextType>;
   workflowEnabled?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type SubTypeAttributeResolvers<ContextType = any, ParentType extends ResolversParentTypes['SubTypeAttribute'] = ResolversParentTypes['SubTypeAttribute']> = ResolversObject<{
+  builtIn?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  mandatory?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -31733,6 +31765,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AttackPatternEdge?: AttackPatternEdgeResolvers<ContextType>;
   AttackPatternEditMutations?: AttackPatternEditMutationsResolvers<ContextType>;
   Attribute?: AttributeResolvers<ContextType>;
+  AttributeConfiguration?: AttributeConfigurationResolvers<ContextType>;
   AttributeConnection?: AttributeConnectionResolvers<ContextType>;
   AttributeEdge?: AttributeEdgeResolvers<ContextType>;
   AttributeEditMutations?: AttributeEditMutationsResolvers<ContextType>;
@@ -32027,6 +32060,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   StreamCollectionEdge?: StreamCollectionEdgeResolvers<ContextType>;
   StreamCollectionEditMutations?: StreamCollectionEditMutationsResolvers<ContextType>;
   SubType?: SubTypeResolvers<ContextType>;
+  SubTypeAttribute?: SubTypeAttributeResolvers<ContextType>;
   SubTypeConnection?: SubTypeConnectionResolvers<ContextType>;
   SubTypeEdge?: SubTypeEdgeResolvers<ContextType>;
   SubTypeEditMutations?: SubTypeEditMutationsResolvers<ContextType>;
