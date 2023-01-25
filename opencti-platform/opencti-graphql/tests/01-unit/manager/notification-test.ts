@@ -13,7 +13,7 @@ const digest = (period: 'hour' | 'day' | 'week' | 'month', triggerTime = ''): Re
       period,
       trigger_type: 'digest',
       trigger_time: triggerTime,
-      triggers: [],
+      trigger_ids: [],
       outcomes: []
     },
     users: []
