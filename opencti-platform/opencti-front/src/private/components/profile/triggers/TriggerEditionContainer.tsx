@@ -7,8 +7,9 @@ import makeStyles from '@mui/styles/makeStyles';
 import { useFormatter } from '../../../../components/i18n';
 import { Theme } from '../../../../components/Theme';
 import Loader, { LoaderVariant } from '../../../../components/Loader';
-import TriggerEditionOverview from './TriggerEditionOverview';
 import { TriggerEditionContainerQuery } from './__generated__/TriggerEditionContainerQuery.graphql';
+import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
+import TriggerEditionOverview from './TriggerEditionOverview';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   header: {
@@ -48,25 +49,28 @@ export const triggerEditionQuery = graphql`
 `;
 
 interface TriggerEditionContainerProps {
-  handleClose: () => void
-  queryRef: PreloadedQuery<TriggerEditionContainerQuery>
+  handleClose: () => void;
+  queryRef: PreloadedQuery<TriggerEditionContainerQuery>;
+  paginationOptions?: TriggersLinesPaginationQuery$variables;
 }
 
-const TriggerEditionContainer: FunctionComponent<TriggerEditionContainerProps> = ({ handleClose, queryRef }) => {
+const TriggerEditionContainer: FunctionComponent<
+TriggerEditionContainerProps
+> = ({ handleClose, queryRef, paginationOptions }) => {
   const classes = useStyles();
   const { t } = useFormatter();
-
   const queryData = usePreloadedQuery(triggerEditionQuery, queryRef);
-
   if (queryData.trigger) {
     return (
       <div>
         <div className={classes.header}>
-          <IconButton aria-label="Close"
+          <IconButton
+            aria-label="Close"
             className={classes.closeButton}
             onClick={handleClose}
             size="large"
-            color="primary">
+            color="primary"
+          >
             <Close fontSize="small" color="primary" />
           </IconButton>
           <Typography variant="h6" classes={{ root: classes.title }}>
@@ -75,7 +79,11 @@ const TriggerEditionContainer: FunctionComponent<TriggerEditionContainerProps> =
           <div className="clearfix" />
         </div>
         <div className={classes.container}>
-          <TriggerEditionOverview data={queryData.trigger} handleClose={handleClose} />
+          <TriggerEditionOverview
+            data={queryData.trigger}
+            handleClose={handleClose}
+            paginationOptions={paginationOptions}
+          />
         </div>
       </div>
     );

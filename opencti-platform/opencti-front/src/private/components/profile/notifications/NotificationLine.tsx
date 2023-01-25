@@ -16,7 +16,7 @@ import { graphql, useFragment } from 'react-relay';
 import makeStyles from '@mui/styles/makeStyles';
 import { Theme } from '@mui/material/styles/createTheme';
 import Checkbox from '@mui/material/Checkbox';
-import { deepPurple, green, indigo, pink } from '@mui/material/colors';
+import { deepPurple, green, indigo, red } from '@mui/material/colors';
 import Collapse from '@mui/material/Collapse';
 import List from '@mui/material/List';
 import { ListItemButton } from '@mui/material';
@@ -27,6 +27,7 @@ import {
   NotificationLine_node$key,
 } from './__generated__/NotificationLine_node.graphql';
 import { useFormatter } from '../../../../components/i18n';
+import { hexToRGB } from '../../../../utils/Colors';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   item: {
@@ -57,6 +58,15 @@ const useStyles = makeStyles<Theme>((theme) => ({
     height: 20,
     float: 'left',
     width: 100,
+    marginRight: 10,
+  },
+  chipInList2: {
+    fontSize: 12,
+    height: 20,
+    float: 'left',
+    width: 120,
+    textTransform: 'uppercase',
+    borderRadius: '0',
   },
   placeholder: {
     display: 'inline-block',
@@ -133,18 +143,25 @@ NotificationLineProps
     delete: t('Deletion'),
     none: t('Unknown'),
   };
+  const colors: Record<string, string> = {
+    create: green[500],
+    update: deepPurple[500],
+    delete: red[500],
+    none: indigo[500],
+  };
   const iconSelector = (operation: string) => {
     switch (operation) {
       case 'create':
-        return <BellPlusOutline style={{ color: pink[500] }} />;
+        return <BellPlusOutline style={{ color: colors[operation] }} />;
       case 'update':
-        return <BellCogOutline style={{ color: green[500] }} />;
+        return <BellCogOutline style={{ color: colors[operation] }} />;
       case 'delete':
-        return <BellRemoveOutline style={{ color: deepPurple[500] }} />;
+        return <BellRemoveOutline style={{ color: colors[operation] }} />;
       default:
-        return <BellOutline style={{ color: indigo[500] }} />;
+        return <BellOutline style={{ color: colors[operation] }} />;
     }
   };
+  const firstOperation = firstEvent?.operation ?? 'none';
   return (
     <ListItem
       classes={{ root: classes.item }}
@@ -172,7 +189,7 @@ NotificationLineProps
       </ListItemIcon>
       <ListItemIcon classes={{ root: classes.itemIcon }}>
         <Badge color="warning" variant="dot" invisible={data.is_read}>
-          {iconSelector(firstEvent?.operation ?? 'none')}
+          {iconSelector(firstOperation)}
         </Badge>
       </ListItemIcon>
       <ListItemText
@@ -183,9 +200,12 @@ NotificationLineProps
               style={{ width: dataColumns.operation.width }}
             >
               <Chip
-                classes={{ root: classes.chipInList }}
-                color="primary"
-                variant="outlined"
+                classes={{ root: classes.chipInList2 }}
+                style={{
+                  backgroundColor: hexToRGB(colors[firstOperation], 0.08),
+                  color: colors[firstOperation],
+                  border: `1px solid ${colors[firstOperation]}`,
+                }}
                 label={eventTypes[firstEvent?.operation ?? 'none']}
               />
             </div>
@@ -205,7 +225,14 @@ NotificationLineProps
               className={classes.bodyItem}
               style={{ width: dataColumns.name.width }}
             >
-              {data.name}
+              <Chip
+                classes={{ root: classes.chipInList }}
+                color={
+                  data.notification_type === 'live' ? 'warning' : 'secondary'
+                }
+                variant="outlined"
+                label={data.name}
+              />
             </div>
           </div>
         }

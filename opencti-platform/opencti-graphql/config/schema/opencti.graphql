@@ -6878,6 +6878,7 @@ enum StixCyberObservablesOrdering {
   updated_at
   observable_value
   objectMarking
+  createdBy
   creator
 }
 enum StixCyberObservablesFilter {

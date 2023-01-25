@@ -78,10 +78,7 @@ import TopMenuCaseIncident from './TopMenuCaseIncident';
 import TopMenuCaseFeedback from './TopMenuCaseFeedback';
 import FeedbackCreation from '../cases/feedbacks/FeedbackCreation';
 import TopMenuCases from './TopMenuCases';
-import {
-  TopBarNotificationSubscription,
-  TopBarNotificationSubscription$data,
-} from './__generated__/TopBarNotificationSubscription.graphql';
+import { TopBarNotificationSubscription } from './__generated__/TopBarNotificationSubscription.graphql';
 import { Theme } from '../../../components/Theme';
 import {
   EXPLORE,
@@ -180,25 +177,7 @@ const TopBar: FunctionComponent<TopBarProps> = ({
   const classes = useStyles();
   const { t } = useFormatter();
   const [isNewNotif, setIsNewNotif] = useState(false);
-  const notificationListener = (
-    payload: TopBarNotificationSubscription$data | null | undefined,
-  ) => {
-    if (
-      payload
-      && payload.notification
-      && payload.notification.content.length > 0
-    ) {
-      const { content, name, notification_type } = payload.notification;
-      if (notification_type === 'digest') {
-        MESSAGING$.notifySuccess(`New digest available for ${name}`);
-      } else {
-        const { title, events } = content.at(0) ?? {};
-        const message = `${title} > ${(events ?? []).at(0)}...`;
-        MESSAGING$.notifySuccess(message);
-      }
-      setIsNewNotif(true);
-    }
-  };
+  const notificationListener = () => setIsNewNotif(true);
   const subConfig = useMemo<
   GraphQLSubscriptionConfig<TopBarNotificationSubscription>
   >(

@@ -412,10 +412,10 @@ const notificationDigestHandler = async () => {
     // Iter on each digest an generate the output
     for (let index = 0; index < digestNotifications.length; index += 1) {
       const { trigger, users } = digestNotifications[index];
-      const { period, triggers, outcomes, internal_id: notification_id, trigger_type: type } = trigger;
+      const { period, trigger_ids: triggerIds, outcomes, internal_id: notification_id, trigger_type: type } = trigger;
       const fromDate = baseDate.clone().subtract(1, period).toDate();
       const rangeNotifications = await fetchRangeNotifications<NotificationEvent>(fromDate, baseDate.toDate());
-      const digestContent = rangeNotifications.filter((n) => triggers.includes(n.notification_id));
+      const digestContent = rangeNotifications.filter((n) => triggerIds.includes(n.notification_id));
       if (digestContent.length > 0) {
         // Range of results must filtered to keep only data related to the digest
         // And related to the users participating to the digest

@@ -18,6 +18,9 @@ import SelectField from '../../../../components/SelectField';
 import Filters from '../../common/lists/Filters';
 import FilterCard from '../../../../components/FilterCard';
 import { isUniqFilter } from '../../../../utils/filters/filtersUtils';
+import { convertTriggers } from '../../../../utils/edition';
+import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
+import TriggersField from './TriggersField';
 
 const triggerMutationFieldPatch = graphql`
   mutation TriggerEditionOverviewFieldPatchMutation(
@@ -34,23 +37,26 @@ const triggerEditionOverviewFragment = graphql`
   fragment TriggerEditionOverview_trigger on Trigger {
     id
     name
-    description
+    trigger_type
     event_types
-    outcomes
+    description
     filters
+    created
+    modified
+    outcomes
+    period
+    trigger_time
+    triggers {
+      id
+      name
+    }
   }
 `;
-
-const triggerValidation = (t: (v: string) => string) => Yup.object().shape({
-  name: Yup.string().required(t('This field is required')),
-  description: Yup.string().nullable(),
-  event_types: Yup.array().required(t('This field is required')),
-  outcomes: Yup.array().required(t('This field is required')),
-});
 
 interface TriggerEditionOverviewProps {
   data: TriggerEditionOverview_trigger$key;
   handleClose: () => void;
+  paginationOptions?: TriggersLinesPaginationQuery$variables;
 }
 
 interface TriggerEditionFormValues {
@@ -58,11 +64,12 @@ interface TriggerEditionFormValues {
   description: string | null;
   event_types: string[];
   outcomes: string[];
+  trigger_ids: { value: string }[];
 }
 
 const TriggerEditionOverview: FunctionComponent<
 TriggerEditionOverviewProps
-> = ({ data, handleClose }) => {
+> = ({ data, handleClose, paginationOptions }) => {
   const { t } = useFormatter();
   const trigger = useFragment(triggerEditionOverviewFragment, data);
   const filters = JSON.parse(trigger.filters ?? '{}');
@@ -116,12 +123,32 @@ TriggerEditionOverviewProps
       },
     });
   };
-
+  const triggerValidation = () => Yup.object().shape({
+    name: Yup.string().required(t('This field is required')),
+    description: Yup.string().nullable(),
+    event_types:
+        trigger.trigger_type === 'live'
+          ? Yup.array().required(t('This field is required'))
+          : Yup.array().nullable(),
+    outcomes: Yup.array().required(t('This field is required')),
+    period:
+        trigger.trigger_type === 'digest'
+          ? Yup.string().required(t('This field is required'))
+          : Yup.string().nullable(),
+    trigger_time:
+        trigger.trigger_type === 'digest'
+          ? Yup.string().required(t('This field is required'))
+          : Yup.string().nullable(),
+    trigger_ids:
+        trigger.trigger_type === 'digest'
+          ? Yup.array().required(t('This field is required'))
+          : Yup.array().nullable(),
+  });
   const handleSubmitField = (
     name: string,
     value: Option | string | string[],
   ) => {
-    triggerValidation(t)
+    triggerValidation()
       .validateAt(name, { [name]: value })
       .then(() => {
         commitFieldPatch({
@@ -133,12 +160,26 @@ TriggerEditionOverviewProps
       })
       .catch(() => false);
   };
-
+  const handleSubmitTriggers = (name: string, value: { value: string }[]) => {
+    triggerValidation()
+      .validateAt(name, { [name]: value })
+      .then(() => {
+        commitFieldPatch({
+          variables: {
+            id: trigger.id,
+            input: { key: name, value: value.map(({ value: v }) => v) || '' },
+          },
+        });
+      })
+      .catch(() => false);
+  };
   const initialValues = {
     name: trigger.name,
     description: trigger.description,
     event_types: trigger.event_types,
     outcomes: trigger.outcomes,
+    period: trigger.period,
+    trigger_ids: convertTriggers(trigger),
   };
   const eventTypesOptions: Record<string, string> = {
     create: t('Creation'),
@@ -154,10 +195,10 @@ TriggerEditionOverviewProps
     <Formik
       enableReinitialize={true}
       initialValues={initialValues as never}
-      validationSchema={triggerValidation(t)}
+      validationSchema={triggerValidation()}
       onSubmit={onSubmit}
     >
-      {({ values }) => (
+      {({ values, setFieldValue }) => (
         <Form style={{ margin: '20px 0 20px 0' }}>
           <Field
             component={TextField}
@@ -177,38 +218,65 @@ TriggerEditionOverviewProps
             onSubmit={handleSubmitField}
             style={{ marginTop: 20 }}
           />
-          <Field
-            component={SelectField}
-            variant="standard"
-            name="event_types"
-            label={t('Triggering on')}
-            fullWidth={true}
-            multiple={true}
-            onChange={(name: string, value: string[]) => handleSubmitField('event_types', value)
-            }
-            inputProps={{ name: 'event_types', id: 'event_types' }}
-            containerstyle={{ marginTop: 20, width: '100%' }}
-            renderValue={(selected: Array<string>) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((value) => (
-                  <Chip key={value} label={eventTypesOptions[value]} />
-                ))}
-              </Box>
-            )}
-          >
-            <MenuItem value="create">
-              <Checkbox checked={values.event_types.indexOf('create') > -1} />
-              <ListItemText primary={eventTypesOptions.create} />
-            </MenuItem>
-            <MenuItem value="update">
-              <Checkbox checked={values.event_types.indexOf('update') > -1} />
-              <ListItemText primary={eventTypesOptions.update} />
-            </MenuItem>
-            <MenuItem value="delete">
-              <Checkbox checked={values.event_types.indexOf('delete') > -1} />
-              <ListItemText primary={eventTypesOptions.delete} />
-            </MenuItem>
-          </Field>
+          {trigger.trigger_type === 'live' && (
+            <Field
+              component={SelectField}
+              variant="standard"
+              name="event_types"
+              label={t('Triggering on')}
+              fullWidth={true}
+              multiple={true}
+              onChange={(name: string, value: string[]) => handleSubmitField('event_types', value)
+              }
+              inputProps={{ name: 'event_types', id: 'event_types' }}
+              containerstyle={{ marginTop: 20, width: '100%' }}
+              renderValue={(selected: Array<string>) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => (
+                    <Chip key={value} label={eventTypesOptions[value]} />
+                  ))}
+                </Box>
+              )}
+            >
+              <MenuItem value="create">
+                <Checkbox checked={values.event_types.indexOf('create') > -1} />
+                <ListItemText primary={eventTypesOptions.create} />
+              </MenuItem>
+              <MenuItem value="update">
+                <Checkbox checked={values.event_types.indexOf('update') > -1} />
+                <ListItemText primary={eventTypesOptions.update} />
+              </MenuItem>
+              <MenuItem value="delete">
+                <Checkbox checked={values.event_types.indexOf('delete') > -1} />
+                <ListItemText primary={eventTypesOptions.delete} />
+              </MenuItem>
+            </Field>
+          )}
+          {trigger.trigger_type === 'digest' && (
+            <TriggersField
+              name="trigger_ids"
+              setFieldValue={setFieldValue}
+              values={values.trigger_ids}
+              style={{ marginTop: 20, width: '100%' }}
+              onChange={handleSubmitTriggers}
+              paginationOptions={paginationOptions}
+            />
+          )}
+          {trigger.trigger_type === 'digest' && (
+            <Field
+              component={SelectField}
+              variant="standard"
+              name="period"
+              label={t('Period')}
+              fullWidth={true}
+              containerstyle={{ marginTop: 20, width: '100%' }}
+            >
+              <MenuItem value="hour">{t('hour')}</MenuItem>
+              <MenuItem value="day">{t('day')}</MenuItem>
+              <MenuItem value="week">{t('week')}</MenuItem>
+              <MenuItem value="month">{t('month')}</MenuItem>
+            </Field>
+          )}
           <Field
             component={SelectField}
             variant="standard"
@@ -261,42 +329,46 @@ TriggerEditionOverviewProps
               <ListItemText primary={outcomesOptions.webhook} />
             </MenuItem>
           </Field>
-          <div style={{ marginTop: 35 }}>
-            <Filters
-              variant="text"
-              availableFilterKeys={[
-                'entity_type',
-                'markedBy',
-                'labelledBy',
-                'objectContains',
-                'createdBy',
-                'x_opencti_score',
-                'x_opencti_detection',
-                'revoked',
-                'confidence',
-                'indicator_types',
-                'pattern_type',
-                'fromId',
-                'toId',
-                'fromTypes',
-                'toTypes',
-              ]}
-              handleAddFilter={handleAddFilter}
-              noDirectFilters={true}
-              disabled={undefined}
-              size={undefined}
-              fontSize={undefined}
-              availableEntityTypes={undefined}
-              availableRelationshipTypes={undefined}
-              allEntityTypes={undefined}
-              type={undefined}
-              availableRelationFilterTypes={undefined}
-            />
-          </div>
-          <FilterCard
-            filters={filters}
-            handleRemoveFilter={handleRemoveFilter}
-          />
+          {trigger.trigger_type === 'live' && (
+            <div>
+              <div style={{ marginTop: 35 }}>
+                <Filters
+                  variant="text"
+                  availableFilterKeys={[
+                    'entity_type',
+                    'markedBy',
+                    'labelledBy',
+                    'objectContains',
+                    'createdBy',
+                    'x_opencti_score',
+                    'x_opencti_detection',
+                    'revoked',
+                    'confidence',
+                    'indicator_types',
+                    'pattern_type',
+                    'fromId',
+                    'toId',
+                    'fromTypes',
+                    'toTypes',
+                  ]}
+                  handleAddFilter={handleAddFilter}
+                  noDirectFilters={true}
+                  disabled={undefined}
+                  size={undefined}
+                  fontSize={undefined}
+                  availableEntityTypes={undefined}
+                  availableRelationshipTypes={undefined}
+                  allEntityTypes={undefined}
+                  type={undefined}
+                  availableRelationFilterTypes={undefined}
+                />
+              </div>
+              <FilterCard
+                filters={filters}
+                handleRemoveFilter={handleRemoveFilter}
+              />
+            </div>
+          )}
         </Form>
       )}
     </Formik>

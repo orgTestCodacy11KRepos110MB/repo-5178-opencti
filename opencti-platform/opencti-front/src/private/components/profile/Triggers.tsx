@@ -30,6 +30,11 @@ const Triggers: FunctionComponent = () => {
   const renderLines = () => {
     const { searchTerm, sortBy, orderAsc, filters, numberOfElements } = viewStorage;
     const dataColumns = {
+      trigger_type: {
+        label: 'Type',
+        width: '10%',
+        isSortable: true,
+      },
       name: {
         label: 'Name',
         width: '12%',
@@ -37,7 +42,7 @@ const Triggers: FunctionComponent = () => {
       },
       description: {
         label: 'Description',
-        width: '18%',
+        width: '15%',
         isSortable: true,
       },
       outcomes: {
@@ -46,13 +51,13 @@ const Triggers: FunctionComponent = () => {
         isSortable: true,
       },
       event_types: {
-        label: 'Event',
-        width: '20%',
-        isSortable: true,
+        label: 'Triggering on',
+        width: '15%',
+        isSortable: false,
       },
       filters: {
-        label: 'Filters',
-        width: '28%',
+        label: 'Details',
+        width: '25%',
         isSortable: false,
       },
     };
@@ -104,11 +109,7 @@ const Triggers: FunctionComponent = () => {
   return (
     <div>
       {renderLines()}
-      <TriggerCreation
-        paginationOptions={paginationOptions}
-        handleClose={() => {}}
-        open={false}
-      />
+      <TriggerCreation paginationOptions={paginationOptions} />
     </div>
   );
 };

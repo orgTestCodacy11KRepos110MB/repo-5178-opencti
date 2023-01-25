@@ -37,6 +37,9 @@ const TRIGGER_DEFINITION: ModuleDefinition<StoreEntityTrigger, StixTrigger> = {
     { name: 'event_types', type: 'string', multiple: true, upsert: false },
     { name: 'outcomes', type: 'string', multiple: true, upsert: false },
     { name: 'filters', type: 'string', multiple: false, upsert: false },
+    { name: 'trigger_ids', type: 'string', multiple: true, upsert: false },
+    { name: 'period', type: 'string', multiple: false, upsert: false },
+    { name: 'trigger_time', type: 'string', multiple: false, upsert: false },
   ],
   relations: [],
   representative: (stix: StixTrigger) => {
@@ -63,7 +66,8 @@ const NOTIFICATION_DEFINITION: ModuleDefinition<StoreEntityNotification, StixNot
     },
   },
   attributes: [
-    { name: 'messages', type: 'string', multiple: true, upsert: false },
+    { name: 'notification_type', type: 'string', multiple: false, upsert: false },
+    { name: 'content', type: 'dictionary', multiple: true, upsert: false },
     { name: 'is_read', type: 'boolean', multiple: false, upsert: true },
   ],
   relations: [],

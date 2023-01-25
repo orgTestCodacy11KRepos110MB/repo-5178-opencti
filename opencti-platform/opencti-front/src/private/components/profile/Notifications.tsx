@@ -47,12 +47,12 @@ const Notifications: FunctionComponent = () => {
     const dataColumns = {
       operation: {
         label: 'Operation',
-        width: '15%',
+        width: '10%',
         isSortable: false,
       },
       message: {
         label: 'Message',
-        width: '40%',
+        width: '45%',
         isSortable: false,
       },
       created: {

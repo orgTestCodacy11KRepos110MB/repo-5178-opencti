@@ -11,7 +11,9 @@ enum TriggerEventType {
     delete
 }
 enum TriggerFilter {
+    trigger_type
     created
+    event_types
 }
 input TriggersFiltering {
     key: [TriggerFilter!]!
@@ -22,6 +24,9 @@ input TriggersFiltering {
 enum TriggersOrdering {
     name
     created
+    event_types
+    trigger_type
+    outcomes
 }
 type Trigger implements InternalObject & BasicObject {
     id: ID! # internal_id
@@ -34,9 +39,13 @@ type Trigger implements InternalObject & BasicObject {
     description: String
     user_ids: [StixRef!]!
     trigger_type: TriggerType! # live or digest
-    event_types: [TriggerEventType!]!
+    event_types: [TriggerEventType!]
     filters: String
     outcomes: [StixRef!]!
+    trigger_ids: [String]
+    triggers: [Trigger]
+    period: DigestPeriod
+    trigger_time: String
 }
 
 type TriggerConnection {
@@ -146,7 +155,7 @@ input TriggerLiveAddInput {
 input TriggerDigestAddInput {
     name: String! @constraint(minLength: 1)
     description: String
-    triggers: [String!]! # Triggers that composed the digest
+    trigger_ids: [String!]! # Triggers that composed the digest
     period: DigestPeriod!
     trigger_time: String
     outcomes: [StixRef!]!

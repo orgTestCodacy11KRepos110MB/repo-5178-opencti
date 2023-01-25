@@ -16,9 +16,9 @@ import Chip from '@mui/material/Chip';
 import { DataColumns } from '../../../../components/list_lines';
 import { TriggerLine_node$key } from './__generated__/TriggerLine_node.graphql';
 import FilterIconButton from '../../../../components/FilterIconButton';
-import TriggerPopover from './TriggerPopover';
 import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
 import { useFormatter } from '../../../../components/i18n';
+import TriggerPopover from './TriggerPopover';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   item: {
@@ -56,6 +56,14 @@ const useStyles = makeStyles<Theme>((theme) => ({
     width: 100,
     marginRight: 10,
   },
+  chipInList2: {
+    fontSize: 12,
+    height: 20,
+    float: 'left',
+    width: 140,
+    textTransform: 'uppercase',
+    borderRadius: '0',
+  },
 }));
 
 interface TriggerLineProps {
@@ -81,6 +89,10 @@ const triggerLineFragment = graphql`
     created
     modified
     outcomes
+    triggers {
+      id
+      name
+    }
   }
 `;
 
@@ -106,16 +118,31 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
   };
   return (
     <ListItem classes={{ root: classes.item }} divider={true}>
-      <ListItemIcon classes={{ root: classes.itemIcon }}>
+      <ListItemIcon>
         {data.trigger_type === 'live' ? (
-          <CampaignOutlined />
+          <CampaignOutlined color="warning" />
         ) : (
-          <BackupTableOutlined />
+          <BackupTableOutlined color="secondary" />
         )}
       </ListItemIcon>
       <ListItemText
         primary={
           <div>
+            <div
+              className={classes.bodyItem}
+              style={{ width: dataColumns.trigger_type.width }}
+            >
+              <Chip
+                color={data.trigger_type === 'live' ? 'warning' : 'secondary'}
+                classes={{ root: classes.chipInList2 }}
+                label={
+                  data.trigger_type === 'live'
+                    ? t('Live trigger')
+                    : t('Regular digest')
+                }
+                variant="outlined"
+              />
+            </div>
             <div
               className={classes.bodyItem}
               style={{ width: dataColumns.name.width }}
@@ -138,15 +165,26 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
               className={classes.bodyItem}
               style={{ width: dataColumns.event_types.width }}
             >
-              {data.event_types.map((n: string) => (
-                <Chip
-                  key={n}
-                  classes={{ root: classes.chipInList }}
-                  color="primary"
-                  variant="outlined"
-                  label={eventTypes[n]}
-                />
-              ))}
+              {data.event_types
+                && data.event_types.map((n: string) => (
+                  <Chip
+                    key={n}
+                    classes={{ root: classes.chipInList }}
+                    color="primary"
+                    variant="outlined"
+                    label={eventTypes[n]}
+                  />
+                ))}
+              {data.triggers
+                && data.triggers.map((n) => (
+                  <Chip
+                    key={n?.id}
+                    classes={{ root: classes.chipInList }}
+                    color="warning"
+                    variant="outlined"
+                    label={n?.name}
+                  />
+                ))}
             </div>
             <FilterIconButton
               filters={filters}

@@ -25,6 +25,9 @@ const notificationResolvers: Resolvers = {
     notification: (_, { id }, context) => notificationGet(context, context.user, id),
     notifications: (_, args, context) => notificationsFind(context, context.user, args),
   },
+  Trigger: {
+    triggers: (trigger, _, context) => trigger.trigger_ids && trigger.trigger_ids.map((id) => triggerGet(context, context.user, id)),
+  },
   Mutation: {
     triggerFieldPatch: (_, { id, input }, context) => triggerEdit(context, context.user, id, input),
     triggerDelete: (_, { id }, context) => triggerDelete(context, context.user, id),

@@ -15,6 +15,7 @@ export interface BasicStoreEntityTrigger extends BasicStoreEntity {
   outcomes: string[]
   user_ids: string[]
   group_ids: string[]
+  trigger_ids: string[]
 }
 
 export interface BasicStoreEntityLiveTrigger extends BasicStoreEntityTrigger {
@@ -26,7 +27,7 @@ export interface BasicStoreEntityDigestTrigger extends BasicStoreEntityTrigger {
   trigger_type: 'digest'
   period: 'hour' | 'day' | 'week' | 'month'
   trigger_time?: string
-  triggers: Array<string>
+  trigger_ids: string[]
 }
 
 export interface StoreEntityTrigger extends StoreEntity {

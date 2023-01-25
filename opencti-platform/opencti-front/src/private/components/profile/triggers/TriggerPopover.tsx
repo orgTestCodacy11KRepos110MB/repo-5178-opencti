@@ -16,12 +16,12 @@ import Loader, { LoaderVariant } from '../../../../components/Loader';
 import { Theme } from '../../../../components/Theme';
 import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 import { TriggerEditionContainerQuery } from './__generated__/TriggerEditionContainerQuery.graphql';
-import TriggerEditionContainer, {
-  triggerEditionQuery,
-} from './TriggerEditionContainer';
 import Transition from '../../../../components/Transition';
 import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
 import { deleteNode } from '../../../../utils/store';
+import TriggerEditionContainer, {
+  triggerEditionQuery,
+} from './TriggerEditionContainer';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   drawerPaper: {
@@ -81,7 +81,7 @@ const TriggerPopover = ({
       },
       onCompleted: () => {
         setDeleting(false);
-        handleClose();
+        handleCloseDelete();
       },
     });
   };
@@ -140,6 +140,7 @@ const TriggerPopover = ({
             <TriggerEditionContainer
               queryRef={queryRef}
               handleClose={handleClose}
+              paginationOptions={paginationOptions}
             />
           </React.Suspense>
         )}
