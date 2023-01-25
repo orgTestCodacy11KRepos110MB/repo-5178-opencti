@@ -52,16 +52,7 @@ import {
   REL_INDEX_PREFIX,
   RULE_PREFIX,
 } from '../schema/general';
-import {
-  booleanAttributes,
-  dateAttributes,
-  isBooleanAttribute,
-  isModifiedObject,
-  isMultipleAttribute,
-  isRuntimeAttribute,
-  isUpdatedAtObject,
-  numericOrBooleanAttributes,
-} from '../schema/fieldDataAdapter';
+import { isModifiedObject, isUpdatedAtObject, } from '../schema/fieldDataAdapter';
 import { convertEntityTypeToStixType, getParentTypes } from '../schema/schemaUtils';
 import {
   ATTRIBUTE_ABSTRACT,
@@ -83,6 +74,7 @@ import { ENTITY_TYPE_MARKING_DEFINITION } from '../schema/stixMetaObject';
 import { getEntityFromCache } from './cache';
 import { ENTITY_TYPE_SETTINGS, ENTITY_TYPE_USER } from '../schema/internalObject';
 import { telemetry } from '../config/tracing';
+import { isBooleanAttr, isDateNumericOrBooleanAttr, isMultipleAttr, isRuntimeAttr } from '../schema/schema-register';
 
 const ELK_ENGINE = 'elk';
 export const ES_MAX_CONCURRENCY = conf.get('elasticsearch:max_concurrency');
@@ -1021,7 +1013,6 @@ const elQueryBodyBuilder = async (context, user, options) => {
   const searchAfter = after ? cursorToOffset(after) : undefined;
   let ordering = [];
   const markingRestrictions = await buildDataRestrictions(context, user);
-  const numericOrBooleanAttr = numericOrBooleanAttributes();
   const accessMust = markingRestrictions.must;
   const accessMustNot = markingRestrictions.must_not;
   const mustFilters = [];
@@ -1147,14 +1138,14 @@ const elQueryBodyBuilder = async (context, user, options) => {
           } else if (operator === 'eq') {
             valuesFiltering.push({
               multi_match: {
-                fields: validKeys.map((k) => `${(dateAttributes.includes(k) || numericOrBooleanAttr.includes(k)) ? k : `${k}.keyword`}`),
+                fields: validKeys.map((k) => `${isDateNumericOrBooleanAttr(k) ? k : `${k}.keyword`}`),
                 query: values[i].toString(),
               },
             });
           } else if (operator === 'not_eq') {
             noValuesFiltering.push({
               multi_match: {
-                fields: validKeys.map((k) => `${(dateAttributes.includes(k) || numericOrBooleanAttr.includes(k)) ? k : `${k}.keyword`}`),
+                fields: validKeys.map((k) => `${isDateNumericOrBooleanAttr(k) ? k : `${k}.keyword`}`),
                 query: values[i].toString(),
               },
             });
@@ -1227,7 +1218,7 @@ const elQueryBodyBuilder = async (context, user, options) => {
     const orderCriterion = Array.isArray(orderBy) ? orderBy : [orderBy];
     for (let index = 0; index < orderCriterion.length; index += 1) {
       const orderCriteria = orderCriterion[index];
-      const isDateOrNumber = dateAttributes.includes(orderCriteria) || numericOrBooleanAttr.includes(orderCriteria);
+      const isDateOrNumber = isDateNumericOrBooleanAttr(orderCriteria);
       const orderKeyword = isDateOrNumber || orderCriteria.startsWith('_') ? orderCriteria : `${orderCriteria}.keyword`;
       const order = { [orderKeyword]: orderMode };
       ordering = R.append(order, ordering);
@@ -1246,7 +1237,7 @@ const elQueryBodyBuilder = async (context, user, options) => {
   }
   // Build runtime mappings
   const runtimeMappings = {};
-  if (isRuntimeAttribute(orderBy)) {
+  if (isRuntimeAttr(orderBy)) {
     const runtime = RUNTIME_ATTRIBUTES[orderBy];
     if (isEmptyField(runtime)) {
       throw UnsupportedError(`[SEARCH] Unsupported runtime field ${orderBy}`);
@@ -1362,7 +1353,7 @@ export const elAggregationCount = async (context, user, indexName, options = {})
   body.aggs = {
     genres: {
       terms: {
-        field: booleanAttributes.includes(field) ? field : `${field}.keyword`,
+        field: isBooleanAttr(field) ? field : `${field}.keyword`,
         size: MAX_AGGREGATION_SIZE,
       },
       aggs: {
@@ -1604,7 +1595,7 @@ export const elLoadBy = async (context, user, field, value, type = null, indices
 export const elAttributeValues = async (context, user, field, opts = {}) => {
   const { first, orderMode = 'asc', search } = opts;
   const markingRestrictions = await buildDataRestrictions(context, user);
-  const isDateOrNumber = dateAttributes.includes(field) || numericOrBooleanAttributes().includes(field);
+  const isDateOrNumber = isDateNumericOrBooleanAttr(field);
   const must = [];
   if (isNotEmptyField(search) && search.length > 0) {
     const shouldSearch = elGenerateFullTextSearchShould(search);
@@ -1868,7 +1859,7 @@ export const prepareElementForIndexing = (element) => {
     if (Array.isArray(value)) {
       const filteredArray = value.filter((i) => i);
       thing[key] = filteredArray.length > 0 ? filteredArray : [];
-    } else if (isBooleanAttribute(key)) {
+    } else if (isBooleanAttr(key)) {
       // patch field is string generic so need to be cast to boolean
       thing[key] = typeof value === 'boolean' ? value : value?.toLowerCase() === 'true';
     } else {
@@ -2022,7 +2013,7 @@ export const elIndexElements = async (context, user, message, elements) => {
 };
 
 export const elUpdateAttributeValue = async (context, key, previousValue, value) => {
-  const isMultiple = isMultipleAttribute(key);
+  const isMultiple = isMultipleAttr(key);
   const source = !isMultiple
     ? 'ctx._source[params.key] = params.value'
     : `def index = 0;

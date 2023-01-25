@@ -17,8 +17,8 @@ import { isStixObject } from '../schema/stixCoreObject';
 import conf from '../config/conf';
 import { now, observableValue } from '../utils/format';
 import { isStixRelationship } from '../schema/stixRelationship';
-import { isDictionaryAttribute, isJsonAttribute } from '../schema/fieldDataAdapter';
 import { truncate } from '../utils/mailData';
+import { isDictionaryAttr, isJsonAttr } from '../schema/schema-register';
 
 export const ES_INDEX_PREFIX = conf.get('elasticsearch:index_prefix') || 'opencti';
 const rabbitmqPrefix = conf.get('rabbitmq:queue_prefix');
@@ -339,9 +339,9 @@ export const generateUpdateMessage = (inputs) => {
         // If update is based on internal ref, we need to extract the value
         if (metaFieldToStixAttribute()[key] || STIX_CYBER_OBSERVABLE_FIELD_TO_STIX_ATTRIBUTE[key]) {
           message = values.map((val) => truncate(extractEntityMainValue(val))).join(', ');
-        } else if (isDictionaryAttribute(key)) {
+        } else if (isDictionaryAttr(key)) {
           message = Object.entries(R.head(values)).map(([k, v]) => truncate(`${k}:${v}`)).join(', ');
-        } else if (isJsonAttribute(key)) {
+        } else if (isJsonAttr(key)) {
           message = values.map((v) => truncate(JSON.stringify(v)));
         } else {
           // If standard primitive data, just join the values

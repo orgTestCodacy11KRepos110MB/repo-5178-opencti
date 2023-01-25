@@ -1,45 +1,53 @@
-import type { StoreEntity } from './store';
+import type { StoreEntity } from '../types/store';
+import type { RelationDefinition } from '../database/stix';
 import type { ConvertFn } from '../database/stix-converter';
-import { registerStixDomainConverter, registerStixMetaConverter } from '../database/stix-converter';
-import { registerStixDomainAliased, registerStixDomainType, resolveAliasesField } from '../schema/stixDomainObject';
-import { registerGraphqlSchema } from '../graphql/schema';
-import { registerModelIdentifier } from '../schema/identifier';
+import type { AttrType } from '../types/module';
 import {
   ABSTRACT_INTERNAL_OBJECT,
-  ABSTRACT_STIX_DOMAIN_OBJECT,
-  ABSTRACT_STIX_META_OBJECT,
+  ABSTRACT_STIX_DOMAIN_OBJECT, ABSTRACT_STIX_META_OBJECT,
   DEPS_KEYS,
   ENTITY_TYPE_CONTAINER,
   schemaTypes,
   STIX_META_RELATIONSHIPS_INPUTS
-} from '../schema/general';
+} from './general';
 import {
-  booleanAttributes,
-  dateAttributes,
-  dictAttributes,
-  jsonAttributes,
-  multipleAttributes,
-  numericAttributes
-} from '../schema/fieldDataAdapter';
-import { STIX_CORE_RELATIONSHIPS } from '../schema/stixCoreRelationship';
-import {
-  CHECK_META_RELATIONSHIP_VALUES,
-  RelationDefinition,
-  stixCoreRelationshipsMapping as coreRels,
-} from '../database/stix';
+  registerStixDomainAliased,
+  registerStixDomainType,
+  resolveAliasesFieldComplex
+} from './stixDomainObject';
+import { registerStixDomainConverter, registerStixMetaConverter } from '../database/stix-converter';
 import { UnsupportedError } from '../config/errors';
+import { registerGraphqlSchema } from '../graphql/schema';
+import { registerModelIdentifier } from './identifier';
+import { confidence, iAliasedIds, lang, revoked, standardId, xOpenctiStixIds } from './entity-attributes';
+import { schemaDefinition } from './schema-register';
+import { STIX_CORE_RELATIONSHIPS } from './stixCoreRelationship';
+import { CHECK_META_RELATIONSHIP_VALUES, stixCoreRelationshipsMapping as coreRels } from '../database/stix';
 import {
-  SINGLE_STIX_META_RELATIONSHIPS,
-  SINGLE_STIX_META_RELATIONSHIPS_INPUTS,
+  SINGLE_STIX_META_RELATIONSHIPS, SINGLE_STIX_META_RELATIONSHIPS_INPUTS,
   STIX_ATTRIBUTE_TO_META_RELATIONS_FIELD,
   STIX_EXTERNAL_META_RELATIONSHIPS,
   STIX_META_RELATION_TO_FIELD
-} from '../schema/stixMetaRelationship';
-import { STIX_ATTRIBUTE_TO_META_FIELD } from '../schema/stixEmbeddedRelationship';
-import { registerInternalObject } from '../schema/internalObject';
+} from './stixMetaRelationship';
+import { STIX_ATTRIBUTE_TO_META_FIELD } from './stixEmbeddedRelationship';
+import { registerInternalObject } from './internalObject';
+import type { ValidatorFn } from './validator-register';
+import { registerEntityValidator } from './validator-register';
 
-export type AttrType = 'string' | 'date' | 'numeric' | 'boolean' | 'dictionary' | 'json' | 'runtime';
-export interface ModuleDefinition<T extends StoreEntity> {
+export type MandatoryType = 'internal' | 'external' | 'customizable' | 'no';
+
+export interface AttributeDefinition {
+  name: string
+  type: AttrType
+  mandatoryType: MandatoryType
+  multiple: boolean
+  upsert: boolean
+  label?: string
+  description?: string
+  schemaDef?: Record<string, any> // if the type is json, need-it
+}
+
+export interface ModuleRegisterDefinition<T extends StoreEntity> {
   type: {
     id: string;
     name: string;
@@ -58,12 +66,7 @@ export interface ModuleDefinition<T extends StoreEntity> {
       [f: string]: (data: object) => string
     };
   };
-  attributes: Array<{
-    name: string;
-    type: AttrType;
-    multiple: boolean;
-    upsert: boolean;
-  }>;
+  attributes: Array<AttributeDefinition>;
   relations: Array<{
     name: string;
     targets: Array<RelationDefinition>;
@@ -76,14 +79,15 @@ export interface ModuleDefinition<T extends StoreEntity> {
     checker: (fromType: string, toType: string) => boolean;
   }>;
   converter: ConvertFn<T>;
+  validators: {
+    validatorCreation?: ValidatorFn,
+    validatorUpdate?: ValidatorFn
+  }
   depsKeys?: { src: string, types?: string[] }[]
 }
 
-export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefinition<T>) => {
-  const attrsForType = (type: AttrType) => {
-    return definition.attributes.filter((attr) => attr.type === type).map((attr) => attr.name);
-  };
-    // Register types
+export const moduleRegisterDefinition = <T extends StoreEntity>(definition: ModuleRegisterDefinition<T>) => {
+  // Register types
   if (definition.type.category) {
     switch (definition.type.category) {
       case ENTITY_TYPE_CONTAINER:
@@ -110,35 +114,25 @@ export const registerDefinition = <T extends StoreEntity>(definition: ModuleDefi
   if (definition.type.aliased) {
     registerStixDomainAliased(definition.type.name);
   }
+  // Register validator
+  if (definition.validators) {
+    registerEntityValidator(definition.type.name, definition.validators);
+  }
+
   // Register graphQL schema
   registerGraphqlSchema(definition.graphql);
   // Register key identification
   registerModelIdentifier(definition.identifier);
   // Register model attributes
-  const attributes = ['standard_id'];
-  attributes.push(...definition.attributes.map((attr) => attr.name));
+  const attributes: AttributeDefinition[] = [standardId];
+  attributes.push(...definition.attributes.map((attr) => attr));
   if (definition.type.aliased) {
-    attributes.push(...[resolveAliasesField(definition.type.name), 'i_aliases_ids']);
+    attributes.push(...[resolveAliasesFieldComplex(definition.type.name), iAliasedIds]);
   }
   if (definition.type.category === ABSTRACT_STIX_DOMAIN_OBJECT) {
-    attributes.push(...['x_opencti_stix_ids', 'revoked', 'confidence', 'lang']);
+    attributes.push(...[xOpenctiStixIds, revoked, confidence, lang]);
   }
-  schemaTypes.registerAttributes(definition.type.name, attributes);
-  // Register upsert attributes
-  const upsertAttributes = definition.attributes.filter((attr) => attr.upsert).map((attr) => attr.name);
-  if (definition.type.category === ABSTRACT_STIX_DOMAIN_OBJECT) {
-    upsertAttributes.push(...['x_opencti_stix_ids', 'revoked', 'confidence']);
-  }
-  schemaTypes.registerUpsertAttributes(definition.type.name, upsertAttributes);
-
-  // Register attribute types
-  dateAttributes.push(...attrsForType('date')); // --- dateAttributes
-  numericAttributes.push(...attrsForType('numeric')); // --- numericAttributes
-  booleanAttributes.push(...attrsForType('boolean')); // --- booleanAttributes
-  dictAttributes.push(...attrsForType('dictionary')); // --- dictAttributes
-  const multipleAttrs = definition.attributes.filter((attr) => attr.multiple).map((attr) => attr.name);
-  multipleAttributes.push(...multipleAttrs); // --- multipleAttributes
-  jsonAttributes.push(...attrsForType('json')); // --- jsonAttributes
+  schemaDefinition.registerAttributes(definition.type.name, attributes);
 
   // Register dependency keys for input resolved refs
   schemaTypes.add(DEPS_KEYS, definition.depsKeys ?? []);

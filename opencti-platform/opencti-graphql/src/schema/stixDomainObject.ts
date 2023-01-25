@@ -21,6 +21,8 @@ import {
 import { RELATION_INDICATES } from './stixCoreRelationship';
 import { ENTITY_TYPE_CONTAINER_GROUPING } from '../modules/grouping/grouping-types';
 import { ENTITY_TYPE_WORK } from './internalObject';
+import { aliases, xOpenctiAliases } from './entity-attributes';
+import type { AttributeDefinition } from './module-register';
 
 export const ATTRIBUTE_NAME = 'name';
 export const ATTRIBUTE_ABSTRACT = 'abstract';
@@ -165,6 +167,15 @@ export const resolveAliasesField = (type: string): string => {
   return ATTRIBUTE_ALIASES;
 };
 
+// TODO: need to be mutualize with the simple method
+export const resolveAliasesFieldComplex = (type: string): AttributeDefinition => {
+  // eslint-disable-next-line max-len
+  if (type === ENTITY_TYPE_COURSE_OF_ACTION || type === ENTITY_TYPE_VULNERABILITY || type === ENTITY_TYPE_CONTAINER_GROUPING || isStixDomainObjectIdentity(type) || isStixDomainObjectLocation(type)) {
+    return xOpenctiAliases;
+  }
+  return aliases;
+};
+
 export const STIX_ORGANIZATIONS_UNRESTRICTED = [
   ABSTRACT_INTERNAL_OBJECT,
   ABSTRACT_STIX_META_OBJECT,
@@ -189,7 +200,7 @@ export const stixDomainObjectOptions = {
   StixDomainObjectsOrdering: {}
 };
 
-const stixDomainObjectFieldsToBeUpdated: { [k: string]: Array<string> } = {
+const stixDomainObjectFieldsToBeUpserted: { [k: string]: Array<string> } = {
   [ENTITY_TYPE_ATTACK_PATTERN]: [
     'name',
     'revoked',
@@ -284,7 +295,7 @@ const stixDomainObjectFieldsToBeUpdated: { [k: string]: Array<string> } = {
   ],
   [ENTITY_TYPE_INCIDENT]: ['name', 'revoked', 'description', 'incident_type', 'severity', 'source', 'first_seen', 'last_seen', 'objective', 'confidence', 'aliases'],
 };
-R.forEachObjIndexed((value, key) => schemaTypes.registerUpsertAttributes(key, value), stixDomainObjectFieldsToBeUpdated);
+R.forEachObjIndexed((value, key) => schemaTypes.registerUpsertAttributes(key, value), stixDomainObjectFieldsToBeUpserted);
 
 const stixDomainObjectsAttributes: { [k: string]: Array<string> } = {
   [ENTITY_TYPE_ATTACK_PATTERN]: [
