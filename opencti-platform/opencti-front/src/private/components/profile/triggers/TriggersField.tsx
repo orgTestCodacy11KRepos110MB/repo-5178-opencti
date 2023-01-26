@@ -8,9 +8,9 @@ import AutocompleteField from '../../../../components/AutocompleteField';
 import { useFormatter } from '../../../../components/i18n';
 import {
   TriggerEventType,
-  TriggersLinesSearchQuery$data,
+  TriggersQueriesSearchQuery$data,
   TriggerType,
-} from './__generated__/TriggersLinesSearchQuery.graphql';
+} from './__generated__/TriggersQueriesSearchQuery.graphql';
 import { triggersQueriesSearchQuery } from './TriggersQueries';
 import { TriggerCreationLiveMutation$data } from './__generated__/TriggerCreationLiveMutation.graphql';
 import TriggerLiveCreation from './TriggerLiveCreation';
@@ -108,7 +108,7 @@ const TriggersField: FunctionComponent<TriggersFieldProps> = ({
     })
       .toPromise()
       .then((data) => {
-        const newTriggersEdges = ((data as TriggersLinesSearchQuery$data)
+        const newTriggersEdges = ((data as TriggersQueriesSearchQuery$data)
           ?.triggers?.edges ?? []) as {
           node: {
             created: string | null;
