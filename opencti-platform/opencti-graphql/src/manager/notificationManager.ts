@@ -330,7 +330,6 @@ export const isTimeTrigger = (digest: ResolvedDigest, baseDate: Moment): boolean
     }
     case 'month': {
       // Need to check if time is aligned on the month hour (like 22-19:11:00.000Z)
-      // 1 being Monday and 7 being Sunday.
       const monthTime = `${now.clone().date()}-${now.clone().format('HH:mm:ss.SSS')}Z`;
       return triggerTime === monthTime;
     }

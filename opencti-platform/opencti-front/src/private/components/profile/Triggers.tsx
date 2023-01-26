@@ -37,27 +37,22 @@ const Triggers: FunctionComponent = () => {
       },
       name: {
         label: 'Name',
-        width: '12%',
-        isSortable: true,
-      },
-      description: {
-        label: 'Description',
         width: '15%',
         isSortable: true,
       },
       outcomes: {
         label: 'Notification',
-        width: '12%',
+        width: '20%',
         isSortable: true,
       },
       event_types: {
         label: 'Triggering on',
-        width: '15%',
+        width: '20%',
         isSortable: false,
       },
       filters: {
         label: 'Details',
-        width: '25%',
+        width: '30%',
         isSortable: false,
       },
     };

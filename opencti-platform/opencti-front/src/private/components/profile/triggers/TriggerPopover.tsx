@@ -10,11 +10,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import MoreVert from '@mui/icons-material/MoreVert';
 import makeStyles from '@mui/styles/makeStyles';
-import { graphql, useMutation } from 'react-relay';
+import { graphql, useMutation, useQueryLoader } from 'react-relay';
 import { useFormatter } from '../../../../components/i18n';
 import Loader, { LoaderVariant } from '../../../../components/Loader';
 import { Theme } from '../../../../components/Theme';
-import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 import { TriggerEditionContainerQuery } from './__generated__/TriggerEditionContainerQuery.graphql';
 import Transition from '../../../../components/Transition';
 import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
@@ -57,11 +56,9 @@ const TriggerPopover = ({
   const [displayEdit, setDisplayEdit] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [commit] = useMutation(TriggerPopoverDeletionMutation);
-  const queryRef = useQueryLoading<TriggerEditionContainerQuery>(
-    triggerEditionQuery,
-    { id },
-  );
+  const [queryRef, loadQuery] = useQueryLoader<TriggerEditionContainerQuery>(triggerEditionQuery);
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+    loadQuery({ id }, { fetchPolicy: 'store-and-network' });
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => setAnchorEl(null);

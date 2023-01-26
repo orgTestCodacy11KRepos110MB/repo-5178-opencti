@@ -21,6 +21,8 @@ import { isUniqFilter } from '../../../../utils/filters/filtersUtils';
 import { convertTriggers } from '../../../../utils/edition';
 import { TriggersLinesPaginationQuery$variables } from './__generated__/TriggersLinesPaginationQuery.graphql';
 import TriggersField from './TriggersField';
+import TimePickerField from '../../../../components/TimePickerField';
+import { dayStartDate, parse } from '../../../../utils/Time';
 
 const triggerMutationFieldPatch = graphql`
   mutation TriggerEditionOverviewFieldPatchMutation(
@@ -65,6 +67,7 @@ interface TriggerEditionFormValues {
   event_types: string[];
   outcomes: string[];
   trigger_ids: { value: string }[];
+  period: string;
 }
 
 const TriggerEditionOverview: FunctionComponent<
@@ -135,13 +138,13 @@ TriggerEditionOverviewProps
         trigger.trigger_type === 'digest'
           ? Yup.string().required(t('This field is required'))
           : Yup.string().nullable(),
-    trigger_time:
-        trigger.trigger_type === 'digest'
-          ? Yup.string().required(t('This field is required'))
-          : Yup.string().nullable(),
+    day: Yup.string().nullable(),
+    time: Yup.string().nullable(),
     trigger_ids:
         trigger.trigger_type === 'digest'
-          ? Yup.array().required(t('This field is required'))
+          ? Yup.array()
+            .min(1, t('Minimum one trigger'))
+            .required(t('This field is required'))
           : Yup.array().nullable(),
   });
   const handleSubmitField = (
@@ -173,6 +176,39 @@ TriggerEditionOverviewProps
       })
       .catch(() => false);
   };
+  const handleSubmitDay = (_: string, value: string) => {
+    const day = value && value.length > 0 ? value : '1';
+    const currentTime = trigger?.trigger_time?.split('-') ?? [
+      dayStartDate().toISOString(),
+    ];
+    const newTime = currentTime.length > 1
+      ? `${day}-${currentTime[1]}`
+      : `${day}-${currentTime[0]}`;
+    commitFieldPatch({
+      variables: {
+        id: trigger.id,
+        input: { key: 'trigger_time', value: newTime },
+      },
+    });
+  };
+  const handleSubmitTime = (_: string, value: string) => {
+    const time = value && value.length > 0
+      ? `${parse(value).format('HH:mm:ss.SSS')}Z`
+      : `${parse(dayStartDate()).format('HH:mm:ss.SSS')}Z`;
+    const currentTime = trigger?.trigger_time?.split('-') ?? [
+      dayStartDate().toISOString(),
+    ];
+    const newTime = currentTime.length > 1 ? `${currentTime[0]}-${time}` : time;
+    commitFieldPatch({
+      variables: {
+        id: trigger.id,
+        input: { key: 'trigger_time', value: newTime },
+      },
+    });
+  };
+  const currentTime = trigger?.trigger_time?.split('-') ?? [
+    dayStartDate().toISOString(),
+  ];
   const initialValues = {
     name: trigger.name,
     description: trigger.description,
@@ -180,6 +216,11 @@ TriggerEditionOverviewProps
     outcomes: trigger.outcomes,
     period: trigger.period,
     trigger_ids: convertTriggers(trigger),
+    day: currentTime.length > 1 ? currentTime[0] : '1',
+    time:
+      currentTime.length > 1
+        ? `2000-01-01T${currentTime[1]}`
+        : `2000-01-01T${currentTime[0]}`,
   };
   const eventTypesOptions: Record<string, string> = {
     create: t('Creation'),
@@ -270,12 +311,63 @@ TriggerEditionOverviewProps
               label={t('Period')}
               fullWidth={true}
               containerstyle={{ marginTop: 20, width: '100%' }}
+              onChange={handleSubmitField}
             >
               <MenuItem value="hour">{t('hour')}</MenuItem>
               <MenuItem value="day">{t('day')}</MenuItem>
               <MenuItem value="week">{t('week')}</MenuItem>
               <MenuItem value="month">{t('month')}</MenuItem>
             </Field>
+          )}
+          {trigger.trigger_type === 'digest' && values.period === 'week' && (
+            <Field
+              component={SelectField}
+              variant="standard"
+              name="day"
+              label={t('Week day')}
+              fullWidth={true}
+              containerstyle={{ marginTop: 20, width: '100%' }}
+              onChange={handleSubmitDay}
+            >
+              <MenuItem value="1">{t('Monday')}</MenuItem>
+              <MenuItem value="2">{t('Tuesday')}</MenuItem>
+              <MenuItem value="3">{t('Wednesday')}</MenuItem>
+              <MenuItem value="4">{t('Thursday')}</MenuItem>
+              <MenuItem value="5">{t('Friday')}</MenuItem>
+              <MenuItem value="6">{t('Saturday')}</MenuItem>
+              <MenuItem value="7">{t('Sunday')}</MenuItem>
+            </Field>
+          )}
+          {trigger.trigger_type === 'digest' && values.period === 'month' && (
+            <Field
+              component={SelectField}
+              variant="standard"
+              name="day"
+              label={t('Month day')}
+              fullWidth={true}
+              containerstyle={{ marginTop: 20, width: '100%' }}
+              onChange={handleSubmitDay}
+            >
+              {Array.from(Array(31).keys()).map((idx) => (
+                <MenuItem key={idx} value={(idx + 1).toString()}>
+                  {(idx + 1).toString()}
+                </MenuItem>
+              ))}
+            </Field>
+          )}
+          {trigger.trigger_type === 'digest' && values.period !== 'hour' && (
+            <Field
+              component={TimePickerField}
+              name="time"
+              withMinutes={true}
+              onSubmit={handleSubmitTime}
+              TextFieldProps={{
+                label: t('Time'),
+                variant: 'standard',
+                fullWidth: true,
+                style: { marginTop: 20 },
+              }}
+            />
           )}
           <Field
             component={SelectField}

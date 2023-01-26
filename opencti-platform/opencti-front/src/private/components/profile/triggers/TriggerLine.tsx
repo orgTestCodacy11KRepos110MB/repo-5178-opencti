@@ -64,6 +64,12 @@ const useStyles = makeStyles<Theme>((theme) => ({
     textTransform: 'uppercase',
     borderRadius: '0',
   },
+  chipInList3: {
+    fontSize: 12,
+    height: 20,
+    float: 'left',
+    marginRight: 10,
+  },
 }));
 
 interface TriggerLineProps {
@@ -89,6 +95,8 @@ const triggerLineFragment = graphql`
     created
     modified
     outcomes
+    period
+    trigger_time
     triggers {
       id
       name
@@ -151,15 +159,11 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
             </div>
             <div
               className={classes.bodyItem}
-              style={{ width: dataColumns.description.width }}
-            >
-              {data.description}
-            </div>
-            <div
-              className={classes.bodyItem}
               style={{ width: dataColumns.outcomes.width }}
             >
-              {data.outcomes.map((n) => outcomesOptions[n]).join(', ')}
+              {data.outcomes
+                .map<React.ReactNode>((n) => <code>{outcomesOptions[n]}</code>)
+                .reduce((prev, curr) => [prev, ', ', curr])}
             </div>
             <div
               className={classes.bodyItem}
@@ -186,12 +190,39 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
                   />
                 ))}
             </div>
-            <FilterIconButton
-              filters={filters}
-              dataColumns={dataColumns}
-              classNameNumber={3}
-              styleNumber={3}
-            />
+            {data.trigger_type === 'live' && (
+              <FilterIconButton
+                filters={filters}
+                dataColumns={dataColumns}
+                classNameNumber={3}
+                styleNumber={3}
+              />
+            )}
+            {data.trigger_type === 'digest' && (
+              <div
+                className={classes.bodyItem}
+                style={{ width: dataColumns.filters.width }}
+              >
+                <Chip
+                  classes={{ root: classes.chipInList3 }}
+                  label={
+                    <span>
+                      <strong>{t('Period: ')}</strong>
+                      {data.period}
+                    </span>
+                  }
+                />
+                <Chip
+                  classes={{ root: classes.chipInList3 }}
+                  label={
+                    <span>
+                      <strong>{t('Time: ')}</strong>
+                      {data.trigger_time}
+                    </span>
+                  }
+                />
+              </div>
+            )}
           </div>
         }
       />

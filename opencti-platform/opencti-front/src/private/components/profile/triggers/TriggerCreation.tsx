@@ -44,6 +44,8 @@ import {
   TriggerEventType,
 } from './__generated__/TriggerCreationLiveMutation.graphql';
 import TriggersField from './TriggersField';
+import TimePickerField from '../../../../components/TimePickerField';
+import { dayStartDate, parse } from '../../../../utils/Time';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   drawerPaper: {
@@ -139,9 +141,13 @@ const liveTriggerValidation = (t: (message: string) => string) => Yup.object().s
 const digestTriggerValidation = (t: (message: string) => string) => Yup.object().shape({
   name: Yup.string().required(t('This field is required')),
   description: Yup.string().nullable(),
-  trigger_ids: Yup.array().required(t('This field is required')),
+  trigger_ids: Yup.array()
+    .min(1, t('Minimum one trigger'))
+    .required(t('This field is required')),
   period: Yup.string().required(t('This field is required')),
   outcomes: Yup.array().nullable(),
+  day: Yup.string().nullable(),
+  time: Yup.string().nullable(),
 });
 
 interface TriggerLiveAddInput {
@@ -497,7 +503,8 @@ interface TriggerDigestAddInput {
   period: string;
   outcomes: string[];
   trigger_ids: { value: string }[];
-  trigger_time: string;
+  day: string;
+  time: string;
 }
 
 const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
@@ -515,9 +522,10 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
     name: inputValue || '',
     description: '',
     period: 'day',
-    trigger_time: '',
     trigger_ids: [],
     outcomes: [],
+    day: '1',
+    time: dayStartDate().toISOString(),
   };
   const outcomesOptions: Record<string, string> = {
     'f4ee7b33-006a-4b0d-b57d-411ad288653d': t('User interface'),
@@ -532,12 +540,21 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       resetForm,
     }: FormikHelpers<TriggerDigestAddInput>,
   ) => {
+    const time = values.time && values.time.length > 0
+      ? values.time
+      : dayStartDate().toISOString();
+    let triggerTime = `${parse(time).format('HH:mm:ss.SSS')}Z`;
+    if (values.period !== 'hour' && values.period !== 'day') {
+      const day = values.day && values.day.length > 0 ? values.day : '1';
+      triggerTime = `${day}-${triggerTime}`;
+    }
     const finalValues = {
       name: values.name,
       outcomes: values.outcomes,
       description: values.description,
       trigger_ids: values.trigger_ids.map(({ value }) => value),
       period: values.period,
+      trigger_time: triggerTime,
     };
     commitDigest({
       variables: {
@@ -609,6 +626,53 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
         <MenuItem value="week">{t('week')}</MenuItem>
         <MenuItem value="month">{t('month')}</MenuItem>
       </Field>
+      {values.period === 'week' && (
+        <Field
+          component={SelectField}
+          variant="standard"
+          name="day"
+          label={t('Week day')}
+          fullWidth={true}
+          containerstyle={{ marginTop: 20, width: '100%' }}
+        >
+          <MenuItem value="1">{t('Monday')}</MenuItem>
+          <MenuItem value="2">{t('Tuesday')}</MenuItem>
+          <MenuItem value="3">{t('Wednesday')}</MenuItem>
+          <MenuItem value="4">{t('Thursday')}</MenuItem>
+          <MenuItem value="5">{t('Friday')}</MenuItem>
+          <MenuItem value="6">{t('Saturday')}</MenuItem>
+          <MenuItem value="7">{t('Sunday')}</MenuItem>
+        </Field>
+      )}
+      {values.period === 'month' && (
+        <Field
+          component={SelectField}
+          variant="standard"
+          name="day"
+          label={t('Month day')}
+          fullWidth={true}
+          containerstyle={{ marginTop: 20, width: '100%' }}
+        >
+          {Array.from(Array(31).keys()).map((idx) => (
+            <MenuItem key={idx} value={(idx + 1).toString()}>
+              {(idx + 1).toString()}
+            </MenuItem>
+          ))}
+        </Field>
+      )}
+      {values.period !== 'hour' && (
+        <Field
+          component={TimePickerField}
+          name="time"
+          withMinutes={true}
+          TextFieldProps={{
+            label: t('Time'),
+            variant: 'standard',
+            fullWidth: true,
+            style: { marginTop: 20 },
+          }}
+        />
+      )}
       <Field
         component={SelectField}
         variant="standard"
