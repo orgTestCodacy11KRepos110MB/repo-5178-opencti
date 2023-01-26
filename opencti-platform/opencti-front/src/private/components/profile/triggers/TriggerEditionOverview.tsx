@@ -160,7 +160,7 @@ TriggerEditionOverviewProps
     .catch(() => false);
   const handleSubmitDay = (_: string, value: string) => {
     const day = value && value.length > 0 ? value : '1';
-    const currentTime = trigger?.trigger_time?.split('-') ?? [
+    const currentTime = trigger.trigger_time?.split('-') ?? [
       dayStartDate().toISOString(),
     ];
     const newTime = currentTime.length > 1
@@ -177,7 +177,7 @@ TriggerEditionOverviewProps
     const time = value && value.length > 0
       ? `${parse(value).format('HH:mm:ss.SSS')}Z`
       : `${parse(dayStartDate()).format('HH:mm:ss.SSS')}Z`;
-    const currentTime = trigger?.trigger_time?.split('-') ?? [
+    const currentTime = trigger.trigger_time?.split('-') ?? [
       dayStartDate().toISOString(),
     ];
     const newTime = currentTime.length > 1 && trigger.period !== 'hour'
