@@ -147,35 +147,17 @@ TriggerEditionOverviewProps
             .required(t('This field is required'))
           : Yup.array().nullable(),
   });
-  const handleSubmitField = (
-    name: string,
-    value: Option | string | string[],
-  ) => {
-    triggerValidation()
-      .validateAt(name, { [name]: value })
-      .then(() => {
-        commitFieldPatch({
-          variables: {
-            id: trigger.id,
-            input: { key: name, value: value || '' },
-          },
-        });
-      })
-      .catch(() => false);
-  };
-  const handleSubmitTriggers = (name: string, value: { value: string }[]) => {
-    triggerValidation()
-      .validateAt(name, { [name]: value })
-      .then(() => {
-        commitFieldPatch({
-          variables: {
-            id: trigger.id,
-            input: { key: name, value: value?.map(({ value: v }) => v) ?? '' },
-          },
-        });
-      })
-      .catch(() => false);
-  };
+  const handleSubmitTriggers = (name: string, value: { value: string }[]) => triggerValidation()
+    .validateAt(name, { [name]: value })
+    .then(() => {
+      commitFieldPatch({
+        variables: {
+          id: trigger.id,
+          input: { key: name, value: value?.map(({ value: v }) => v) ?? '' },
+        },
+      });
+    })
+    .catch(() => false);
   const handleSubmitDay = (_: string, value: string) => {
     const day = value && value.length > 0 ? value : '1';
     const currentTime = trigger?.trigger_time?.split('-') ?? [
@@ -184,7 +166,7 @@ TriggerEditionOverviewProps
     const newTime = currentTime.length > 1
       ? `${day}-${currentTime[1]}`
       : `${day}-${currentTime[0]}`;
-    commitFieldPatch({
+    return commitFieldPatch({
       variables: {
         id: trigger.id,
         input: { key: 'trigger_time', value: newTime },
@@ -198,13 +180,64 @@ TriggerEditionOverviewProps
     const currentTime = trigger?.trigger_time?.split('-') ?? [
       dayStartDate().toISOString(),
     ];
-    const newTime = currentTime.length > 1 ? `${currentTime[0]}-${time}` : time;
-    commitFieldPatch({
+    const newTime = currentTime.length > 1 && trigger.period !== 'hour'
+      ? `${currentTime[0]}-${time}`
+      : time;
+    return commitFieldPatch({
       variables: {
         id: trigger.id,
         input: { key: 'trigger_time', value: newTime },
       },
     });
+  };
+  const handleRemoveDay = () => {
+    const currentTime = trigger?.trigger_time?.split('-') ?? [
+      dayStartDate().toISOString(),
+    ];
+    const newTime = currentTime.length > 1 ? currentTime[1] : currentTime[0];
+    return commitFieldPatch({
+      variables: {
+        id: trigger.id,
+        input: { key: 'trigger_time', value: newTime },
+      },
+    });
+  };
+  const handleAddDay = () => {
+    const currentTime = trigger?.trigger_time?.split('-') ?? [
+      dayStartDate().toISOString(),
+    ];
+    const newTime = currentTime.length > 1 ? currentTime : `1-${currentTime[0]}`;
+    return commitFieldPatch({
+      variables: {
+        id: trigger.id,
+        input: { key: 'trigger_time', value: newTime },
+      },
+    });
+  };
+  const handleSubmitField = (
+    name: string,
+    value: Option | string | string[],
+  ) => {
+    return triggerValidation()
+      .validateAt(name, { [name]: value })
+      .then(() => {
+        commitFieldPatch({
+          variables: {
+            id: trigger.id,
+            input: { key: name, value: value || '' },
+          },
+          onCompleted: () => {
+            if (name === 'period') {
+              if (value === 'hour') {
+                handleRemoveDay();
+              } else {
+                handleAddDay();
+              }
+            }
+          },
+        });
+      })
+      .catch(() => false);
   };
   const currentTime = trigger?.trigger_time?.split('-') ?? [
     dayStartDate().toISOString(),

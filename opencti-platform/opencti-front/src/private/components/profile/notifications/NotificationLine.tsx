@@ -163,88 +163,94 @@ NotificationLineProps
   };
   const firstOperation = firstEvent?.operation ?? 'none';
   return (
-    <ListItem
-      classes={{ root: classes.item }}
-      divider={true}
-      button={true}
-      component={Link}
-      to={`/dashboard/id/${firstEvent?.instance_id}`}
-    >
-      <ListItemIcon
-        classes={{ root: classes.itemIcon }}
-        style={{ minWidth: 40 }}
-        onClick={(event) => (event.shiftKey
-          ? onToggleShiftEntity(index, data, event)
-          : onToggleEntity(data, event))
-        }
+    <div>
+      <ListItem
+        classes={{ root: classes.item }}
+        divider={true}
+        button={true}
+        component={Link}
+        to={`/dashboard/id/${firstEvent?.instance_id}`}
       >
-        <Checkbox
-          edge="start"
-          checked={
-            (selectAll && !(data.id in (deSelectedElements || {})))
-            || data.id in (selectedElements || {})
-          }
-          disableRipple={true}
-        />
-      </ListItemIcon>
-      <ListItemIcon classes={{ root: classes.itemIcon }}>
-        <Badge color="warning" variant="dot" invisible={data.is_read}>
-          {iconSelector(firstOperation)}
-        </Badge>
-      </ListItemIcon>
-      <ListItemText
-        primary={
-          <div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.operation.width }}
-            >
-              <Chip
-                classes={{ root: classes.chipInList2 }}
-                style={{
-                  backgroundColor: hexToRGB(colors[firstOperation], 0.08),
-                  color: colors[firstOperation],
-                  border: `1px solid ${colors[firstOperation]}`,
-                }}
-                label={eventTypes[firstEvent?.operation ?? 'none']}
-              />
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.message.width }}
-            >
-              {firstEvent?.message}
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.created.width }}
-            >
-              {fldt(data.created)}
-            </div>
-            <div
-              className={classes.bodyItem}
-              style={{ width: dataColumns.name.width }}
-            >
-              <Chip
-                classes={{ root: classes.chipInList }}
-                color={
-                  data.notification_type === 'live' ? 'warning' : 'secondary'
-                }
-                variant="outlined"
-                label={data.name}
-              />
-            </div>
-          </div>
-        }
-      />
-      {otherEvents.length > 0 && (
         <ListItemIcon
-          classes={{ root: classes.goIcon }}
-          onClick={() => setOpen(open === data.id ? '' : data.id)}
+          classes={{ root: classes.itemIcon }}
+          style={{ minWidth: 40 }}
+          onClick={(event) => (event.shiftKey
+            ? onToggleShiftEntity(index, data, event)
+            : onToggleEntity(data, event))
+          }
         >
-          {open === data.id ? <ExpandLessOutlined /> : <ExpandMoreOutlined />}
+          <Checkbox
+            edge="start"
+            checked={
+              (selectAll && !(data.id in (deSelectedElements || {})))
+              || data.id in (selectedElements || {})
+            }
+            disableRipple={true}
+          />
         </ListItemIcon>
-      )}
+        <ListItemIcon classes={{ root: classes.itemIcon }}>
+          <Badge color="warning" variant="dot" invisible={data.is_read}>
+            {iconSelector(firstOperation)}
+          </Badge>
+        </ListItemIcon>
+        <ListItemText
+          primary={
+            <div>
+              <div
+                className={classes.bodyItem}
+                style={{ width: dataColumns.operation.width }}
+              >
+                <Chip
+                  classes={{ root: classes.chipInList2 }}
+                  style={{
+                    backgroundColor: hexToRGB(colors[firstOperation], 0.08),
+                    color: colors[firstOperation],
+                    border: `1px solid ${colors[firstOperation]}`,
+                  }}
+                  label={eventTypes[firstEvent?.operation ?? 'none']}
+                />
+              </div>
+              <div
+                className={classes.bodyItem}
+                style={{ width: dataColumns.message.width }}
+              >
+                {firstEvent?.message}
+              </div>
+              <div
+                className={classes.bodyItem}
+                style={{ width: dataColumns.created.width }}
+              >
+                {fldt(data.created)}
+              </div>
+              <div
+                className={classes.bodyItem}
+                style={{ width: dataColumns.name.width }}
+              >
+                <Chip
+                  classes={{ root: classes.chipInList }}
+                  color={
+                    data.notification_type === 'live' ? 'warning' : 'secondary'
+                  }
+                  variant="outlined"
+                  label={data.name}
+                />
+              </div>
+            </div>
+          }
+        />
+        {otherEvents.length > 0 && (
+          <ListItemIcon
+            classes={{ root: classes.goIcon }}
+            onClick={(event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              setOpen(open === data.id ? '' : data.id);
+            }}
+          >
+            {open === data.id ? <ExpandLessOutlined /> : <ExpandMoreOutlined />}
+          </ListItemIcon>
+        )}
+      </ListItem>
       {otherEvents.length > 0 && (
         <Collapse in={open === data.id} timeout="auto" unmountOnExit={true}>
           <List component="div" disablePadding>
@@ -288,7 +294,7 @@ NotificationLineProps
           </List>
         </Collapse>
       )}
-    </ListItem>
+    </div>
   );
 };
 

@@ -161,9 +161,12 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
               className={classes.bodyItem}
               style={{ width: dataColumns.outcomes.width }}
             >
-              {data.outcomes
-                .map<React.ReactNode>((n) => <code>{outcomesOptions[n]}</code>)
-                .reduce((prev, curr) => [prev, ', ', curr])}
+              {data.outcomes.length > 0
+                && data.outcomes
+                  .map<React.ReactNode>((n) => (
+                    <code>{outcomesOptions[n]}</code>
+                ))
+                  .reduce((prev, curr) => [prev, ', ', curr])}
             </div>
             <div
               className={classes.bodyItem}

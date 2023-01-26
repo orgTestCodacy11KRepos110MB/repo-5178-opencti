@@ -10,7 +10,7 @@ import {
   triggerDelete,
   triggerEdit,
   triggerGet,
-  triggersFind
+  triggersFind, triggersGet
 } from './notification-domain';
 import { pubsub } from '../../database/redis';
 import { BUS_TOPICS } from '../../config/conf';
@@ -26,7 +26,7 @@ const notificationResolvers: Resolvers = {
     notifications: (_, args, context) => notificationsFind(context, context.user, args),
   },
   Trigger: {
-    triggers: (trigger, _, context) => trigger.trigger_ids && trigger.trigger_ids.map((id) => triggerGet(context, context.user, id)),
+    triggers: (trigger, _, context) => triggersGet(context, context.user, trigger.trigger_ids),
   },
   Mutation: {
     triggerFieldPatch: (_, { id, input }, context) => triggerEdit(context, context.user, id, input),

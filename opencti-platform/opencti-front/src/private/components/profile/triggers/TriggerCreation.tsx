@@ -135,7 +135,7 @@ const liveTriggerValidation = (t: (message: string) => string) => Yup.object().s
   name: Yup.string().required(t('This field is required')),
   description: Yup.string().nullable(),
   event_types: Yup.array().required(t('This field is required')),
-  outcomes: Yup.array().required(t('This field is required')),
+  outcomes: Yup.array().nullable(),
 });
 
 const digestTriggerValidation = (t: (message: string) => string) => Yup.object().shape({
@@ -145,7 +145,9 @@ const digestTriggerValidation = (t: (message: string) => string) => Yup.object()
     .min(1, t('Minimum one trigger'))
     .required(t('This field is required')),
   period: Yup.string().required(t('This field is required')),
-  outcomes: Yup.array().nullable(),
+  outcomes: Yup.array()
+    .min(1, t('Minimum one outcome'))
+    .required(t('This field is required')),
   day: Yup.string().nullable(),
   time: Yup.string().nullable(),
 });
@@ -540,10 +542,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       resetForm,
     }: FormikHelpers<TriggerDigestAddInput>,
   ) => {
-    const time = values.time && values.time.length > 0
-      ? values.time
-      : dayStartDate().toISOString();
-    let triggerTime = `${parse(time).format('HH:mm:ss.SSS')}Z`;
+    let triggerTime = `${parse(values.time).format('HH:mm:ss.SSS')}Z`;
     if (values.period !== 'hour' && values.period !== 'day') {
       const day = values.day && values.day.length > 0 ? values.day : '1';
       triggerTime = `${day}-${triggerTime}`;

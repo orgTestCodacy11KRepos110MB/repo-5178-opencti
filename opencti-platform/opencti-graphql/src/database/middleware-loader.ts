@@ -367,6 +367,7 @@ export const internalLoadById = async <T extends BasicStoreObject>(
   // TODO Remove when all Typescript
   return await elLoadById(context, user, id, type as unknown as null) as unknown as T;
 };
+
 export const storeLoadById = async <T extends BasicStoreObject>(context: AuthContext, user: AuthUser, id: string, type: string, args: Record<string, string> = {}): Promise<T> => {
   if (R.isNil(type) || R.isEmpty(type)) {
     throw FunctionalError('You need to specify a type when loading a element');

@@ -14,7 +14,11 @@ import type {
   TriggerDigestAddInput,
   TriggerLiveAddInput
 } from '../../generated/graphql';
-import { listEntitiesPaginated, storeLoadById } from '../../database/middleware-loader';
+import {
+  internalFindByIds,
+  listEntitiesPaginated,
+  storeLoadById,
+} from '../../database/middleware-loader';
 import {
   BasicStoreEntityDigestTrigger,
   BasicStoreEntityLiveTrigger,
@@ -41,8 +45,12 @@ export const addDigestTrigger = async (context: AuthContext, user: AuthUser, tri
   const created = await createEntity(context, user, digestTrigger, ENTITY_TYPE_TRIGGER);
   return notify(BUS_TOPICS[ENTITY_TYPE_TRIGGER].ADDED_TOPIC, created, user) as BasicStoreEntityDigestTrigger;
 };
-export const triggerGet = (context: AuthContext, user: AuthUser, narrativeId: string): BasicStoreEntityTrigger => {
-  return storeLoadById(context, user, narrativeId, ENTITY_TYPE_TRIGGER) as unknown as BasicStoreEntityTrigger;
+export const triggerGet = (context: AuthContext, user: AuthUser, triggerId: string): BasicStoreEntityTrigger => {
+  return storeLoadById(context, user, triggerId, ENTITY_TYPE_TRIGGER) as unknown as BasicStoreEntityTrigger;
+};
+
+export const triggersGet = (context: AuthContext, user: AuthUser, triggerIds: string[]): BasicStoreEntityTrigger[] => {
+  return internalFindByIds(context, user, triggerIds) as unknown as BasicStoreEntityTrigger[];
 };
 
 export const triggerEdit = async (context: AuthContext, user: AuthUser, triggerId: string, input: EditInput[]) => {
