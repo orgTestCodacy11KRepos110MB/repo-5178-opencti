@@ -167,7 +167,7 @@ TriggerEditionOverviewProps
         commitFieldPatch({
           variables: {
             id: trigger.id,
-            input: { key: name, value: value.map(({ value: v }) => v) || '' },
+            input: { key: name, value: value?.map(({ value: v }) => v) ?? '' },
           },
         });
       })
