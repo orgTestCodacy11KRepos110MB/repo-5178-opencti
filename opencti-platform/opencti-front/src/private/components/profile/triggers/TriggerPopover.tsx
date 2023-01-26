@@ -102,13 +102,13 @@ const TriggerPopover = ({
         <MenuItem onClick={handleOpenDelete}>{t('Delete')}</MenuItem>
       </Menu>
       <Dialog
-        open={displayDelete}
-        keepMounted={true}
-        TransitionComponent={Transition}
-        PaperProps={{ elevation: 1 }}
-        onClose={handleCloseDelete}
-      >
-        <DialogContent>
+            open={displayDelete}
+            keepMounted={true}
+            TransitionComponent={Transition}
+            PaperProps={{ elevation: 1 }}
+            onClose={handleCloseDelete}
+        >
+          <DialogContent>
           <DialogContentText>
             {t('Do you want to delete this trigger?')}
           </DialogContentText>

@@ -191,7 +191,7 @@ TriggerEditionOverviewProps
     });
   };
   const handleRemoveDay = () => {
-    const currentTime = trigger?.trigger_time?.split('-') ?? [
+    const currentTime = trigger.trigger_time?.split('-') ?? [
       dayStartDate().toISOString(),
     ];
     const newTime = currentTime.length > 1 ? currentTime[1] : currentTime[0];
@@ -203,7 +203,7 @@ TriggerEditionOverviewProps
     });
   };
   const handleAddDay = () => {
-    const currentTime = trigger?.trigger_time?.split('-') ?? [
+    const currentTime = trigger.trigger_time?.split('-') ?? [
       dayStartDate().toISOString(),
     ];
     const newTime = currentTime.length > 1 ? currentTime : `1-${currentTime[0]}`;
@@ -239,7 +239,7 @@ TriggerEditionOverviewProps
       })
       .catch(() => false);
   };
-  const currentTime = trigger?.trigger_time?.split('-') ?? [
+  const currentTime = trigger.trigger_time?.split('-') ?? [
     dayStartDate().toISOString(),
   ];
   const initialValues = {

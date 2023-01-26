@@ -4,12 +4,12 @@ import Badge from '@mui/material/Badge';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { ExpandLessOutlined, ExpandMoreOutlined } from '@mui/icons-material';
 import {
   BellPlusOutline,
   BellRemoveOutline,
   BellCogOutline,
   BellOutline,
+  FileTableBoxMultipleOutline,
 } from 'mdi-material-ui';
 import Skeleton from '@mui/material/Skeleton';
 import { graphql, useFragment } from 'react-relay';
@@ -17,10 +17,14 @@ import makeStyles from '@mui/styles/makeStyles';
 import { Theme } from '@mui/material/styles/createTheme';
 import Checkbox from '@mui/material/Checkbox';
 import { deepPurple, green, indigo, red } from '@mui/material/colors';
-import Collapse from '@mui/material/Collapse';
 import List from '@mui/material/List';
 import { ListItemButton } from '@mui/material';
 import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import { DataColumns } from '../../../../components/list_lines';
 import {
   NotificationLine_node$data,
@@ -28,6 +32,7 @@ import {
 } from './__generated__/NotificationLine_node.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import { hexToRGB } from '../../../../utils/Colors';
+import Transition from '../../../../components/Transition';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   item: {
@@ -131,12 +136,10 @@ NotificationLineProps
 }) => {
   const classes = useStyles();
   const { t, fldt } = useFormatter();
-  const [open, setOpen] = useState('');
+  const [open, setOpen] = useState(false);
   const data = useFragment(notificationLineFragment, node);
-  const allEvents = data.content.map((n) => n.events).flat();
-  const firstEvent = allEvents.at(0);
-  const otherEvents = allEvents;
-  otherEvents.shift();
+  const events = data.content.map((n) => n.events).flat();
+  const firstEvent = events.at(0);
   const eventTypes: Record<string, string> = {
     create: t('Creation'),
     update: t('Modification'),
@@ -147,7 +150,7 @@ NotificationLineProps
     create: green[500],
     update: deepPurple[500],
     delete: red[500],
-    none: indigo[500],
+    multiple: indigo[500],
   };
   const iconSelector = (operation: string) => {
     switch (operation) {
@@ -157,19 +160,28 @@ NotificationLineProps
         return <BellCogOutline style={{ color: colors[operation] }} />;
       case 'delete':
         return <BellRemoveOutline style={{ color: colors[operation] }} />;
+      case 'multiple':
+        return (
+          <FileTableBoxMultipleOutline style={{ color: colors[operation] }} />
+        );
       default:
         return <BellOutline style={{ color: colors[operation] }} />;
     }
   };
-  const firstOperation = firstEvent?.operation ?? 'none';
+  const firstOperation = events.length > 1 ? 'multiple' : firstEvent?.operation ?? 'none';
   return (
     <div>
       <ListItem
         classes={{ root: classes.item }}
         divider={true}
         button={true}
-        component={Link}
-        to={`/dashboard/id/${firstEvent?.instance_id}`}
+        component={events.length > 1 ? 'div' : Link}
+        to={
+          events.length > 1
+            ? undefined
+            : `/dashboard/id/${firstEvent?.instance_id}`
+        }
+        onClick={() => setOpen(true)}
       >
         <ListItemIcon
           classes={{ root: classes.itemIcon }}
@@ -207,14 +219,22 @@ NotificationLineProps
                     color: colors[firstOperation],
                     border: `1px solid ${colors[firstOperation]}`,
                   }}
-                  label={eventTypes[firstEvent?.operation ?? 'none']}
+                  label={
+                    events.length > 1
+                      ? t('Multiple')
+                      : eventTypes[firstEvent?.operation ?? 'none']
+                  }
                 />
               </div>
               <div
                 className={classes.bodyItem}
                 style={{ width: dataColumns.message.width }}
               >
-                {firstEvent?.message}
+                {events.length > 1 ? (
+                  <i>{t('Digest with multiple notifications')}</i>
+                ) : (
+                  firstEvent?.message
+                )}
               </div>
               <div
                 className={classes.bodyItem}
@@ -238,27 +258,23 @@ NotificationLineProps
             </div>
           }
         />
-        {otherEvents.length > 0 && (
-          <ListItemIcon
-            classes={{ root: classes.goIcon }}
-            onClick={(event) => {
-              event.stopPropagation();
-              event.preventDefault();
-              setOpen(open === data.id ? '' : data.id);
-            }}
-          >
-            {open === data.id ? <ExpandLessOutlined /> : <ExpandMoreOutlined />}
-          </ListItemIcon>
-        )}
       </ListItem>
-      {otherEvents.length > 0 && (
-        <Collapse in={open === data.id} timeout="auto" unmountOnExit={true}>
+      <Dialog
+        open={open}
+        TransitionComponent={Transition}
+        PaperProps={{ elevation: 1 }}
+        fullWidth={true}
+        maxWidth="md"
+        onClose={() => setOpen(false)}
+      >
+        <DialogTitle>{data.name}</DialogTitle>
+        <DialogContent>
           <List component="div" disablePadding>
-            {otherEvents.map((event, i) => (
+            {events.map((event, i) => (
               <ListItemButton
                 key={i}
-                sx={{ pl: 4 }}
                 component={Link}
+                divider={true}
                 to={`/dashboard/id/${event.instance_id}`}
               >
                 <ListItemIcon classes={{ root: classes.itemIcon }}>
@@ -282,7 +298,7 @@ NotificationLineProps
                       </div>
                       <div
                         className={classes.bodyItem}
-                        style={{ width: '50%' }}
+                        style={{ width: '70%' }}
                       >
                         {event.message}
                       </div>
@@ -292,8 +308,11 @@ NotificationLineProps
               </ListItemButton>
             ))}
           </List>
-        </Collapse>
-      )}
+          <DialogActions>
+            <Button onClick={() => setOpen(false)}>{t('Close')}</Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
