@@ -7610,6 +7610,10 @@ type Query {
   containersObjectsOfObject(id: String!, types: [String], filters: [ContainersFiltering], filterMode: FilterMode, search: String): StixObjectOrStixRelationshipConnection
   note(id: String): Note
   notes(first: Int, after: ID, orderBy: NotesOrdering, orderMode: OrderingMode, filters: [NotesFiltering], filterMode: FilterMode, search: String, toStix: Boolean): NoteConnection
+  notesNumber(objectId: String, endDate: DateTime): Number
+  notesTimeSeries(objectId: String, authorId: String, field: String!, operation: StatsOperation!, startDate: DateTime!, endDate: DateTime!, interval: String!): [TimeSeries]
+  notesDistribution(objectId: String, field: String!, dateAttribute: String, operation: StatsOperation!, limit: Int, order: String): [Distribution]
+  noteContainsStixObjectOrStixRelationship(id: String!, stixObjectOrStixRelationshipId: String!): Boolean
   observedData(id: String): ObservedData
   observedDatas(first: Int, after: ID, orderBy: ObservedDatasOrdering, orderMode: OrderingMode, filters: [ObservedDatasFiltering], filterMode: FilterMode, search: String, toStix: Boolean): ObservedDataConnection
   observedDatasTimeSeries(objectId: String, authorId: String, field: String!, operation: StatsOperation!, startDate: DateTime!, endDate: DateTime!, interval: String!): [TimeSeries]

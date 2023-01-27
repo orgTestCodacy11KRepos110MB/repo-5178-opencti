@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import * as R from 'ramda';
-import { interval } from 'rxjs';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
@@ -21,7 +20,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { FIVE_SECONDS, parse } from '../../../utils/Time';
+import { parse } from '../../../utils/Time';
 import { useFormatter } from '../../../components/i18n';
 import { commitMutation, MESSAGING$ } from '../../../relay/environment';
 import ItemBoolean from '../../../components/ItemBoolean';
@@ -29,8 +28,6 @@ import Transition from '../../../components/Transition';
 import { areaChartOptions } from '../../../utils/Charts';
 import { simpleNumberFormat } from '../../../utils/Number';
 import ItemNumberDifference from '../../../components/ItemNumberDifference';
-
-const interval$ = interval(FIVE_SECONDS);
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -206,7 +203,7 @@ export const rulesListQuery = graphql`
   }
 `;
 
-const RulesListComponent = ({ relay, data, keyword }) => {
+const RulesListComponent = ({ data, keyword }) => {
   const classes = useStyles();
   const { t, nsdt, md, n } = useFormatter();
   const theme = useTheme();
@@ -214,12 +211,6 @@ const RulesListComponent = ({ relay, data, keyword }) => {
   const [displayEnable, setDisplayEnable] = useState(false);
   const [selectedRule, setSelectedRule] = useState(false);
   const [processing, setProcessing] = useState(false);
-  useEffect(() => {
-    const subscription = interval$.subscribe(() => relay.refetch());
-    return () => {
-      subscription.unsubscribe();
-    };
-  });
   const handleOpenEnable = (rule) => {
     setDisplayEnable(true);
     setSelectedRule(rule);

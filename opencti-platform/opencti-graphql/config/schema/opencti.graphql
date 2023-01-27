@@ -12271,6 +12271,26 @@ type Query {
     search: String
     toStix: Boolean
   ): NoteConnection @auth(for: [KNOWLEDGE])
+  notesNumber(objectId: String, endDate: DateTime): Number @auth(for: [KNOWLEDGE, EXPLORE])
+  notesTimeSeries(
+    objectId: String
+    authorId: String
+    field: String!
+    operation: StatsOperation!
+    startDate: DateTime!
+    endDate: DateTime!
+    interval: String!
+  ): [TimeSeries] @auth(for: [KNOWLEDGE, EXPLORE])
+  notesDistribution(
+    objectId: String
+    field: String!
+    dateAttribute: String
+    operation: StatsOperation!
+    limit: Int
+    order: String
+  ): [Distribution] @auth(for: [KNOWLEDGE, EXPLORE])
+  noteContainsStixObjectOrStixRelationship(id: String!, stixObjectOrStixRelationshipId: String!): Boolean
+  @auth(for: [KNOWLEDGE])
   observedData(id: String): ObservedData @auth(for: [KNOWLEDGE])
   observedDatas(
     first: Int
