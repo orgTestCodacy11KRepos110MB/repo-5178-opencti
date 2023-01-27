@@ -15,7 +15,12 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableRow from '@mui/material/TableRow';
 import IconButton from '@mui/material/IconButton';
-import { ClearOutlined, DeleteOutlined } from '@mui/icons-material';
+import {
+  CheckCircleOutlined,
+  ClearOutlined,
+  DeleteOutlined,
+  UnpublishedOutlined,
+} from '@mui/icons-material';
 import Drawer from '@mui/material/Drawer';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -218,11 +223,11 @@ class ToolBar extends Component {
     });
   }
 
-  handleLaunchRead() {
+  handleLaunchRead(read) {
     const actions = [
       {
         type: 'REPLACE',
-        context: { field: 'is_read', type: 'ATTRIBUTE', values: ['true'] },
+        context: { field: 'is_read', type: 'ATTRIBUTE', values: [read ? 'true' : 'false'] },
       },
     ];
     this.setState({ actions }, () => {
@@ -393,11 +398,26 @@ class ToolBar extends Component {
                 disabled={
                   numberOfSelectedElements === 0 || this.state.processing
                 }
-                onClick={this.handleLaunchRead.bind(this)}
-                color="primary"
+                onClick={this.handleLaunchRead.bind(this, true)}
+                color="success"
                 size="small"
               >
-                <DeleteOutlined fontSize="small" />
+                <CheckCircleOutlined fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title={t('Mark as unread')}>
+            <span>
+              <IconButton
+                aria-label="ack"
+                disabled={
+                  numberOfSelectedElements === 0 || this.state.processing
+                }
+                onClick={this.handleLaunchRead.bind(this, false)}
+                color="warning"
+                size="small"
+              >
+                <UnpublishedOutlined fontSize="small" />
               </IconButton>
             </span>
           </Tooltip>

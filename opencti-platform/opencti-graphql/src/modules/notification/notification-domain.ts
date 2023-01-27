@@ -1,3 +1,4 @@
+import { assoc } from 'ramda';
 import type { AuthContext, AuthUser } from '../../types/user';
 import {
   createEntity,
@@ -29,6 +30,8 @@ import {
   NotificationAddInput
 } from './notification-types';
 import { now } from '../../utils/format';
+import { elCount } from '../../database/engine';
+import { READ_INDEX_INTERNAL_OBJECTS } from '../../database/utils';
 
 // Outcomes
 
@@ -64,6 +67,12 @@ export const triggersFind = (context: AuthContext, user: AuthUser, opts: QueryTr
   return listEntitiesPaginated<BasicStoreEntityTrigger>(context, user, [ENTITY_TYPE_TRIGGER], opts);
 };
 
+export const myTriggersFind = (context: AuthContext, user: AuthUser, opts: QueryTriggersArgs) => {
+  const queryFilters = [...(opts.filters || []), { key: 'user_ids', values: [user.id] }];
+  const queryArgs = { ...opts, filters: queryFilters };
+  return listEntitiesPaginated<BasicStoreEntityTrigger>(context, user, [ENTITY_TYPE_TRIGGER], queryArgs);
+};
+
 // region Notifications
 export const notificationGet = (context: AuthContext, user: AuthUser, narrativeId: string): BasicStoreEntityNotification => {
   return storeLoadById(context, user, narrativeId, ENTITY_TYPE_NOTIFICATION) as unknown as BasicStoreEntityNotification;
@@ -71,6 +80,18 @@ export const notificationGet = (context: AuthContext, user: AuthUser, narrativeI
 
 export const notificationsFind = (context: AuthContext, user: AuthUser, opts: QueryNotificationsArgs) => {
   return listEntitiesPaginated<BasicStoreEntityNotification>(context, user, [ENTITY_TYPE_NOTIFICATION], opts);
+};
+
+export const myNotificationsFind = (context: AuthContext, user: AuthUser, opts: QueryNotificationsArgs) => {
+  const queryFilters = [...(opts.filters || []), { key: 'user_id', values: [user.id] }];
+  const queryArgs = { ...opts, filters: queryFilters };
+  return listEntitiesPaginated<BasicStoreEntityNotification>(context, user, [ENTITY_TYPE_NOTIFICATION], queryArgs);
+};
+
+export const myUnreadNotificationsCount = (context: AuthContext, user: AuthUser) => {
+  const queryFilters = [{ key: 'user_id', values: [user.id] }, { key: 'is_read', values: [false] }];
+  const queryArgs = { filters: queryFilters };
+  return elCount(context, user, READ_INDEX_INTERNAL_OBJECTS, assoc('types', [ENTITY_TYPE_NOTIFICATION], queryArgs));
 };
 
 export const notificationDelete = (context: AuthContext, user: AuthUser, notificationId: string) => {

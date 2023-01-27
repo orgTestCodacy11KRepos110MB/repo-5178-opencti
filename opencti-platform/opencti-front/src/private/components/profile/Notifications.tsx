@@ -83,6 +83,7 @@ const Notifications: FunctionComponent = () => {
         keyword={searchTerm}
         filters={filters}
         iconExtension={true}
+        secondaryAction={true}
         paginationOptions={paginationOptions}
         numberOfElements={numberOfElements}
         availableFilterKeys={[

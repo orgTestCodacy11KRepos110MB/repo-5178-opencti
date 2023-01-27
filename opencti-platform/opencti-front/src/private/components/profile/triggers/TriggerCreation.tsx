@@ -228,7 +228,7 @@ const TriggerLiveCreation: FunctionComponent<TriggerCreationProps> = ({
         if (paginationOptions) {
           insertNode(
             store,
-            'Pagination_triggers',
+            'Pagination_myTriggers',
             paginationOptions,
             'triggerLiveAdd',
           );
@@ -563,7 +563,7 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       updater: (store) => {
         insertNode(
           store,
-          'Pagination_triggers',
+          'Pagination_myTriggers',
           paginationOptions,
           'triggerDigestAdd',
         );

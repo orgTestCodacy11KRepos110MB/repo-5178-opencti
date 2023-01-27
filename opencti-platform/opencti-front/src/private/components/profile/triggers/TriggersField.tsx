@@ -109,7 +109,7 @@ const TriggersField: FunctionComponent<TriggersFieldProps> = ({
       .toPromise()
       .then((data) => {
         const newTriggersEdges = ((data as TriggersQueriesSearchQuery$data)
-          ?.triggers?.edges ?? []) as {
+          ?.myTriggers?.edges ?? []) as {
           node: {
             created: string | null;
             description: string | null;

@@ -205,7 +205,7 @@ const TriggerLiveCreation: FunctionComponent<TriggerLiveCreationProps> = ({
         if (paginationOptions) {
           insertNode(
             store,
-            'Pagination_triggers',
+            'Pagination_myTriggers',
             paginationOptions,
             'triggerLiveAdd',
           );

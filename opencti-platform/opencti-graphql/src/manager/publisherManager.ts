@@ -76,6 +76,8 @@ const processNotificationEvent = async (
         user_id: user.user_id,
         content,
         created: now(),
+        created_at: now(),
+        updated_at: now(),
         is_read: false
       };
       addNotification(context, SYSTEM_USER, createNotification).then(() => {

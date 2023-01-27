@@ -78,6 +78,9 @@ type Notification implements InternalObject & BasicObject {
     parent_types: [String]!
     content: [NotificationContent!]!
     is_read: Boolean!
+    user_id: String
+    created_at: DateTime
+    updated_at: DateTime
 }
 
 # Ordering
@@ -121,6 +124,15 @@ type Query {
         filters: [TriggersFiltering!]
         filterMode: FilterMode
         search: String
+    ): TriggerConnection @auth(for: [SETTINGS_SETACCESSES])
+    myTriggers(
+        first: Int
+        after: ID
+        orderBy: TriggersOrdering
+        orderMode: OrderingMode
+        filters: [TriggersFiltering!]
+        filterMode: FilterMode
+        search: String
     ): TriggerConnection @auth
     # Notifications
     notification(id: String!): Notification @auth
@@ -132,11 +144,20 @@ type Query {
         filters: [NotificationsFiltering!]
         filterMode: FilterMode
         search: String
+    ): NotificationConnection @auth(for: [SETTINGS_SETACCESSES])
+    myNotifications(
+        first: Int
+        after: ID
+        orderBy: NotificationsOrdering
+        orderMode: OrderingMode
+        filters: [NotificationsFiltering!]
+        filterMode: FilterMode
+        search: String
     ): NotificationConnection @auth
+    myUnreadNotificationsCount: Int @auth
 }
 
 # Mutations
-
 enum DigestPeriod {
     hour
     day

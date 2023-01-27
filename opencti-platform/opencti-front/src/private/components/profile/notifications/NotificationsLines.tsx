@@ -69,14 +69,14 @@ const notificationsLinesFragment = graphql`
     filters: { type: "[NotificationsFiltering!]" }
   )
   @refetchable(queryName: "AlertsLinesRefetchQuery") {
-    notifications(
+    myNotifications(
       search: $search
       first: $count
       after: $cursor
       orderBy: $orderBy
       orderMode: $orderMode
       filters: $filters
-    ) @connection(key: "Pagination_notifications") {
+    ) @connection(key: "Pagination_myNotifications") {
       edges {
         node {
           id
@@ -110,7 +110,7 @@ const NotificationsLines: FunctionComponent<NotificationLinesProps> = ({
     linesQuery: notificationsLinesQuery,
     linesFragment: notificationsLinesFragment,
     queryRef,
-    nodePath: ['notifications', 'pageInfo', 'globalCount'],
+    nodePath: ['myNotifications', 'pageInfo', 'globalCount'],
     setNumberOfElements,
   });
 
@@ -120,8 +120,8 @@ const NotificationsLines: FunctionComponent<NotificationLinesProps> = ({
       isLoading={isLoadingMore}
       loadMore={loadMore}
       hasMore={hasMore}
-      dataList={data?.notifications?.edges ?? []}
-      globalCount={data?.notifications?.pageInfo?.globalCount ?? nbOfRowsToLoad}
+      dataList={data?.myNotifications?.edges ?? []}
+      globalCount={data?.myNotifications?.pageInfo?.globalCount ?? nbOfRowsToLoad}
       LineComponent={NotificationLineComponent}
       DummyLineComponent={NotificationLineDummy}
       dataColumns={dataColumns}

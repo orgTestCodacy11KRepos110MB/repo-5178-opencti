@@ -3,6 +3,7 @@ import type { Notification, Resolvers } from '../../generated/graphql';
 import {
   addDigestTrigger,
   addLiveTrigger,
+  myNotificationsFind,
   notificationDelete,
   notificationEditRead,
   notificationGet,
@@ -10,7 +11,10 @@ import {
   triggerDelete,
   triggerEdit,
   triggerGet,
-  triggersFind, triggersGet
+  triggersFind,
+  myTriggersFind,
+  triggersGet,
+  myUnreadNotificationsCount
 } from './notification-domain';
 import { pubsub } from '../../database/redis';
 import { BUS_TOPICS } from '../../config/conf';
@@ -21,9 +25,12 @@ const notificationResolvers: Resolvers = {
     // Triggers
     trigger: (_, { id }, context) => triggerGet(context, context.user, id),
     triggers: (_, args, context) => triggersFind(context, context.user, args),
+    myTriggers: (_, args, context) => myTriggersFind(context, context.user, args),
     // Notifications
     notification: (_, { id }, context) => notificationGet(context, context.user, id),
     notifications: (_, args, context) => notificationsFind(context, context.user, args),
+    myNotifications: (_, args, context) => myNotificationsFind(context, context.user, args),
+    myUnreadNotificationsCount: (_, __, context) => myUnreadNotificationsCount(context, context.user),
   },
   Trigger: {
     triggers: (trigger, _, context) => triggersGet(context, context.user, trigger.trigger_ids),

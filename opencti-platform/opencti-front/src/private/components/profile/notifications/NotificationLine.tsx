@@ -11,8 +11,13 @@ import {
   BellOutline,
   FileTableBoxMultipleOutline,
 } from 'mdi-material-ui';
+import {
+  CheckCircleOutlined,
+  UnpublishedOutlined,
+  DeleteOutlined,
+} from '@mui/icons-material';
 import Skeleton from '@mui/material/Skeleton';
-import { graphql, useFragment } from 'react-relay';
+import { graphql, useFragment, useMutation } from 'react-relay';
 import makeStyles from '@mui/styles/makeStyles';
 import { Theme } from '@mui/material/styles/createTheme';
 import Checkbox from '@mui/material/Checkbox';
@@ -25,6 +30,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
+import IconButton from '@mui/material/IconButton';
 import { DataColumns } from '../../../../components/list_lines';
 import {
   NotificationLine_node$data,
@@ -33,6 +40,8 @@ import {
 import { useFormatter } from '../../../../components/i18n';
 import { hexToRGB } from '../../../../utils/Colors';
 import Transition from '../../../../components/Transition';
+import { deleteNode } from '../../../../utils/store';
+import { NotificationsLinesPaginationQuery$variables } from './__generated__/NotificationsLinesPaginationQuery.graphql';
 
 const useStyles = makeStyles<Theme>((theme) => ({
   item: {
@@ -80,9 +89,27 @@ const useStyles = makeStyles<Theme>((theme) => ({
   },
 }));
 
+const notificationLineNotificationMarkReadMutation = graphql`
+  mutation NotificationLineNotificationMarkReadMutation(
+    $id: ID!
+    $read: Boolean!
+  ) {
+    notificationMarkRead(id: $id, read: $read) {
+      ...NotificationLine_node
+    }
+  }
+`;
+
+const notificationLineNotificationDeleteMutation = graphql`
+  mutation NotificationLineNotificationDeleteMutation($id: ID!) {
+    notificationDelete(id: $id)
+  }
+`;
+
 interface NotificationLineProps {
   node: NotificationLine_node$key;
   dataColumns: DataColumns;
+  paginationOptions?: NotificationsLinesPaginationQuery$variables;
   onLabelClick: (
     k: string,
     id: string,
@@ -107,6 +134,7 @@ interface NotificationLineProps {
 const notificationLineFragment = graphql`
   fragment NotificationLine_node on Notification {
     id
+    entity_type
     name
     created
     notification_type
@@ -133,13 +161,52 @@ NotificationLineProps
   selectAll,
   onToggleShiftEntity,
   index,
+  paginationOptions,
 }) => {
   const classes = useStyles();
   const { t, fldt } = useFormatter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
+  const [updating, setUpdating] = useState<boolean>(false);
   const data = useFragment(notificationLineFragment, node);
   const events = data.content.map((n) => n.events).flat();
   const firstEvent = events.at(0);
+  const [commitMarkRead] = useMutation(
+    notificationLineNotificationMarkReadMutation,
+  );
+  const [commitDelete] = useMutation(
+    notificationLineNotificationDeleteMutation,
+  );
+  const handleRead = (read: boolean) => {
+    setUpdating(true);
+    return commitMarkRead({
+      variables: {
+        id: data.id,
+        read,
+      },
+      onCompleted: () => {
+        setUpdating(false);
+      },
+    });
+  };
+  const handleDelete = () => {
+    setUpdating(true);
+    return commitDelete({
+      variables: {
+        id: data.id,
+      },
+      updater: (store) => {
+        deleteNode(
+          store,
+          'Pagination_myNotifications',
+          paginationOptions,
+          data.id,
+        );
+      },
+      onCompleted: () => {
+        setUpdating(false);
+      },
+    });
+  };
   const eventTypes: Record<string, string> = {
     create: t('Creation'),
     update: t('Modification'),
@@ -258,6 +325,24 @@ NotificationLineProps
             </div>
           }
         />
+        <ListItemSecondaryAction>
+          <IconButton
+            disabled={updating}
+            onClick={() => handleRead(!data.is_read)}
+            size="large"
+            color={data.is_read ? 'warning' : 'success'}
+          >
+            {data.is_read ? <UnpublishedOutlined /> : <CheckCircleOutlined />}
+          </IconButton>
+          <IconButton
+            disabled={updating}
+            onClick={() => handleDelete()}
+            size="large"
+            color="primary"
+          >
+            <DeleteOutlined />
+          </IconButton>
+        </ListItemSecondaryAction>
       </ListItem>
       <Dialog
         open={open}
