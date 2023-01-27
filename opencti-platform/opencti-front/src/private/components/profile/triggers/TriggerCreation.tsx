@@ -542,7 +542,8 @@ const TriggerDigestCreation: FunctionComponent<TriggerCreationProps> = ({
       resetForm,
     }: FormikHelpers<TriggerDigestAddInput>,
   ) => {
-    let triggerTime = `${parse(values.time).format('HH:mm:ss.SSS')}Z`;
+    // Important to translate to UTC before formatting
+    let triggerTime = `${parse(values.time).utc().format('HH:mm:00.000')}Z`;
     if (values.period !== 'hour' && values.period !== 'day') {
       const day = values.day && values.day.length > 0 ? values.day : '1';
       triggerTime = `${day}-${triggerTime}`;

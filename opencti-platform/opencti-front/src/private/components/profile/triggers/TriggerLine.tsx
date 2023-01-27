@@ -215,15 +215,17 @@ export const TriggerLineComponent: FunctionComponent<TriggerLineProps> = ({
                     </span>
                   }
                 />
-                <Chip
-                  classes={{ root: classes.chipInList3 }}
-                  label={
-                    <span>
-                      <strong>{t('Time: ')}</strong>
-                      {data.trigger_time}
-                    </span>
-                  }
-                />
+                {data.trigger_time && data.trigger_time.length > 0 && (
+                  <Chip
+                    classes={{ root: classes.chipInList3 }}
+                    label={
+                      <span>
+                        <strong>{t('Time: ')}</strong>
+                        {data.trigger_time}
+                      </span>
+                    }
+                  />
+                )}
               </div>
             )}
           </div>

@@ -161,7 +161,7 @@ TriggerEditionOverviewProps
   const handleSubmitDay = (_: string, value: string) => {
     const day = value && value.length > 0 ? value : '1';
     const currentTime = trigger.trigger_time?.split('-') ?? [
-      dayStartDate().toISOString(),
+      `${parse(dayStartDate()).utc().format('HH:mm:00.000')}Z`,
     ];
     const newTime = currentTime.length > 1
       ? `${day}-${currentTime[1]}`
@@ -175,10 +175,10 @@ TriggerEditionOverviewProps
   };
   const handleSubmitTime = (_: string, value: string) => {
     const time = value && value.length > 0
-      ? `${parse(value).format('HH:mm:ss.SSS')}Z`
-      : `${parse(dayStartDate()).format('HH:mm:ss.SSS')}Z`;
+      ? `${parse(value).utc().format('HH:mm:00.000')}Z`
+      : `${parse(dayStartDate()).utc().format('HH:mm:00.000')}Z`;
     const currentTime = trigger.trigger_time?.split('-') ?? [
-      dayStartDate().toISOString(),
+      `${parse(dayStartDate()).utc().format('HH:mm:00.000')}Z`,
     ];
     const newTime = currentTime.length > 1 && trigger.period !== 'hour'
       ? `${currentTime[0]}-${time}`
@@ -190,9 +190,17 @@ TriggerEditionOverviewProps
       },
     });
   };
+  const handleClearTime = () => {
+    return commitFieldPatch({
+      variables: {
+        id: trigger.id,
+        input: { key: 'trigger_time', value: '' },
+      },
+    });
+  };
   const handleRemoveDay = () => {
     const currentTime = trigger.trigger_time?.split('-') ?? [
-      dayStartDate().toISOString(),
+      `${parse(dayStartDate()).utc().format('HH:mm:00.000')}Z`,
     ];
     const newTime = currentTime.length > 1 ? currentTime[1] : currentTime[0];
     return commitFieldPatch({
@@ -204,9 +212,9 @@ TriggerEditionOverviewProps
   };
   const handleAddDay = () => {
     const currentTime = trigger.trigger_time?.split('-') ?? [
-      dayStartDate().toISOString(),
+      `${parse(dayStartDate()).utc().format('HH:mm:00.000')}Z`,
     ];
-    const newTime = currentTime.length > 1 ? currentTime : `1-${currentTime[0]}`;
+    const newTime = currentTime.length > 1 ? currentTime.join('-') : `1-${currentTime[0]}`;
     return commitFieldPatch({
       variables: {
         id: trigger.id,
@@ -229,6 +237,8 @@ TriggerEditionOverviewProps
           onCompleted: () => {
             if (name === 'period') {
               if (value === 'hour') {
+                handleClearTime();
+              } else if (value === 'day') {
                 handleRemoveDay();
               } else {
                 handleAddDay();
