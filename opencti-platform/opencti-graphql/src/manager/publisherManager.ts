@@ -64,7 +64,7 @@ const processNotificationEvent = async (
     }
     const content = Object.entries(generatedContent).map(([k, v]) => ({ title: k, events: v }));
     // region data generation
-    const background_color = (settings.platform_theme_dark_background ?? '#507bc8').substring(1);
+    const background_color = (settings.platform_theme_dark_background ?? '#0a1929').substring(1);
     const platformOpts = { doc_uri: DOC_URI, platform_uri: getBaseUrl(), background_color };
     const title = `New ${trigger_type} notification for ${notification.name}`;
     const templateData = { title, content, notification, settings, user, data, ...platformOpts };
