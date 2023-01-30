@@ -9,6 +9,33 @@ export interface AttributeConfiguration {
   mandatory: boolean;
 }
 
+export interface ConfidenceScale {
+  localDefault: Array<LocalDefault>;
+}
+
+export interface LocalDefault {
+  better_side: string;
+  min: RangeValue;
+  max: RangeValue;
+  ticks: Array<Tick>
+}
+
+export interface RangeValue {
+  value: number;
+  color: string;
+  label: string;
+  reject: {
+    color: string;
+    message: string;
+  }
+}
+
+export interface Tick {
+  value: number;
+  color: string;
+  label: string;
+}
+
 export interface BasicStoreEntityEntitySetting extends BasicStoreEntity {
   confidence_scale: string;
   target_type: string;

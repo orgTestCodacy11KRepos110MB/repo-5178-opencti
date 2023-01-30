@@ -24,10 +24,8 @@ import { ENTITY_TYPE_CONTAINER_GROUPING } from '../grouping/grouping-types';
 import { ENTITY_TYPE_CONTAINER_CASE } from '../case/case-types';
 import { ENTITY_TYPE_CHANNEL } from '../channel/channel-types';
 import { getParentTypes } from '../../schema/schemaUtils';
-import { UnsupportedError } from '../../config/errors';
-import { ENTITY_TYPE_DATA_COMPONENT, isStixDomainObject } from '../../schema/stixDomainObject';
 import { UnsupportedError, ValidationError } from '../../config/errors';
-import type { AttributeConfiguration, BasicStoreEntityEntitySetting } from './entitySetting-types';
+import type { AttributeConfiguration, BasicStoreEntityEntitySetting, ConfidenceScale } from './entitySetting-types';
 import { ENTITY_TYPE_ENTITY_SETTING } from './entitySetting-types';
 import { getEntitiesFromCache } from '../../database/cache';
 import { SYSTEM_USER } from '../../utils/access';
@@ -36,11 +34,11 @@ import { isStixCoreRelationship } from '../../schema/stixCoreRelationship';
 import { isStixCyberObservable } from '../../schema/stixCyberObservable';
 import { schemaDefinition } from '../../schema/schema-register';
 
-export const defaultEntitySetting: Record<string, boolean | object> = {
+export const defaultEntitySetting: Record<string, boolean | string> = {
   platform_entity_files_ref: false,
   platform_hidden_type: false,
   enforce_reference: false,
-  confidence_scale: {
+  confidence_scale: JSON.stringify({
     localDefault: [
       {
         better_side: 'min',
@@ -69,7 +67,7 @@ export const defaultEntitySetting: Record<string, boolean | object> = {
         ],
       }
     ]
-  }
+  })
 };
 
 export const availableSettings: Record<string, Array<string>> = {
@@ -174,6 +172,8 @@ const customizableAttributesValidation = (entitySetting: BasicStoreEntityEntityS
   }
 };
 
+// ADD CONFIDENCE SCALE VALIDATION
+
 export const validateEntitySettingCreation = async (context: AuthContext, user: AuthUser, input: Record<string, unknown>) => {
   const entitySetting = (input as unknown as BasicStoreEntityEntitySetting);
 
@@ -206,3 +206,66 @@ export const attributeConfiguration: JSONSchemaType<AttributeConfiguration[]> = 
     required: ['name', 'mandatory']
   },
 };
+
+export const confidenceScale: JSONSchemaType<ConfidenceScale> = {
+  type: 'object',
+  properties: {
+    localDefault: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          better_side: { type: 'string' },
+          min: {
+            type: 'object',
+            properties: {
+              value: { type: 'number' },
+              color: { type: 'string' },
+              label: { type: 'string' },
+              reject: {
+                type: 'object',
+                properties: {
+                  color: { type: 'string' },
+                  message: { type: 'string' },
+                },
+                required: ['color', 'message'],
+              }
+            },
+            required: ['value', 'color', 'label'],
+          },
+          max: {
+            type: 'object',
+              properties: {
+              value: { type: 'number' },
+              color: { type: 'string' },
+              label: { type: 'string' },
+              reject: {
+                type: 'object',
+                  properties: {
+                  color: { type: 'string' },
+                  message: { type: 'string' },
+                },
+                required: ['color', 'message'],
+              }
+            },
+            required: ['value', 'color', 'label'],
+          },
+          ticks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                value: { type: 'number' },
+                color: { type: 'string' },
+                label: { type: 'string' },
+              },
+              required: ['value', 'color', 'label'],
+            }
+          },
+        },
+        required: ['better_side', 'min', 'max'],
+      },
+    },
+  },
+  required: ['localDefault'],
+}

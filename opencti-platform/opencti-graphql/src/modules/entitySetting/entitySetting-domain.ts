@@ -57,7 +57,7 @@ export const initCreateEntitySettings = async (context: AuthContext) => {
         target_type: entityType,
       };
       availableSettings.forEach((key) => {
-        if (defaultEntitySetting[key]) {
+        if (defaultEntitySetting[key] !== undefined) {
           entitySetting[key] = defaultEntitySetting[key];
         }
       });

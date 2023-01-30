@@ -9587,10 +9587,6 @@ type EntitySetting implements InternalObject & BasicObject {
   updated_at: DateTime!
 }
 
-type AttributeConfiguration {
-  name: String
-}
-
 enum EntitySettingsOrdering {
   target_type
 }

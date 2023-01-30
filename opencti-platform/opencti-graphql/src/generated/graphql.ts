@@ -857,11 +857,6 @@ export type Attribute = {
   value: Scalars['String'];
 };
 
-export type AttributeConfiguration = {
-  __typename?: 'AttributeConfiguration';
-  name?: Maybe<Scalars['String']>;
-};
-
 export type AttributeConnection = {
   __typename?: 'AttributeConnection';
   edges?: Maybe<Array<Maybe<AttributeEdge>>>;
@@ -5354,8 +5349,8 @@ export type EmailMimePartTypeAddInput = {
 
 export type EntitySetting = BasicObject & InternalObject & {
   __typename?: 'EntitySetting';
-  confidence_scale?: Maybe<Scalars['String']>;
   attributes_configuration?: Maybe<Scalars['String']>;
+  confidence_scale?: Maybe<Scalars['String']>;
   created_at: Scalars['DateTime'];
   enforce_reference?: Maybe<Scalars['Boolean']>;
   entity_type: Scalars['String'];
@@ -24116,7 +24111,6 @@ export type ResolversTypes = ResolversObject<{
   AttackPatternsFiltering: AttackPatternsFiltering;
   AttackPatternsOrdering: AttackPatternsOrdering;
   Attribute: ResolverTypeWrapper<Attribute>;
-  AttributeConfiguration: ResolverTypeWrapper<AttributeConfiguration>;
   AttributeConnection: ResolverTypeWrapper<AttributeConnection>;
   AttributeEdge: ResolverTypeWrapper<AttributeEdge>;
   AttributeEditMutations: ResolverTypeWrapper<AttributeEditMutations>;
@@ -24800,7 +24794,6 @@ export type ResolversParentTypes = ResolversObject<{
   AttackPatternEditMutations: Omit<AttackPatternEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'relationDelete'> & { contextClean?: Maybe<ResolversParentTypes['AttackPattern']>, contextPatch?: Maybe<ResolversParentTypes['AttackPattern']>, fieldPatch?: Maybe<ResolversParentTypes['AttackPattern']>, relationDelete?: Maybe<ResolversParentTypes['AttackPattern']> };
   AttackPatternsFiltering: AttackPatternsFiltering;
   Attribute: Attribute;
-  AttributeConfiguration: AttributeConfiguration;
   AttributeConnection: AttributeConnection;
   AttributeEdge: AttributeEdge;
   AttributeEditMutations: AttributeEditMutations;
@@ -25612,11 +25605,6 @@ export type AttributeResolvers<ContextType = any, ParentType extends ResolversPa
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type AttributeConfigurationResolvers<ContextType = any, ParentType extends ResolversParentTypes['AttributeConfiguration'] = ResolversParentTypes['AttributeConfiguration']> = ResolversObject<{
-  name?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -26823,8 +26811,8 @@ export type EmailMimePartTypeResolvers<ContextType = any, ParentType extends Res
 }>;
 
 export type EntitySettingResolvers<ContextType = any, ParentType extends ResolversParentTypes['EntitySetting'] = ResolversParentTypes['EntitySetting']> = ResolversObject<{
-  confidence_scale?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   attributes_configuration?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  confidence_scale?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   enforce_reference?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   entity_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -31767,7 +31755,6 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AttackPatternEdge?: AttackPatternEdgeResolvers<ContextType>;
   AttackPatternEditMutations?: AttackPatternEditMutationsResolvers<ContextType>;
   Attribute?: AttributeResolvers<ContextType>;
-  AttributeConfiguration?: AttributeConfigurationResolvers<ContextType>;
   AttributeConnection?: AttributeConnectionResolvers<ContextType>;
   AttributeEdge?: AttributeEdgeResolvers<ContextType>;
   AttributeEditMutations?: AttributeEditMutationsResolvers<ContextType>;
