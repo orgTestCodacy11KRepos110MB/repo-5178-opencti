@@ -91,7 +91,7 @@ export const myNotificationsFind = (context: AuthContext, user: AuthUser, opts: 
 export const myUnreadNotificationsCount = (context: AuthContext, user: AuthUser) => {
   const queryFilters = [{ key: 'user_id', values: [user.id] }, { key: 'is_read', values: [false] }];
   const queryArgs = { filters: queryFilters };
-  return elCount(context, user, READ_INDEX_INTERNAL_OBJECTS, assoc('types', [ENTITY_TYPE_NOTIFICATION], queryArgs));
+  return elCount(context, user, READ_INDEX_INTERNAL_OBJECTS, { ...queryArgs, types: [ENTITY_TYPE_NOTIFICATION] });
 };
 
 export const notificationDelete = (context: AuthContext, user: AuthUser, notificationId: string) => {

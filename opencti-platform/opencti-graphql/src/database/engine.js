@@ -233,7 +233,7 @@ export const elRawSearch = (context, user, types, query) => {
         // Result must be always accurate to prevent data duplication and unwanted behaviors
         // If any shard fail during query, engine throw a lock exception with shards information
         throw EngineShardsError({ shards: parsedSearch._shards });
-      } else {
+      } else if (failures.length > 0) {
         // At least log the situation
         const message = `[SEARCH] Search meet ${failures.length} shards failure, please check your configuration`;
         logApp.error(message, { shards: parsedSearch._shards });
