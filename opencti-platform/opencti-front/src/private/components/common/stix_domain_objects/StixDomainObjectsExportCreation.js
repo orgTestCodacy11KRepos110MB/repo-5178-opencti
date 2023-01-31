@@ -99,8 +99,8 @@ const exportValidation = (t) => Yup.object().shape({
 });
 
 export const scopesConn = (exportConnectors) => {
-  const scopes = uniq(flatten(map((c) => c.connector_scope, exportConnectors)));
-  const connectors = map((s) => {
+  const scopes = uniq(flatten(exportConnectors.map((c) => c.connector_scope)));
+  const connectors = scopes.map((s) => {
     const filteredConnectors = filter(
       (e) => includes(s, e.connector_scope),
       exportConnectors,
@@ -109,7 +109,7 @@ export const scopesConn = (exportConnectors) => {
       (x) => ({ data: { name: x.name, active: x.active } }),
       filteredConnectors,
     );
-  }, scopes);
+  });
   const zipped = zip(scopes, connectors);
   return fromPairs(zipped);
 };
@@ -129,10 +129,12 @@ class StixDomainObjectsExportCreationComponent extends Component {
   }
 
   onSubmit(selectedIds, values, { setSubmitting, resetForm }) {
-    const { paginationOptions, context } = this.props;
+    const { paginationOptions, context, elementId } = this.props;
+    console.log('paginationOptions', paginationOptions);
     const maxMarkingDefinition = values.maxMarkingDefinition === 'none'
       ? null
       : values.maxMarkingDefinition;
+    console.log('entityType', this.props.exportEntityType);
     commitMutation({
       mutation: StixDomainObjectsExportCreationMutation,
       variables: {
@@ -142,6 +144,7 @@ class StixDomainObjectsExportCreationComponent extends Component {
         maxMarkingDefinition,
         context,
         ...paginationOptions,
+        elementId,
         selectedIds,
       },
       onCompleted: () => {
@@ -310,6 +313,7 @@ StixDomainObjectsExportCreations.propTypes = {
   data: PropTypes.object,
   exportEntityType: PropTypes.string.isRequired,
   paginationOptions: PropTypes.object,
+  elementId: PropTypes.string,
   context: PropTypes.string,
   onExportAsk: PropTypes.func,
 };
