@@ -65,7 +65,7 @@ const buildResolutionMap = async (context) => {
 
 export const convertFiltersFrontendFormat = async (context, filters) => {
   // Grab all values that are internal_id that needs to be converted to standard_ids
-  const resolvedMap = await buildResolutionMap(context, filters);
+  const resolvedMap = await buildResolutionMap(context);
   // Remap the format of specific keys
   const adaptedFilters = [];
   const filterEntries = Object.entries(filters);
