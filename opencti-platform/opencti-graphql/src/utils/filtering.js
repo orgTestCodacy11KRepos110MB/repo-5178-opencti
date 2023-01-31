@@ -6,11 +6,12 @@ import {
   RELATION_OBJECT_MARKING,
 } from '../schema/stixMetaRelationship';
 import { RELATION_INDICATES } from '../schema/stixCoreRelationship';
-import { internalFindByIds } from '../database/middleware-loader';
 import { isUserCanAccessStixElement, SYSTEM_USER } from './access';
 import { STIX_EXT_OCTI } from '../types/stix-extensions';
 import { getParentTypes } from '../schema/schemaUtils';
 import { STIX_TYPE_RELATION, STIX_TYPE_SIGHTING } from '../database/stix';
+import { getEntitiesFromCache } from '../database/cache';
+import { ENTITY_TYPE_RESOLVED_FILTERS } from '../schema/stixDomainObject';
 
 // Resolutions
 export const MARKING_FILTER = 'markedBy';
@@ -49,21 +50,35 @@ export const GlobalFilters = {
   creator: 'creator_id',
 };
 
+export const extractFilterIdsToResolve = (filters) => {
+  const filterEntries = Object.entries(filters);
+  return filterEntries.filter(([key]) => RESOLUTION_FILTERS.includes(key))
+    .map(([, values]) => values.map((v) => v.id)).flat();
+};
+
+const buildResolutionMap = async (context) => {
+  const resolvedMap = new Map();
+  const platformFilters = await getEntitiesFromCache(context, SYSTEM_USER, ENTITY_TYPE_RESOLVED_FILTERS);
+  platformFilters.forEach((element) => resolvedMap.set(element.internal_id, element.standard_id));
+  return resolvedMap;
+};
+
 export const convertFiltersFrontendFormat = async (context, filters) => {
+  // Grab all values that are internal_id that needs to be converted to standard_ids
+  const resolvedMap = await buildResolutionMap(context, filters);
+  // Remap the format of specific keys
   const adaptedFilters = [];
   const filterEntries = Object.entries(filters);
-  // Grab all values that are internal_id that needs to be converted to standard_ids
-  const resolvedMap = new Map();
-  const internalIdsToResolve = filterEntries.filter(([key]) => RESOLUTION_FILTERS.includes(key))
-    .map(([, values]) => values.map((v) => v.id)).flat();
-  if (internalIdsToResolve.length > 0) {
-    // TODO @JRI Think about caching of filters ids
-    const resolvedElements = (await internalFindByIds(context, SYSTEM_USER, internalIdsToResolve)) ?? [];
-    resolvedElements.forEach((element) => resolvedMap.set(element.id, element.standard_id));
-  }
-  // Remap the format of specific keys
   for (let index = 0; index < filterEntries.length; index += 1) {
-    const [key, values] = filterEntries[index];
+    const [key, rawValues] = filterEntries[index];
+    const values = [];
+    for (let vIndex = 0; vIndex < rawValues.length; vIndex += 1) {
+      const v = rawValues[vIndex];
+      values.push(v);
+      if (resolvedMap.has(v.id)) {
+        values.push({ id: resolvedMap.get(v.id), value: v.value });
+      }
+    }
     if (key.endsWith('start_date') || key.endsWith('_gt')) {
       const workingKey = key.replace('_start_date', '').replace('_gt', '');
       adaptedFilters.push({ key: workingKey, operator: 'gt', values });
@@ -76,9 +91,6 @@ export const convertFiltersFrontendFormat = async (context, filters) => {
     } else if (key.endsWith('_not_eq')) {
       const workingKey = key.replace('_not_eq', '');
       adaptedFilters.push({ key: workingKey, operator: 'not_eq', values, filterMode: 'and' });
-    } else if (RESOLUTION_FILTERS.includes(key)) {
-      const mappedValues = values.map((v) => [v, { id: resolvedMap.get(v.id), value: v.value }]).flat();
-      adaptedFilters.push({ key, operator: 'eq', values: mappedValues });
     } else {
       adaptedFilters.push({ key, operator: 'eq', values, filterMode: 'or' });
     }
@@ -111,7 +123,6 @@ export const convertFiltersToQueryOptions = async (context, filters, opts = {}) 
   return { types, orderMode, orderBy: [field, 'internal_id'], filters: queryFilters };
 };
 
-// TODO Add filtering testing JRI
 export const isStixMatchFilters = async (context, user, stix, filters) => {
   // We can start checking the user can access the stix (marking + segregation).
   const isUserHasAccessToElement = await isUserCanAccessStixElement(context, user, stix);

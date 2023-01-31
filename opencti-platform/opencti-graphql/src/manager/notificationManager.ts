@@ -1,6 +1,5 @@
 import * as R from 'ramda';
 import * as jsonpatch from 'fast-json-patch';
-import { Promise as Bluebird } from 'bluebird';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import type { Moment } from 'moment';
 import {
@@ -15,13 +14,8 @@ import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import type { DataEvent, SseEvent, StreamNotifEvent, UpdateEvent } from '../types/event';
 import type { AuthContext, AuthUser } from '../types/user';
-import type { BasicStoreRelation } from '../types/store';
-import { listAllEntities, listAllRelations } from '../database/middleware-loader';
-import { RELATION_MEMBER_OF } from '../schema/internalRelationship';
-import { ES_MAX_CONCURRENCY } from '../database/engine';
-import { resolveUserById } from '../domain/user';
 import { utcDate } from '../utils/format';
-import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE, isNotEmptyField } from '../database/utils';
+import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE } from '../database/utils';
 import type { StixCoreObject } from '../types/stix-common';
 import {
   BasicStoreEntityDigestTrigger,
@@ -30,21 +24,13 @@ import {
   ENTITY_TYPE_TRIGGER
 } from '../modules/notification/notification-types';
 import { isStixMatchFilters } from '../utils/filtering';
+import { getEntitiesFromCache } from '../database/cache';
+import { ENTITY_TYPE_USER } from '../schema/internalObject';
 
-const EVENT_NOTIFICATION_VERSION = '1';
 const NOTIFICATION_ENGINE_KEY = conf.get('notification_manager:lock_key');
+const EVENT_NOTIFICATION_VERSION = '1';
 const CRON_SCHEDULE_TIME = 60000; // 1 minute
 const STREAM_SCHEDULE_TIME = 10000;
-
-// TODO Make it work with inference engine
-/*
-Subscribe to reports (or any container) about a specific identity, location or threat (object_ref)
-Subscribe to new victims (Identity or Location) of a specific threat (targets)
-Subscribe to new indicators of a specific threat (indicates)
-Subscribe to new threats targeting a specific identity or location (targets)
-Subscribe to new sighting sighted-in a specific entity (sightings in France, IMPORTANT)
-Subscribe to new malware used by a threat (uses)
- */
 
 interface ResolvedTrigger {
   users: Array<AuthUser>
@@ -200,107 +186,22 @@ export const STATIC_OUTCOMES: Array<NotificationOutcome> = [
      </html>
       `
     }
-  },
-  {
-    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654f',
-    built_in: false,
-    name: 'Teams webhook',
-    outcome_type: 'WEBHOOK',
-    description: 'Publish notification to Filigran teams',
-    schema: {
-      uri: 'string',
-      template: 'textarea'
-    },
-    configuration: {
-      uri: 'https://filigranio.webhook.office.com/xxxx',
-      template: `{
-        "@context": "https://schema.org/extensions",
-        "@type": "MessageCard",
-        "summary": "Summary",
-        "themeColor": "<%=background_color%>",
-        "title": "<%=title%>",
-        "sections": [
-          <% content.forEach((line)=> { %>
-              {"text": "<strong><%= line.title %></strong>"},
-              {"text": "<ul><% line.messages.forEach((message)=> { %><li><%= message %></li><% }) %></ul>"}
-          <% }) %>
-        ]
-      }`
-    }
-  },
-  {
-    internal_id: 'f4ee7b33-006a-4b0d-b57d-411ad288654g',
-    built_in: false,
-    name: 'Twitter connector',
-    outcome_type: 'CONNECTOR',
-    description: 'Publish notification to Twitter',
-    schema: {
-      connector_id: 'string',
-    },
-    configuration: {
-      connector_id: 'xxxxx'
-    }
   }
 ];
 
-// - When sending the daily ? Midnight doesn't seem interesting -> need to be choose by the user
-// - Do we talk about align on day start or sliding period? -> Sliding
-// - What about user timezone ? -> need to be taken into account
-// const STATIC_NOTIFICATIONS: Array<LiveNotification | DigestNotification> = [
-//   {
-//     internal_id: '1c449a99-4a7e-4fc6-a091-8935a8bfe2f8',
-//     name: 'Report <-> Energy',
-//     user_ids: ['4c1b46af-51d4-44aa-94c2-52d20612f0b1'], // Julien
-//     trigger_type: 'live', // or digest
-//     event_types: ['create', 'delete'],
-//     filters: {
-//       entity_type: [{ id: 'Report', value: 'Report' }],
-//       objectContains: [{ id: '50767ae3-dbe6-4847-a3c1-4553ca157f97', value: 'Energy' }],
-//     },
-//     // outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d', '44fcf1f4-8e31-4b31-8dbc-cd6993e1b822', 'f4ee7b33-006a-4b0d-b57d-411ad288654f']
-//     outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288654f']
-//   },
-//   {
-//     internal_id: '8419ef73-6667-4a77-95e5-390275d2fc1d',
-//     name: 'Daily digest Report <-> Energy',
-//     group_ids: ['1130302f-6aa1-4d8a-b6d7-78b8d816ba8a'], // GR group
-//     trigger_type: 'digest',
-//     period: 'hour',
-//     notifications: ['1c449a99-4a7e-4fc6-a091-8935a8bfe2f8'],
-//     outcomes: ['f4ee7b33-006a-4b0d-b57d-411ad288653d']
-//   }
-// ];
-
-export const isDefine = (elem: any): elem is any => {
-  return elem !== undefined;
-};
 export const isLive = (n: ResolvedTrigger): n is ResolvedLive => n.trigger.trigger_type === 'live';
 export const isDigest = (n: ResolvedTrigger): n is ResolvedDigest => n.trigger.trigger_type === 'digest';
 
 export const getNotifications = async (context: AuthContext): Promise<Array<ResolvedTrigger>> => {
-  const triggers = await listAllEntities<BasicStoreEntityTrigger>(context, SYSTEM_USER, [ENTITY_TYPE_TRIGGER], { connectionFormat: false });
-  const notificationUserIds: Array<string> = triggers.map((l) => l.user_ids).flat().filter(isDefine);
-  const groupsIds = triggers.map((l) => (l.group_ids ?? [])).flat();
-  const membersRel = await listAllRelations<BasicStoreRelation>(context, SYSTEM_USER, RELATION_MEMBER_OF, { toId: groupsIds });
-  const userIdGroup: Array<{ group: string; user: string; }> = membersRel.map((rel) => ({
-    group: rel.toId,
-    user: rel.fromId
-  }));
-  const groupUserIds = R.groupBy((userGroup) => userGroup.group, userIdGroup);
-  const allUserIds = new Set([...notificationUserIds, ...Object.values(groupUserIds).flat().map((v) => v.user)]);
-  const userMaps = new Map();
-  const userResolver = async (userId: string) => {
-    const user = await resolveUserById(context, userId);
-    if (user) {
-      userMaps.set(user.internal_id, user);
-    }
-  };
-  await Bluebird.map(allUserIds, userResolver, { concurrency: ES_MAX_CONCURRENCY });
+  const triggers = await getEntitiesFromCache<BasicStoreEntityTrigger>(context, SYSTEM_USER, ENTITY_TYPE_TRIGGER);
+  const platformUsers = await getEntitiesFromCache<AuthUser>(context, SYSTEM_USER, ENTITY_TYPE_USER);
   return triggers.map((trigger) => {
-    const userFromGroups = (trigger.group_ids ?? []).map((id) => (groupUserIds[id] ?? []).map((g) => g.user)).flat();
-    const userIds = new Set([...(trigger.user_ids ?? []), ...userFromGroups].filter(isDefine));
-    const users = Array.from(userIds).map((i) => userMaps.get(i)).filter((u) => isNotEmptyField(u));
-    return { users, trigger };
+    const triggerGroupIds = trigger.group_ids ?? [];
+    const usersFromGroups = platformUsers.filter((user) => user.groups.map((g) => g.internal_id)
+      .some((id: string) => triggerGroupIds.includes(id)));
+    const triggerUserIds = trigger.user_ids ?? [];
+    const usersFromIds = platformUsers.filter((user) => triggerUserIds.includes(user.id));
+    return { users: [...usersFromGroups, ...usersFromIds], trigger };
   });
 };
 
@@ -353,10 +254,20 @@ const convertToNotificationUser = (user: AuthUser, outcomes: Array<string>): Not
   };
 };
 
+const eventTypeTranslater = (isPreviousMatch: boolean, isCurrentlyMatch: boolean, currentType: string) => {
+  if (isPreviousMatch && !isCurrentlyMatch) { // No longer visible
+    return EVENT_TYPE_DELETE;
+  }
+  if (!isPreviousMatch && isCurrentlyMatch) { // Newly visible
+    return EVENT_TYPE_CREATE;
+  }
+  return currentType;
+};
+
 const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>>) => {
   try {
     const context = executionContext('notification_manager');
-    const liveNotifications = await getLiveNotifications(context); // TODO @JRI add caching
+    const liveNotifications = await getLiveNotifications(context);
     for (let index = 0; index < streamEvents.length; index += 1) {
       const { data: { data }, event: eventType } = streamEvents[index];
       // For each event we need to check if
@@ -371,21 +282,20 @@ const notificationStreamHandler = async (streamEvents: Array<SseEvent<DataEvent>
           const { newDocument: previous } = jsonpatch.applyPatch(R.clone(data), dataContext.reverse_patch);
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
-            // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
             const isPreviousMatch = await isStixMatchFilters(context, user, previous, frontendFilters);
             const isCurrentlyMatch = await isStixMatchFilters(context, user, data, frontendFilters);
-            if (isPreviousMatch && !isCurrentlyMatch && event_types.includes(EVENT_TYPE_DELETE)) { // No longer visible
-              targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_DELETE });
-            } else if (!isPreviousMatch && isCurrentlyMatch && event_types.includes(EVENT_TYPE_CREATE)) { // Newly visible
-              targets.push({ user: convertToNotificationUser(user, outcomes), type: EVENT_TYPE_CREATE });
-            } else if (isCurrentlyMatch && event_types.includes(EVENT_TYPE_UPDATE)) { // Just an update
-              targets.push({ user: convertToNotificationUser(user, outcomes), type: eventType });
+            const translatedType = eventTypeTranslater(isPreviousMatch, isCurrentlyMatch, eventType);
+            if (isPreviousMatch && !isCurrentlyMatch && event_types.includes(translatedType)) { // No longer visible
+              targets.push({ user: convertToNotificationUser(user, outcomes), type: translatedType });
+            } else if (!isPreviousMatch && isCurrentlyMatch && event_types.includes(translatedType)) { // Newly visible
+              targets.push({ user: convertToNotificationUser(user, outcomes), type: translatedType });
+            } else if (isCurrentlyMatch && event_types.includes(translatedType)) { // Just an update
+              targets.push({ user: convertToNotificationUser(user, outcomes), type: translatedType });
             }
           }
         } else if (event_types.includes(eventType)) { // create or delete
           for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
             const user = users[indexUser];
-            // TODO @JRI isInstanceMatchFilters currently resolving filter without caching
             const isCurrentlyMatch = await isStixMatchFilters(context, user, data, frontendFilters);
             if (isCurrentlyMatch) {
               targets.push({ user: convertToNotificationUser(user, outcomes), type: eventType });

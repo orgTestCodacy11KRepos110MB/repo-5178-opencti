@@ -1,4 +1,3 @@
-import { assoc } from 'ramda';
 import type { AuthContext, AuthUser } from '../../types/user';
 import {
   createEntity,
@@ -58,7 +57,7 @@ export const triggersGet = (context: AuthContext, user: AuthUser, triggerIds: st
 
 export const triggerEdit = async (context: AuthContext, user: AuthUser, triggerId: string, input: EditInput[]) => {
   const { element: updatedElem } = await updateAttribute(context, user, triggerId, ENTITY_TYPE_TRIGGER, input);
-  return updatedElem;
+  return notify(BUS_TOPICS[ENTITY_TYPE_TRIGGER].EDIT_TOPIC, updatedElem, user);
 };
 export const triggerDelete = (context: AuthContext, user: AuthUser, triggerId: string) => {
   return deleteElementById(context, user, triggerId, ENTITY_TYPE_TRIGGER);

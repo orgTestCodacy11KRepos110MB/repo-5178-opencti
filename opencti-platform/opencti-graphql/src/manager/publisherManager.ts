@@ -2,7 +2,7 @@ import ejs from 'ejs';
 import axios from 'axios';
 import { clearIntervalAsync, setIntervalAsync, SetIntervalAsyncTimer } from 'set-interval-async/fixed';
 import { createStreamProcessor, lockResource, NOTIFICATION_STREAM_NAME, StreamProcessor } from '../database/redis';
-import conf, { getBaseUrl, booleanConf, logApp } from '../config/conf';
+import conf, { booleanConf, getBaseUrl, logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, SYSTEM_USER } from '../utils/access';
 import {
@@ -37,17 +37,18 @@ const processNotificationEvent = async (
   user: NotificationUser,
   data: Array<{ notification_id: string, instance: StixCoreObject | StixRelationshipObject, type: string }>
 ) => {
-  const outcomes = STATIC_OUTCOMES; // TODO @JRI add database fetching
   const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
-  const outcomeMap = new Map(outcomes.map((n) => [n.internal_id, n]));
-  const notifications = await getNotifications(context); // TODO @JRI add caching
+  const outcomeMap = new Map(STATIC_OUTCOMES.map((n) => [n.internal_id, n]));
+  const notifications = await getNotifications(context);
   const notificationMap = new Map(notifications.map((n) => [n.trigger.internal_id, n.trigger]));
   const notification = notificationMap.get(notificationId);
-  if (!notification) return;
+  if (!notification) {
+    return;
+  }
   const { name: notification_name, trigger_type } = notification;
   for (let outcomeIndex = 0; outcomeIndex < user.outcomes.length; outcomeIndex += 1) {
     const outcome = user.outcomes[outcomeIndex];
-    const { outcome_type, name, configuration } = outcomeMap.get(outcome) ?? {};
+    const { outcome_type, configuration } = outcomeMap.get(outcome) ?? {};
     const generatedContent: Record<string, Array<NotificationContentEvent>> = {};
     for (let index = 0; index < data.length; index += 1) {
       const { notification_id, instance, type } = data[index];
@@ -80,10 +81,7 @@ const processNotificationEvent = async (
         updated_at: now(),
         is_read: false
       };
-      addNotification(context, SYSTEM_USER, createNotification).then(() => {
-        // eslint-disable-next-line no-console
-        console.log(`[${name}] ${user.user_email}`);
-      }).catch((err) => {
+      addNotification(context, SYSTEM_USER, createNotification).catch((err) => {
         logApp.error('[OPENCTI-MODULE] Error executing publication', { error: err });
       });
     }
@@ -91,10 +89,7 @@ const processNotificationEvent = async (
       const { template } = configuration ?? {};
       const generatedEmail = ejs.render(template, templateData);
       const mail = { from: settings.platform_email, to: user.user_email, subject: title, html: generatedEmail };
-      sendMail(mail).then(() => {
-        // eslint-disable-next-line no-console
-        console.log(`[${name}] ${user.user_email}`);
-      }).catch((err) => {
+      sendMail(mail).catch((err) => {
         logApp.error('[OPENCTI-MODULE] Error executing publication', { error: err });
       });
     }
@@ -102,10 +97,7 @@ const processNotificationEvent = async (
       const { uri, template } = configuration ?? {};
       const generatedWebhook = ejs.render(template, templateData);
       const dataJson = JSON.parse(generatedWebhook);
-      axios.post(uri, dataJson).then(() => {
-        // eslint-disable-next-line no-console
-        console.log(`[${name}] ${user.user_email}`);
-      }).catch((err) => {
+      axios.post(uri, dataJson).catch((err) => {
         logApp.error('[OPENCTI-MODULE] Error executing publication', { error: err });
       });
     }
@@ -129,7 +121,7 @@ const processDigestNotificationEvent = async (context: AuthContext, event: Diges
 const publisherStreamHandler = async (streamEvents: Array<SseEvent<StreamNotifEvent>>) => {
   try {
     const context = executionContext('publisher_manager');
-    const notifications = await getNotifications(context); // TODO @JRI add caching
+    const notifications = await getNotifications(context);
     const notificationMap = new Map(notifications.map((n) => [n.trigger.internal_id, n.trigger]));
     for (let index = 0; index < streamEvents.length; index += 1) {
       const streamEvent = streamEvents[index];

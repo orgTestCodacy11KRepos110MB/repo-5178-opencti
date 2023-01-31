@@ -66,7 +66,13 @@ interface StoreFile {
   mime_type: string;
 }
 
-interface BasicStoreBase {
+interface BasicStoreIdentifier {
+  internal_id: string;
+  standard_id?: StixId;
+  x_opencti_stix_ids?: Array<StixId>;
+}
+
+interface BasicStoreBase extends BasicStoreIdentifier {
   _index: string;
   standard_id: StixId;
   internal_id: string;
@@ -539,6 +545,14 @@ interface BasicTaskEntity extends BasicStoreEntity {
 interface BasicWorkflowTemplateEntity extends BasicStoreEntity {
   name: string;
   color: string;
+}
+
+interface BasicStreamEntity extends BasicStoreEntity {
+  filters: string;
+}
+
+interface BasicTriggerEntity extends BasicStoreEntity {
+  filters: string;
 }
 
 interface BasicWorkflowStatusEntity extends BasicStoreEntity {
