@@ -82,6 +82,7 @@ const RootRegionComponent = ({ queryRef }) => {
         <StixCoreObjectKnowledgeBar
           stixCoreObjectLink={link}
           availableSections={[
+            'regions',
             'countries',
             'cities',
             'threats',
