@@ -130,11 +130,9 @@ class StixDomainObjectsExportCreationComponent extends Component {
 
   onSubmit(selectedIds, values, { setSubmitting, resetForm }) {
     const { paginationOptions, context, elementId } = this.props;
-    console.log('paginationOptions', paginationOptions);
     const maxMarkingDefinition = values.maxMarkingDefinition === 'none'
       ? null
       : values.maxMarkingDefinition;
-    console.log('entityType', this.props.exportEntityType);
     commitMutation({
       mutation: StixDomainObjectsExportCreationMutation,
       variables: {
