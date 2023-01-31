@@ -7,6 +7,7 @@ import { setRuleActivation } from '../../src/domain/rules';
 import { internalLoadById, listEntities } from '../../src/database/middleware-loader';
 import { testContext } from './testQuery';
 import { fetchStreamInfo } from '../../src/database/redis';
+import { logApp } from '../../src/config/conf';
 
 export const inferenceLookup = async (inferences, fromStandardId, toStandardId, type) => {
   for (let index = 0; index < inferences.length; index += 1) {
@@ -29,6 +30,7 @@ export const getInferences = (type) => {
 };
 
 export const changeRule = async (ruleId, active) => {
+  const start = new Date().getTime();
   // Change the status
   await setRuleActivation(testContext, SYSTEM_USER, ruleId, active);
   // Wait for rule to finish activation
@@ -54,6 +56,8 @@ export const changeRule = async (ruleId, active) => {
       stableCount += 1;
     }
   }
+  const stop = new Date().getTime() - start;
+  logApp.info(`[TEST] Rule ${active ? ' activated' : 'disabled'} in ${stop} ms`);
 };
 
 export const activateRule = async (ruleId) => changeRule(ruleId, true);
